@@ -1,0 +1,7 @@
+.agents/
+.expo/
+dist/
+node_modules/
+src/types/database.generated.ts
+supabase/.branches/
+supabase/.temp/

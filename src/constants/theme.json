@@ -1,0 +1,52 @@
+{
+  "name": "cupcake",
+  "source": "daisyUI 5.7.x built-in cupcake theme",
+  "colorScheme": "light",
+  "colors": {
+    "base-100": {
+      "oklch": "oklch(97.788% 0.004 56.375)",
+      "rgb": "250 247 245"
+    },
+    "base-200": {
+      "oklch": "oklch(93.982% 0.007 61.449)",
+      "rgb": "239 234 230"
+    },
+    "base-300": { "oklch": "oklch(91.586% 0.006 53.44)", "rgb": "231 226 223" },
+    "base-content": {
+      "oklch": "oklch(23.574% 0.066 313.189)",
+      "rgb": "41 19 52"
+    },
+    "primary": { "oklch": "oklch(85% 0.138 181.071)", "rgb": "68 235 211" },
+    "primary-content": {
+      "oklch": "oklch(43% 0.078 188.216)",
+      "rgb": "0 93 88"
+    },
+    "secondary": { "oklch": "oklch(89% 0.061 343.231)", "rgb": "249 203 229" },
+    "secondary-content": {
+      "oklch": "oklch(45% 0.187 3.815)",
+      "rgb": "160 0 74"
+    },
+    "accent": { "oklch": "oklch(90% 0.076 70.697)", "rgb": "255 214 167" },
+    "accent-content": { "oklch": "oklch(47% 0.157 37.304)", "rgb": "159 45 0" },
+    "neutral": { "oklch": "oklch(27% 0.006 286.033)", "rgb": "38 38 41" },
+    "neutral-content": {
+      "oklch": "oklch(92% 0.004 286.32)",
+      "rgb": "228 228 231"
+    },
+    "info": { "oklch": "oklch(68% 0.169 237.323)", "rgb": "0 164 242" },
+    "info-content": { "oklch": "oklch(29% 0.066 243.157)", "rgb": "4 46 73" },
+    "success": { "oklch": "oklch(69% 0.17 162.48)", "rgb": "0 186 123" },
+    "success-content": {
+      "oklch": "oklch(26% 0.051 172.552)",
+      "rgb": "0 44 33"
+    },
+    "warning": { "oklch": "oklch(79% 0.184 86.047)", "rgb": "238 175 0" },
+    "warning-content": { "oklch": "oklch(28% 0.066 53.813)", "rgb": "65 30 3" },
+    "error": { "oklch": "oklch(64% 0.246 16.439)", "rgb": "254 28 85" },
+    "error-content": { "oklch": "oklch(27% 0.105 12.094)", "rgb": "77 2 24" }
+  },
+  "radii": { "selector": 16, "field": 32, "box": 16 },
+  "border": 2,
+  "depth": 1,
+  "noise": 0
+}

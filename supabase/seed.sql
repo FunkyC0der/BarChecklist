@@ -1,0 +1,1 @@
+-- Intentionally empty. Test fixtures live in supabase/tests and app data is user-owned.

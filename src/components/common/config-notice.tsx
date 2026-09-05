@@ -1,0 +1,16 @@
+import { AppText, Card } from '@/components/ui';
+
+export function ConfigNotice({ message }: { message: string }) {
+  return (
+    <Card
+      className="border-warning bg-warning"
+      title="Потрібна конфігурація Supabase"
+    >
+      <AppText className="text-warning-content">{message}</AppText>
+      <AppText className="text-warning-content" variant="caption">
+        Скопіюйте `.env.example` у `.env.local` і додайте локальні або hosted
+        development значення.
+      </AppText>
+    </Card>
+  );
+}

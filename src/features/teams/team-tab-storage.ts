@@ -1,0 +1,43 @@
+const teamTabPaths = ['/today', '/checklists', '/history', '/team'] as const;
+
+export type TeamTabPath = (typeof teamTabPaths)[number];
+
+function storageKey(userId: string) {
+  return `bar-checklist.active-tab.${userId}`;
+}
+
+export function isTeamTabPath(pathname: string): pathname is TeamTabPath {
+  return teamTabPaths.some((path) => path === pathname);
+}
+
+export function resolveActiveTeamTab(
+  storedPath: string | null,
+  pathname: string,
+): TeamTabPath {
+  if (storedPath && isTeamTabPath(storedPath)) return storedPath;
+  if (isTeamTabPath(pathname)) return pathname;
+  return '/today';
+}
+
+export function readStoredActiveTeamTab(userId: string): string | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    return window.localStorage.getItem(storageKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+export function writeStoredActiveTeamTab(
+  userId: string,
+  pathname: TeamTabPath,
+) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(storageKey(userId), pathname);
+  } catch {
+    // Storage can be disabled in the browser. Navigation still remains usable.
+  }
+}
