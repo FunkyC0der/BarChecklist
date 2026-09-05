@@ -1,6 +1,6 @@
 # Епік 2. Team lifecycle та membership
 
-Статус: `BLOCKED` — реалізація готова, очікується ручна QA двома реальними акаунтами.
+Статус: `DONE` — ручну QA підтвердив користувач 5 вересня 2026 року.
 
 ## Мета
 
@@ -54,15 +54,15 @@
 
 ## Definition of Done
 
-- [ ] Двоє реальних тестових акаунтів проходять create → invite → join → remove flow на development preview.
+- [x] Двоє реальних тестових акаунтів проходять create → invite → join → remove flow на development preview.
 - [x] RLS/pgTAP, Jest, lint, format check, typecheck і Web export проходять локально.
 - [x] Hosted migration застосовано, generated schema звірено з hosted development і preview оновлено.
 - [x] Published `/join/[token]` перевірений у браузері: public route, reload і safe local return path працюють.
 - [x] Active team стабільно відновлюється після reload на рівні unit-тестів і реалізації localStorage fallback.
 
-## Блокер
+## Закриття блокера
 
-Фінальний acceptance flow вимагає двох реальних test accounts. Автоматичний агент не створює та не використовує такі акаунти без явної участі користувача, тому епік не можна позначати `DONE` до ручної перевірки.
+Фінальний acceptance flow вимагав двох реальних test accounts, яких автоматичний агент не створює самостійно. Користувач підтвердив проходження create → invite → join → remove вручну, тому епік закритий.
 
 ## Наступний gate
 
