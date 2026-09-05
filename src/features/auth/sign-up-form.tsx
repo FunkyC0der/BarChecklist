@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
-import { AppText, Button, Input } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 import { buildAppUrl } from '@/lib/platform';
 
 import { useAuth } from './auth-context';
@@ -142,11 +142,19 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
         )}
       />
       {message ? (
-        <AppText aria-live="polite" tone={message.kind}>
+        <Alert
+          aria-live="polite"
+          color={message.kind === 'success' ? 'success' : 'error'}
+        >
           {message.text}
-        </AppText>
+        </Alert>
       ) : null}
-      <Button color="primary" loading={isSubmitting} type="submit">
+      <Button
+        className="btn-block"
+        color="primary"
+        loading={isSubmitting}
+        type="submit"
+      >
         Створити акаунт
       </Button>
     </form>

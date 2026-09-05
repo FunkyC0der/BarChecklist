@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
-import { AppText, Button, Input } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 
 import { useAuth } from './auth-context';
 
@@ -80,11 +80,16 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
         )}
       />
       {submitError ? (
-        <AppText aria-live="polite" tone="error">
+        <Alert aria-live="polite" color="error">
           {submitError}
-        </AppText>
+        </Alert>
       ) : null}
-      <Button color="primary" loading={isSubmitting} type="submit">
+      <Button
+        className="btn-block"
+        color="primary"
+        loading={isSubmitting}
+        type="submit"
+      >
         Увійти
       </Button>
     </form>

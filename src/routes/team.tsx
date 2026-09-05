@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import {
+  Alert,
   AppText,
+  Badge,
   Button,
   Card,
   Input,
@@ -25,6 +27,7 @@ import {
 import { joinPath } from '@/features/teams/team-routes';
 import { useTeams } from '@/features/teams/team-context';
 import { useTeamRealtime } from '@/features/teams/use-team-realtime';
+import { cn } from '@/lib/cn';
 import { buildAppUrl, shareLink } from '@/lib/platform';
 
 function formatExpiry(value: string) {
@@ -303,10 +306,13 @@ export function TeamRoute() {
     () =>
       teams.map((team) => (
         <Button
+          className={cn(
+            'join-item',
+            team.id === activeTeam?.id && 'btn-active',
+          )}
           key={team.id}
           onClick={() => selectTeam(team.id)}
           size="sm"
-          color={team.id === activeTeam?.id ? 'primary' : 'default'}
         >
           {team.name}
         </Button>
@@ -316,34 +322,38 @@ export function TeamRoute() {
 
   if (status === 'loading' || !activeTeam) {
     return (
-      <Screen scroll={false}>
+      <Screen inset scroll={false}>
         <Loading label="Завантажуємо команду…" size="lg" />
       </Screen>
     );
   }
 
   return (
-    <Screen>
-      <div className="flex flex-row flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <AppText as="h1" variant="title">
-            Команда
-          </AppText>
-          <AppText tone="muted">{session?.user.email}</AppText>
+    <Screen inset>
+      <div className="navbar min-h-0 px-0">
+        <div className="navbar-start">
+          <div>
+            <h1 className="text-xl font-semibold">{activeTeam.name}</h1>
+            <p className="text-sm text-base-content/60">
+              {session?.user.email}
+            </p>
+          </div>
         </div>
-        <Button onClick={() => void signOut()} variant="ghost">
-          Вийти
-        </Button>
+        <div className="navbar-end">
+          <Button onClick={() => void signOut()} size="sm" variant="ghost">
+            Вийти
+          </Button>
+        </div>
       </div>
 
-      {teamsError ? <AppText tone="error">{teamsError}</AppText> : null}
+      {teamsError ? <Alert color="error">{teamsError}</Alert> : null}
 
       {teams.length > 1 ? (
         <Card
           description="Виберіть команду, дані якої хочете переглянути."
           title="Активна команда"
         >
-          <div className="flex flex-row flex-wrap gap-3">{teamButtons}</div>
+          <div className="join join-horizontal flex-wrap">{teamButtons}</div>
         </Card>
       ) : null}
 
@@ -367,14 +377,15 @@ export function TeamRoute() {
             value={timezone}
           />
           {teamMessage ? (
-            <AppText
-              tone={teamMessage === 'Зміни збережено.' ? 'success' : 'error'}
+            <Alert
+              color={teamMessage === 'Зміни збережено.' ? 'success' : 'error'}
             >
               {teamMessage}
-            </AppText>
+            </Alert>
           ) : null}
           {isOwner ? (
             <Button
+              className="btn-block"
               color="primary"
               loading={savingTeam}
               onClick={() => void saveTeam()}
@@ -393,38 +404,43 @@ export function TeamRoute() {
       >
         <div className="flex flex-col gap-4">
           {membersLoading ? <Loading label="Завантажуємо учасників…" /> : null}
-          {membersError ? <AppText tone="error">{membersError}</AppText> : null}
-          {members.map((member) => {
-            const memberIsOwner = member.user_id === activeTeam.owner_id;
-            return (
-              <div
-                key={member.user_id}
-                className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-base-300 pb-4"
-              >
-                <div className="flex flex-col gap-1">
-                  <AppText variant="label">{member.displayName}</AppText>
-                  <AppText tone="muted" variant="caption">
-                    {memberIsOwner ? 'Owner' : 'Учасник'}
-                  </AppText>
-                </div>
-                {isOwner && !memberIsOwner ? (
-                  <Button
-                    color="error"
-                    loading={memberActionId === member.user_id}
-                    onClick={() => void removeMember(member.user_id)}
-                    size="sm"
-                  >
-                    Видалити
-                  </Button>
-                ) : null}
-              </div>
-            );
-          })}
+          {membersError ? <Alert color="error">{membersError}</Alert> : null}
+          <ul className="list">
+            {members.map((member) => {
+              const memberIsOwner = member.user_id === activeTeam.owner_id;
+              return (
+                <li className="list-row" key={member.user_id}>
+                  <div className="list-col-grow">
+                    <AppText variant="label">{member.displayName}</AppText>
+                    <Badge
+                      className={memberIsOwner ? undefined : 'badge-ghost'}
+                    >
+                      {memberIsOwner ? 'Owner' : 'Учасник'}
+                    </Badge>
+                  </div>
+                  {isOwner && !memberIsOwner ? (
+                    <Button
+                      color="error"
+                      loading={memberActionId === member.user_id}
+                      onClick={() => void removeMember(member.user_id)}
+                      size="sm"
+                    >
+                      Видалити
+                    </Button>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
           {!membersLoading && members.length === 0 ? (
             <AppText tone="muted">У команді поки немає учасників.</AppText>
           ) : null}
           {!isOwner ? (
-            <Button loading={leaveLoading} onClick={() => void leave()}>
+            <Button
+              className="btn-block"
+              loading={leaveLoading}
+              onClick={() => void leave()}
+            >
               Вийти з команди
             </Button>
           ) : null}
@@ -444,11 +460,10 @@ export function TeamRoute() {
             ) : (
               <AppText tone="muted">Активного запрошення немає.</AppText>
             )}
-            {inviteMessage ? (
-              <AppText tone="muted">{inviteMessage}</AppText>
-            ) : null}
-            <div className="flex flex-row flex-wrap gap-3">
+            {inviteMessage ? <Alert>{inviteMessage}</Alert> : null}
+            <div className="flex flex-col gap-2">
               <Button
+                className="btn-block"
                 loading={inviteLoading}
                 onClick={() => void createInvite()}
               >
@@ -458,6 +473,7 @@ export function TeamRoute() {
               </Button>
               {inviteExpiry ? (
                 <Button
+                  className="btn-block"
                   color="error"
                   loading={inviteLoading}
                   onClick={() => void revokeInvite()}
@@ -485,9 +501,7 @@ export function TeamRoute() {
               Дійсне до {formatExpiry(inviteExpiry)}.
             </AppText>
           ) : null}
-          {inviteDialogMessage ? (
-            <AppText tone="muted">{inviteDialogMessage}</AppText>
-          ) : null}
+          {inviteDialogMessage ? <Alert>{inviteDialogMessage}</Alert> : null}
           <div className="modal-action flex-wrap">
             <Button onClick={() => void shareInvite()}>Поділитися</Button>
             <Button color="primary" onClick={() => void copyInvite()}>
@@ -517,6 +531,7 @@ export function TeamRoute() {
               value={deleteName}
             />
             <Button
+              className="btn-block"
               color="error"
               disabled={deleteName !== activeTeam.name}
               loading={deleteLoading}

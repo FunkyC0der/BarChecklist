@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { AppText, Button, Input } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -94,11 +94,16 @@ export function OnboardingForm() {
         )}
       />
       {submitError ? (
-        <AppText aria-live="polite" tone="error">
+        <Alert aria-live="polite" color="error">
           {submitError}
-        </AppText>
+        </Alert>
       ) : null}
-      <Button color="primary" loading={isSubmitting} type="submit">
+      <Button
+        className="btn-block"
+        color="primary"
+        loading={isSubmitting}
+        type="submit"
+      >
         Створити команду
       </Button>
     </form>

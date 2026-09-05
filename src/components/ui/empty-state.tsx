@@ -5,20 +5,34 @@ import { Card } from './card';
 
 export function EmptyState({
   action,
+  bordered = true,
   description,
   title,
 }: {
   action?: ReactNode;
+  bordered?: boolean | undefined;
   description: string;
   title: string;
 }) {
-  return (
-    <Card className="items-center py-8">
-      <div className="mx-auto flex max-w-lg flex-col items-center gap-2 text-center">
-        <AppText variant="heading">{title}</AppText>
-        <AppText tone="muted">{description}</AppText>
-      </div>
-      {action}
-    </Card>
+  const body = (
+    <>
+      <AppText as="h2" variant="heading">
+        {title}
+      </AppText>
+      <AppText tone="muted">{description}</AppText>
+      {action ? (
+        <div className="card-actions justify-center">{action}</div>
+      ) : null}
+    </>
   );
+
+  if (!bordered) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-16 text-center">
+        {body}
+      </div>
+    );
+  }
+
+  return <Card bodyClassName="items-center text-center">{body}</Card>;
 }

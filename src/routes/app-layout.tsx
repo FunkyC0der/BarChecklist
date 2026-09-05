@@ -70,21 +70,34 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col">
-      <div className="flex-1 pb-24">
-        <Outlet />
-      </div>
-      <nav className="dock">
-        {tabs.map((tab) => (
-          <NavLink
-            className={({ isActive }) => cn(isActive && 'dock-active')}
-            key={tab.to}
-            to={tab.to}
-          >
-            <span className="dock-label">{tab.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+    <div className="flex min-h-dvh flex-col bg-base-200 pt-[env(safe-area-inset-top)]">
+      <main className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col px-3 pt-3">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-t-box border border-b-0 border-base-300 bg-base-100 p-4">
+          <Outlet />
+        </div>
+        <nav aria-label="Розділи" className="pb-[env(safe-area-inset-bottom)]">
+          <div className="tabs tabs-lift w-full tabs-bottom" role="tablist">
+            {tabs.map((tab) => {
+              const isActive = location.pathname === tab.to;
+
+              return (
+                <NavLink
+                  aria-selected={isActive}
+                  className={cn(
+                    'tab h-12 min-h-12 flex-1 touch-manipulation px-1 text-xs leading-tight sm:text-sm',
+                    isActive && 'tab-active',
+                  )}
+                  key={tab.to}
+                  role="tab"
+                  to={tab.to}
+                >
+                  {tab.label}
+                </NavLink>
+              );
+            })}
+          </div>
+        </nav>
+      </main>
     </div>
   );
 }

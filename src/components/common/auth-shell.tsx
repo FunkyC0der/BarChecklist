@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { AppText, Card, Screen } from '@/components/ui';
+import { AppText, Card } from '@/components/ui';
 
 type AuthShellProps = {
   children: ReactNode;
@@ -16,9 +16,9 @@ export function AuthShell({
   title,
 }: AuthShellProps) {
   return (
-    <Screen>
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 py-8">
-        <div className="flex flex-col gap-2">
+    <div className="hero min-h-dvh bg-base-200 pt-[env(safe-area-inset-top)]">
+      <div className="hero-content w-full max-w-sm flex-col px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
+        <div className="text-center">
           <AppText as="h1" variant="title">
             Bar Checklist
           </AppText>
@@ -26,11 +26,11 @@ export function AuthShell({
             Щоденні чеклісти команди без зайвого шуму.
           </AppText>
         </div>
-        <Card description={description} title={title}>
+        <Card className="w-full" description={description} title={title}>
           {children}
         </Card>
         <div className="text-center">{footer}</div>
       </div>
-    </Screen>
+    </div>
   );
 }

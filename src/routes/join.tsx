@@ -2,7 +2,7 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { AuthShell } from '@/components/common/auth-shell';
-import { AppText, Button, Card, Loading, Screen } from '@/components/ui';
+import { Alert, AppText, Button, Card, Loading, Screen } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import {
   acceptTeamInvite,
@@ -68,9 +68,9 @@ export function JoinRoute() {
     return (
       <Screen>
         <Card title="Недійсне посилання">
-          <AppText tone="error">
+          <Alert color="error">
             Це посилання-запрошення має некоректний формат.
-          </AppText>
+          </Alert>
         </Card>
       </Screen>
     );
@@ -137,7 +137,7 @@ export function JoinRoute() {
     return (
       <Screen>
         <Card title="Supabase не налаштовано">
-          <AppText tone="error">{configIssue}</AppText>
+          <Alert color="warning">{configIssue}</Alert>
         </Card>
       </Screen>
     );
@@ -156,7 +156,7 @@ export function JoinRoute() {
       <Screen>
         <Card title="Не вдалося відкрити запрошення">
           <div className="flex flex-col gap-4">
-            <AppText tone="error">{error}</AppText>
+            <Alert color="error">{error}</Alert>
             <Button onClick={() => void loadInvite()}>Спробувати ще раз</Button>
             <Button onClick={() => void goToTeams()} variant="ghost">
               До моїх команд
@@ -178,7 +178,7 @@ export function JoinRoute() {
       <Screen>
         <Card title="Запрошення недоступне">
           <div className="flex flex-col gap-4">
-            <AppText tone="error">{statusMessages[unavailableStatus]}</AppText>
+            <Alert color="error">{statusMessages[unavailableStatus]}</Alert>
             <Button color="primary" onClick={() => void goToTeams()}>
               До моїх команд
             </Button>

@@ -1,4 +1,4 @@
-import { AppText, EmptyState, Screen } from '@/components/ui';
+import { EmptyState, Screen } from '@/components/ui';
 
 type PlaceholderScreenProps = {
   description: string;
@@ -10,11 +10,13 @@ export function PlaceholderScreen({
   title,
 }: PlaceholderScreenProps) {
   return (
-    <Screen>
-      <AppText as="h1" variant="title">
-        {title}
-      </AppText>
-      <EmptyState description={description} title="Фундамент готовий" />
+    <Screen inset>
+      <h1 className="sr-only">{title}</h1>
+      <EmptyState
+        bordered={false}
+        description={description}
+        title="Фундамент готовий"
+      />
     </Screen>
   );
 }

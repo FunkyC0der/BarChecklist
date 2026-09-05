@@ -24,10 +24,14 @@ export function Modal({
   }, [open]);
 
   return (
-    <dialog className="modal" onClose={onClose} ref={dialogRef}>
+    <dialog
+      className="modal modal-bottom sm:modal-middle"
+      onClose={onClose}
+      ref={dialogRef}
+    >
       <div className="modal-box">
         <h3 className="text-lg font-bold">{title}</h3>
-        {description ? <p className="py-3">{description}</p> : null}
+        {description ? <p className="py-4">{description}</p> : null}
         {children}
       </div>
       <form className="modal-backdrop" method="dialog">
