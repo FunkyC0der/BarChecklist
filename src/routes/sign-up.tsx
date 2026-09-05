@@ -1,4 +1,4 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, useSearchParams } from 'react-router';
 
 import { AuthShell } from '@/components/common/auth-shell';
 import { ConfigNotice } from '@/components/common/config-notice';
@@ -7,10 +7,13 @@ import { useAuth } from '@/features/auth/auth-context';
 import { SignUpForm } from '@/features/auth/sign-up-form';
 import { safeJoinReturnPath } from '@/features/teams/team-routes';
 
-export default function SignUpScreen() {
+export function SignUpRoute() {
   const { configIssue } = useAuth();
-  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
-  const safeReturnTo = safeJoinReturnPath(returnTo);
+  const [params] = useSearchParams();
+  const safeReturnTo = safeJoinReturnPath(params.get('returnTo'));
+  const signInTo = safeReturnTo
+    ? `/sign-in?returnTo=${encodeURIComponent(safeReturnTo)}`
+    : '/sign-in';
 
   return (
     <AuthShell
@@ -18,13 +21,7 @@ export default function SignUpScreen() {
       footer={
         <AppText>
           Уже маєте акаунт?{' '}
-          <Link
-            className="font-bold text-primary-content"
-            href={{
-              pathname: '/sign-in',
-              params: safeReturnTo ? { returnTo: safeReturnTo } : {},
-            }}
-          >
+          <Link className="link" to={signInTo}>
             Увійти
           </Link>
         </AppText>

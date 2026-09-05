@@ -1,6 +1,6 @@
 # Епік 9. Mobile beta та release readiness
 
-Статус: `DEFERRED`.
+Статус: `SUPERSEDED` — Expo mobile beta не виконується; store-реліз — окреме рішення після майбутнього native-епіка.
 
 ## Мета
 

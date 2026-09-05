@@ -1,8 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { View } from 'react-native';
-import { type Href, useRouter } from 'expo-router';
+import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
 import { AppText, Button, Input } from '@/components/ui';
@@ -10,7 +9,7 @@ import { AppText, Button, Input } from '@/components/ui';
 import { useAuth } from './auth-context';
 
 const schema = z.object({
-  email: z.string().trim().email('Введіть коректний email.'),
+  email: z.email('Введіть коректний email.'),
   password: z.string().min(8, 'Пароль має містити щонайменше 8 символів.'),
 });
 
@@ -22,7 +21,7 @@ type SignInFormProps = {
 
 export function SignInForm({ returnTo = null }: SignInFormProps) {
   const { signIn } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     control,
@@ -37,7 +36,7 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
     setSubmitError(null);
     try {
       await signIn(values.email, values.password);
-      router.replace((returnTo ?? '/') as Href);
+      navigate(returnTo ?? '/', { replace: true });
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : 'Не вдалося увійти.',
@@ -46,19 +45,21 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
   });
 
   return (
-    <View className="gap-5">
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={(event) => void onSubmit(event)}
+    >
       <Controller
         control={control}
         name="email"
         render={({ field, fieldState }) => (
           <Input
-            autoCapitalize="none"
             autoComplete="email"
             error={fieldState.error?.message}
-            keyboardType="email-address"
             label="Email"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
+            type="email"
             value={field.value}
           />
         )}
@@ -73,23 +74,19 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
             label="Пароль"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
-            secureTextEntry
+            type="password"
             value={field.value}
           />
         )}
       />
       {submitError ? (
-        <AppText accessibilityLiveRegion="polite" tone="error">
+        <AppText aria-live="polite" tone="error">
           {submitError}
         </AppText>
       ) : null}
-      <Button
-        loading={isSubmitting}
-        onPress={() => void onSubmit()}
-        color="primary"
-      >
+      <Button color="primary" loading={isSubmitting} type="submit">
         Увійти
       </Button>
-    </View>
+    </form>
   );
 }

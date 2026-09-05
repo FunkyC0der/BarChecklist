@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+@plugin 'daisyui' {
+  themes: cupcake --default;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}

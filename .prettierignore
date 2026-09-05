@@ -2,6 +2,7 @@
 .expo/
 dist/
 node_modules/
+pnpm-lock.yaml
 src/types/database.generated.ts
 supabase/.branches/
 supabase/.temp/

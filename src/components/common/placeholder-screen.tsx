@@ -11,7 +11,9 @@ export function PlaceholderScreen({
 }: PlaceholderScreenProps) {
   return (
     <Screen>
-      <AppText variant="title">{title}</AppText>
+      <AppText as="h1" variant="title">
+        {title}
+      </AppText>
       <EmptyState description={description} title="Фундамент готовий" />
     </Screen>
   );

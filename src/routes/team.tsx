@@ -1,9 +1,15 @@
-import * as Linking from 'expo-linking';
-import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Share, View } from 'react-native';
+import { useLocation, useNavigate } from 'react-router';
 
-import { AppText, Button, Card, Input, Loading, Screen } from '@/components/ui';
+import {
+  AppText,
+  Button,
+  Card,
+  Input,
+  Loading,
+  Modal,
+  Screen,
+} from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import {
   createTeamInvite,
@@ -19,6 +25,7 @@ import {
 import { joinPath } from '@/features/teams/team-routes';
 import { useTeams } from '@/features/teams/team-context';
 import { useTeamRealtime } from '@/features/teams/use-team-realtime';
+import { buildAppUrl, shareLink } from '@/lib/platform';
 
 function formatExpiry(value: string) {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -27,7 +34,7 @@ function formatExpiry(value: string) {
   }).format(new Date(value));
 }
 
-export default function TeamScreen() {
+export function TeamRoute() {
   const { session, signOut } = useAuth();
   const {
     activeTeam,
@@ -37,7 +44,8 @@ export default function TeamScreen() {
     status,
     teams,
   } = useTeams();
-  const router = useRouter();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [membersError, setMembersError] = useState<string | null>(null);
   const [membersLoading, setMembersLoading] = useState(true);
@@ -115,14 +123,20 @@ export default function TeamScreen() {
     activeTeam?.timezone,
     loadInviteStatus,
     loadMembers,
+    location.key,
   ]);
 
-  useFocusEffect(
-    useCallback(() => {
-      void loadMembers();
-      void loadInviteStatus();
-    }, [loadInviteStatus, loadMembers]),
-  );
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void loadMembers();
+        void loadInviteStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [loadInviteStatus, loadMembers]);
 
   const refreshActiveTeam = useCallback(() => {
     void refreshTeams();
@@ -161,7 +175,7 @@ export default function TeamScreen() {
     setInviteMessage(null);
     try {
       const invite = await createTeamInvite(activeTeam.id);
-      setInviteLink(Linking.createURL(joinPath(invite.token)));
+      setInviteLink(buildAppUrl(joinPath(invite.token)));
       setInviteExpiry(invite.expires_at);
       setInviteDialogMessage(null);
       setInviteDialogOpen(true);
@@ -192,21 +206,11 @@ export default function TeamScreen() {
 
     setInviteDialogMessage(null);
     try {
-      if (
-        typeof navigator !== 'undefined' &&
-        typeof navigator.share === 'function'
-      ) {
-        await navigator.share({
-          text: 'Приєднуйтесь до моєї команди у Bar Checklist.',
-          title: 'Запрошення до команди',
-          url: inviteLink,
-        });
-      } else {
-        await Share.share({
-          message: inviteLink,
-          title: 'Запрошення до команди',
-        });
-      }
+      await shareLink({
+        text: 'Приєднуйтесь до моєї команди у Bar Checklist.',
+        title: 'Запрошення до команди',
+        url: inviteLink,
+      });
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') return;
       setInviteDialogMessage('Не вдалося відкрити меню поширення.');
@@ -267,7 +271,7 @@ export default function TeamScreen() {
     try {
       await leaveTeam(activeTeam.id);
       await refreshTeams();
-      router.replace('/');
+      navigate('/', { replace: true });
     } catch (error) {
       setTeamMessage(
         error instanceof Error ? error.message : 'Не вдалося вийти з команди.',
@@ -285,7 +289,7 @@ export default function TeamScreen() {
     try {
       await deleteTeam(activeTeam.id);
       await refreshTeams();
-      router.replace('/');
+      navigate('/', { replace: true });
     } catch (error) {
       setTeamMessage(
         error instanceof Error ? error.message : 'Не вдалося видалити команду.',
@@ -300,9 +304,9 @@ export default function TeamScreen() {
       teams.map((team) => (
         <Button
           key={team.id}
-          onPress={() => selectTeam(team.id)}
+          onClick={() => selectTeam(team.id)}
           size="sm"
-          color={team.id === activeTeam?.id ? 'primary' : 'secondary'}
+          color={team.id === activeTeam?.id ? 'primary' : 'default'}
         >
           {team.name}
         </Button>
@@ -320,15 +324,17 @@ export default function TeamScreen() {
 
   return (
     <Screen>
-      <View className="flex-row flex-wrap items-start justify-between gap-4">
-        <View className="gap-1">
-          <AppText variant="title">Команда</AppText>
+      <div className="flex flex-row flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <AppText as="h1" variant="title">
+            Команда
+          </AppText>
           <AppText tone="muted">{session?.user.email}</AppText>
-        </View>
-        <Button onPress={() => void signOut()} variant="ghost">
+        </div>
+        <Button onClick={() => void signOut()} variant="ghost">
           Вийти
         </Button>
-      </View>
+      </div>
 
       {teamsError ? <AppText tone="error">{teamsError}</AppText> : null}
 
@@ -337,7 +343,7 @@ export default function TeamScreen() {
           description="Виберіть команду, дані якої хочете переглянути."
           title="Активна команда"
         >
-          <View className="flex-row flex-wrap gap-3">{teamButtons}</View>
+          <div className="flex flex-row flex-wrap gap-3">{teamButtons}</div>
         </Card>
       ) : null}
 
@@ -345,20 +351,19 @@ export default function TeamScreen() {
         description="Timezone використовується для визначення робочого дня команди."
         title="Налаштування команди"
       >
-        <View className="gap-5">
+        <div className="flex flex-col gap-5">
           <Input
-            editable={isOwner}
+            disabled={!isOwner}
             label="Назва"
             onChangeText={setName}
             value={name}
           />
           <Input
-            autoCapitalize="none"
-            autoCorrect={false}
-            editable={isOwner}
+            disabled={!isOwner}
             helperText="IANA timezone, наприклад Europe/Kyiv."
             label="Timezone"
             onChangeText={setTimezone}
+            spellCheck={false}
             value={timezone}
           />
           {teamMessage ? (
@@ -370,64 +375,60 @@ export default function TeamScreen() {
           ) : null}
           {isOwner ? (
             <Button
-              loading={savingTeam}
-              onPress={() => void saveTeam()}
               color="primary"
+              loading={savingTeam}
+              onClick={() => void saveTeam()}
             >
               Зберегти зміни
             </Button>
           ) : (
             <AppText tone="muted">Лише owner може змінювати ці дані.</AppText>
           )}
-        </View>
+        </div>
       </Card>
 
       <Card
         description="Усі учасники можуть переглядати командні дані."
         title="Учасники"
       >
-        <View className="gap-4">
+        <div className="flex flex-col gap-4">
           {membersLoading ? <Loading label="Завантажуємо учасників…" /> : null}
           {membersError ? <AppText tone="error">{membersError}</AppText> : null}
           {members.map((member) => {
             const memberIsOwner = member.user_id === activeTeam.owner_id;
             return (
-              <View
+              <div
                 key={member.user_id}
-                className="flex-row flex-wrap items-center justify-between gap-3 border-b border-base-300 pb-4"
+                className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-base-300 pb-4"
               >
-                <View className="gap-1">
+                <div className="flex flex-col gap-1">
                   <AppText variant="label">{member.displayName}</AppText>
                   <AppText tone="muted" variant="caption">
                     {memberIsOwner ? 'Owner' : 'Учасник'}
                   </AppText>
-                </View>
+                </div>
                 {isOwner && !memberIsOwner ? (
                   <Button
-                    loading={memberActionId === member.user_id}
-                    onPress={() => void removeMember(member.user_id)}
-                    size="sm"
                     color="error"
+                    loading={memberActionId === member.user_id}
+                    onClick={() => void removeMember(member.user_id)}
+                    size="sm"
                   >
                     Видалити
                   </Button>
                 ) : null}
-              </View>
+              </div>
             );
           })}
           {!membersLoading && members.length === 0 ? (
             <AppText tone="muted">У команді поки немає учасників.</AppText>
           ) : null}
           {!isOwner ? (
-            <Button
-              loading={leaveLoading}
-              onPress={() => void leave()}
-              color="secondary"
-            >
+            <Button loading={leaveLoading} onClick={() => void leave()}>
               Вийти з команди
             </Button>
           ) : null}
-        </View>
+        </div>
       </Card>
 
       {isOwner ? (
@@ -435,7 +436,7 @@ export default function TeamScreen() {
           description="Посилання дійсне 7 днів і може бути використане багатьма людьми."
           title="Запрошення"
         >
-          <View className="gap-4">
+          <div className="flex flex-col gap-4">
             {inviteExpiry ? (
               <AppText tone="muted">
                 Активне запрошення до {formatExpiry(inviteExpiry)}.
@@ -446,11 +447,10 @@ export default function TeamScreen() {
             {inviteMessage ? (
               <AppText tone="muted">{inviteMessage}</AppText>
             ) : null}
-            <View className="flex-row flex-wrap gap-3">
+            <div className="flex flex-row flex-wrap gap-3">
               <Button
                 loading={inviteLoading}
-                onPress={() => void createInvite()}
-                color="primary"
+                onClick={() => void createInvite()}
               >
                 {inviteExpiry
                   ? 'Створити нове посилання'
@@ -458,56 +458,46 @@ export default function TeamScreen() {
               </Button>
               {inviteExpiry ? (
                 <Button
-                  loading={inviteLoading}
-                  onPress={() => void revokeInvite()}
                   color="error"
+                  loading={inviteLoading}
+                  onClick={() => void revokeInvite()}
                 >
                   Відкликати
                 </Button>
               ) : null}
-            </View>
-          </View>
+            </div>
+          </div>
         </Card>
       ) : null}
 
       <Modal
-        animationType="fade"
-        onRequestClose={closeInviteDialog}
-        transparent
-        visible={inviteDialogOpen}
+        description="Скопіюйте або поширте посилання зараз. Після закриття цього вікна його не можна буде відновити."
+        onClose={closeInviteDialog}
+        open={inviteDialogOpen}
+        title="Запрошення до команди"
       >
-        <View className="flex-1 items-center justify-center bg-neutral/50 p-5">
-          <Card
-            className="w-full max-w-xl"
-            description="Скопіюйте або поширте посилання зараз. Після закриття цього вікна його не можна буде відновити."
-            title="Запрошення до команди"
-          >
-            <View className="gap-4">
-              {inviteLink ? (
-                <Input editable={false} label="Посилання" value={inviteLink} />
-              ) : null}
-              {inviteExpiry ? (
-                <AppText tone="muted">
-                  Дійсне до {formatExpiry(inviteExpiry)}.
-                </AppText>
-              ) : null}
-              {inviteDialogMessage ? (
-                <AppText tone="muted">{inviteDialogMessage}</AppText>
-              ) : null}
-              <View className="flex-row flex-wrap justify-end gap-3">
-                <Button onPress={() => void shareInvite()} color="secondary">
-                  Поділитися
-                </Button>
-                <Button onPress={() => void copyInvite()} color="primary">
-                  Копіювати
-                </Button>
-                <Button onPress={closeInviteDialog} variant="ghost">
-                  Закрити
-                </Button>
-              </View>
-            </View>
-          </Card>
-        </View>
+        <div className="flex flex-col gap-4">
+          {inviteLink ? (
+            <Input readOnly label="Посилання" value={inviteLink} />
+          ) : null}
+          {inviteExpiry ? (
+            <AppText tone="muted">
+              Дійсне до {formatExpiry(inviteExpiry)}.
+            </AppText>
+          ) : null}
+          {inviteDialogMessage ? (
+            <AppText tone="muted">{inviteDialogMessage}</AppText>
+          ) : null}
+          <div className="modal-action flex-wrap">
+            <Button onClick={() => void shareInvite()}>Поділитися</Button>
+            <Button color="primary" onClick={() => void copyInvite()}>
+              Копіювати
+            </Button>
+            <Button onClick={closeInviteDialog} variant="ghost">
+              Закрити
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {isOwner ? (
@@ -515,7 +505,7 @@ export default function TeamScreen() {
           description="Ця дія назавжди видалить команду й усі її дочірні дані."
           title="Видалити команду"
         >
-          <View className="gap-4">
+          <div className="flex flex-col gap-4">
             <Input
               error={
                 deleteName.length > 0 && deleteName !== activeTeam.name
@@ -527,14 +517,14 @@ export default function TeamScreen() {
               value={deleteName}
             />
             <Button
+              color="error"
               disabled={deleteName !== activeTeam.name}
               loading={deleteLoading}
-              onPress={() => void removeTeam()}
-              color="error"
+              onClick={() => void removeTeam()}
             >
               Видалити назавжди
             </Button>
-          </View>
+          </div>
         </Card>
       ) : null}
     </Screen>

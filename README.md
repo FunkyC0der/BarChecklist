@@ -1,8 +1,8 @@
 # Bar Checklist
 
-Web-first foundation for a team checklist product. The UI uses Expo Router, React Native primitives, NativeWind, and the daisyUI Cupcake semantic palette. Supabase provides Auth, Postgres, RLS, and Realtime.
+Web SPA for a team checklist product. The UI uses React, Vite, Tailwind CSS 4, and daisyUI 5 (Cupcake). Supabase provides Auth, Postgres, RLS, and Realtime.
 
-This stage intentionally contains authentication, protected routes, UI primitives, database foundations, and placeholder product screens. Checklist CRUD and the complete Today workflow belong to the next Web MVP stage. Native builds are deferred until after the Web beta.
+This stage contains authentication, protected routes, daisyUI screens, database foundations, and placeholder product screens. Checklist CRUD and the complete Today workflow belong to the next Web MVP stage.
 
 ## Requirements
 
@@ -16,17 +16,17 @@ This stage intentionally contains authentication, protected routes, UI primitive
 pnpm install
 pnpm supabase:start
 cp .env.example .env.local
-pnpm web
+pnpm dev
 ```
 
 Use the `API URL` and `PUBLISHABLE_KEY` printed by `pnpm supabase:start` in `.env.local`:
 
 ```text
-EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
-EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-`EXPO_PUBLIC_SUPABASE_ANON_KEY` is supported only as a temporary fallback. Never add a secret or service-role key to an `EXPO_PUBLIC_` variable.
+`VITE_SUPABASE_ANON_KEY` is supported only as a temporary fallback. During the stack migration, `EXPO_PUBLIC_SUPABASE_*` keys in `.env.local` are still accepted. Prefer the `VITE_` names going forward. Never add a secret or service-role key to a `VITE_` or `EXPO_PUBLIC_` variable.
 
 ## Verification
 
@@ -38,29 +38,20 @@ pnpm test
 pnpm supabase:reset
 pnpm supabase:test
 pnpm db:types
-pnpm export:web
-pnpm export:web:development
-pnpm serve:web
+pnpm build
+pnpm preview
 ```
 
-The generated Web bundle is written to `dist/`.
+The production bundle is written to `dist/`.
 
 ## Preview deployment
 
-Active development preview: https://bar-checklist--development.expo.app
+Web hosting is Vercel (`vercel.json` SPA rewrite to `index.html`).
 
-- EAS project: `@krasdevs-team/bar-checklist` (`27f73b5c-895a-49af-b950-22d30ea1f2fd`)
 - Hosted Supabase: `bar-checklist` in `eu-west-1` (`ujpbumiognmqmgvomvtm`)
-- Auth Site URL: the stable development preview URL; local and immutable EAS preview URLs are allow-listed.
-- EAS `development` contains only `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. No secret or service-role key belongs in a client environment.
+- Auth Site URL and Redirect URLs must include the Vercel domain and `http://localhost:5173`
+- Vercel env: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` only. No secret or service-role key belongs in a client environment.
 
-For every development deployment:
+The previous EAS Hosting preview (`https://bar-checklist--development.expo.app`) is retired with this stack.
 
-```bash
-pnpm export:web:development
-pnpm deploy:web:preview
-```
-
-The export command clears Metro's cache and reads the EAS `development` environment, so it cannot reuse local Supabase values from `.env.local`. The deployment command updates only the `development` alias; it never promotes the app to production.
-
-Production aliases, a custom domain, CI deployment, `expo-dev-client`, SecureStore, and native bundle/package identifiers are intentionally deferred.
+Native (Capacitor iOS/Android) is deferred to a later epic.

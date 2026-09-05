@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest';
+
 import { isoWeekday, isChecklistScheduled, logicalDate } from './dates';
 
 describe('timezone schedule utilities', () => {

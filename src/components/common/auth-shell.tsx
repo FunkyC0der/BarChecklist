@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
 
 import { AppText, Card, Screen } from '@/components/ui';
 
@@ -18,18 +17,20 @@ export function AuthShell({
 }: AuthShellProps) {
   return (
     <Screen>
-      <View className="mx-auto w-full max-w-md flex-1 justify-center gap-6 py-8">
-        <View className="gap-2">
-          <AppText variant="title">Bar Checklist</AppText>
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 py-8">
+        <div className="flex flex-col gap-2">
+          <AppText as="h1" variant="title">
+            Bar Checklist
+          </AppText>
           <AppText tone="muted">
             Щоденні чеклісти команди без зайвого шуму.
           </AppText>
-        </View>
+        </div>
         <Card description={description} title={title}>
           {children}
         </Card>
-        <View className="items-center">{footer}</View>
-      </View>
+        <div className="text-center">{footer}</div>
+      </div>
     </Screen>
   );
 }

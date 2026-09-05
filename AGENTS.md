@@ -1,6 +1,6 @@
-# Expo HAS CHANGED
+# Docs before code
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+Read daisyUI 5 skills in `.agents/skills/daisyui/` before writing HTML or JSX. For Vite, Tailwind 4 and Capacitor 8, use current official docs for those tools — Expo SDK docs do not apply.
 
 # Roadmap workflow
 

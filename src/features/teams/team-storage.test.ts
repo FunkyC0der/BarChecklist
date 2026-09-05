@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest';
+
 import type { Team } from './team-api';
 import { isInviteToken, joinPath, safeJoinReturnPath } from './team-routes';
 import { resolveActiveTeamId } from './team-storage';

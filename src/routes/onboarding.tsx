@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Navigate } from 'react-router';
 
 import { AuthShell } from '@/components/common/auth-shell';
 import { ConfigNotice } from '@/components/common/config-notice';
@@ -7,11 +7,11 @@ import { useAuth } from '@/features/auth/auth-context';
 import { OnboardingForm } from '@/features/teams/onboarding-form';
 import { useTeams } from '@/features/teams/team-context';
 
-export default function OnboardingScreen() {
+export function OnboardingRoute() {
   const { configIssue } = useAuth();
   const { activeTeam, status } = useTeams();
 
-  if (status === 'ready' && activeTeam) return <Redirect href="/today" />;
+  if (status === 'ready' && activeTeam) return <Navigate replace to="/today" />;
 
   return (
     <AuthShell

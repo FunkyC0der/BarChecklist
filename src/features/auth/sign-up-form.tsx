@@ -1,12 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { View } from 'react-native';
-import * as Linking from 'expo-linking';
-import { type Href, useRouter } from 'expo-router';
+import { useNavigate } from 'react-router';
 import { z } from 'zod';
 
 import { AppText, Button, Input } from '@/components/ui';
+import { buildAppUrl } from '@/lib/platform';
 
 import { useAuth } from './auth-context';
 
@@ -16,7 +15,7 @@ const schema = z
       .string()
       .trim()
       .min(2, 'Вкажіть ім’я щонайменше з 2 символів.'),
-    email: z.string().trim().email('Введіть коректний email.'),
+    email: z.email('Введіть коректний email.'),
     password: z.string().min(8, 'Пароль має містити щонайменше 8 символів.'),
     passwordConfirmation: z.string(),
   })
@@ -33,7 +32,7 @@ type SignUpFormProps = {
 
 export function SignUpForm({ returnTo = null }: SignUpFormProps) {
   const { signUp } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [message, setMessage] = useState<{
     kind: 'error' | 'success';
     text: string;
@@ -57,7 +56,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
     try {
       const result = await signUp(
         values,
-        returnTo ? Linking.createURL(returnTo) : undefined,
+        returnTo ? buildAppUrl(returnTo) : buildAppUrl('/'),
       );
       if (result.needsEmailConfirmation) {
         setMessage({
@@ -65,7 +64,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
           text: 'Перевірте email і підтвердьте реєстрацію.',
         });
       } else {
-        router.replace((returnTo ?? '/') as Href);
+        navigate(returnTo ?? '/', { replace: true });
       }
     } catch (error) {
       setMessage({
@@ -79,7 +78,10 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
   });
 
   return (
-    <View className="gap-5">
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={(event) => void onSubmit(event)}
+    >
       <Controller
         control={control}
         name="displayName"
@@ -99,13 +101,12 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
         name="email"
         render={({ field, fieldState }) => (
           <Input
-            autoCapitalize="none"
             autoComplete="email"
             error={fieldState.error?.message}
-            keyboardType="email-address"
             label="Email"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
+            type="email"
             value={field.value}
           />
         )}
@@ -120,7 +121,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
             label="Пароль"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
-            secureTextEntry
+            type="password"
             value={field.value}
           />
         )}
@@ -135,23 +136,19 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
             label="Повторіть пароль"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
-            secureTextEntry
+            type="password"
             value={field.value}
           />
         )}
       />
       {message ? (
-        <AppText accessibilityLiveRegion="polite" tone={message.kind}>
+        <AppText aria-live="polite" tone={message.kind}>
           {message.text}
         </AppText>
       ) : null}
-      <Button
-        loading={isSubmitting}
-        onPress={() => void onSubmit()}
-        color="primary"
-      >
+      <Button color="primary" loading={isSubmitting} type="submit">
         Створити акаунт
       </Button>
-    </View>
+    </form>
   );
 }

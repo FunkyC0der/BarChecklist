@@ -1,6 +1,5 @@
-import { Link, type Href, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
 
 import { AuthShell } from '@/components/common/auth-shell';
 import { AppText, Button, Card, Loading, Screen } from '@/components/ui';
@@ -23,21 +22,24 @@ const statusMessages: Record<
   revoked: 'Власник команди відкликав це запрошення.',
 };
 
-export default function JoinInviteScreen() {
-  const { token } = useLocalSearchParams<{ token?: string }>();
+export function JoinRoute() {
+  const { token } = useParams<{ token: string }>();
   const { configIssue, session } = useAuth();
   const { refreshTeams } = useTeams();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [invite, setInvite] = useState<InviteInspection | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(Boolean(session));
   const [joining, setJoining] = useState(false);
 
   const validToken = isInviteToken(token);
-  const returnTo = validToken ? joinPath(token) : null;
+  const returnTo = validToken && token ? joinPath(token) : null;
+  const returnQuery = returnTo
+    ? `?returnTo=${encodeURIComponent(returnTo)}`
+    : '';
 
   const loadInvite = useCallback(async () => {
-    if (!session || !validToken) return;
+    if (!session || !validToken || !token) return;
 
     setLoading(true);
     setError(null);
@@ -81,17 +83,12 @@ export default function JoinInviteScreen() {
         footer={
           <AppText>
             Уже маєте акаунт?{' '}
-            <Link
-              className="font-bold text-primary-content"
-              href={{ pathname: '/sign-in', params: { returnTo } }}
-            >
+            <Link className="link" to={`/sign-in${returnQuery}`}>
               Увійти
             </Link>
-            {'\n'}Ще немає акаунта?{' '}
-            <Link
-              className="font-bold text-primary-content"
-              href={{ pathname: '/sign-up', params: { returnTo } }}
-            >
+            <br />
+            Ще немає акаунта?{' '}
+            <Link className="link" to={`/sign-up${returnQuery}`}>
               Зареєструватися
             </Link>
           </AppText>
@@ -106,13 +103,14 @@ export default function JoinInviteScreen() {
   }
 
   const join = async () => {
+    if (!token) return;
     setJoining(true);
     setError(null);
     try {
       const result = await acceptTeamInvite(token);
       await refreshTeams(result.team_id);
       writeStoredActiveTeamTab(session.user.id, '/team');
-      router.replace('/team');
+      navigate('/team', { replace: true });
     } catch (nextError) {
       setError(
         nextError instanceof Error
@@ -128,11 +126,11 @@ export default function JoinInviteScreen() {
     const teams = await refreshTeams(preferredTeamId);
     if (teams.length > 0) {
       writeStoredActiveTeamTab(session.user.id, '/team');
-      router.replace('/team');
+      navigate('/team', { replace: true });
       return;
     }
 
-    router.replace('/onboarding' as Href);
+    navigate('/onboarding', { replace: true });
   };
 
   if (configIssue) {
@@ -157,15 +155,13 @@ export default function JoinInviteScreen() {
     return (
       <Screen>
         <Card title="Не вдалося відкрити запрошення">
-          <View className="gap-4">
+          <div className="flex flex-col gap-4">
             <AppText tone="error">{error}</AppText>
-            <Button onPress={() => void loadInvite()} color="secondary">
-              Спробувати ще раз
-            </Button>
-            <Button onPress={() => void goToTeams()} variant="ghost">
+            <Button onClick={() => void loadInvite()}>Спробувати ще раз</Button>
+            <Button onClick={() => void goToTeams()} variant="ghost">
               До моїх команд
             </Button>
-          </View>
+          </div>
         </Card>
       </Screen>
     );
@@ -181,12 +177,12 @@ export default function JoinInviteScreen() {
     return (
       <Screen>
         <Card title="Запрошення недоступне">
-          <View className="gap-4">
+          <div className="flex flex-col gap-4">
             <AppText tone="error">{statusMessages[unavailableStatus]}</AppText>
-            <Button onPress={() => void goToTeams()} color="primary">
+            <Button color="primary" onClick={() => void goToTeams()}>
               До моїх команд
             </Button>
-          </View>
+          </div>
         </Card>
       </Screen>
     );
@@ -196,17 +192,17 @@ export default function JoinInviteScreen() {
     return (
       <Screen>
         <Card title="Ви вже в команді">
-          <View className="gap-4">
+          <div className="flex flex-col gap-4">
             <AppText>
               Ви вже є учасником команди «{invite.teamName ?? 'Команда'}».
             </AppText>
             <Button
-              onPress={() => void goToTeams(invite.teamId ?? undefined)}
               color="primary"
+              onClick={() => void goToTeams(invite.teamId ?? undefined)}
             >
               Відкрити команду
             </Button>
-          </View>
+          </div>
         </Card>
       </Screen>
     );
@@ -215,20 +211,20 @@ export default function JoinInviteScreen() {
   return (
     <Screen>
       <Card title="Приєднатися до команди">
-        <View className="gap-5">
+        <div className="flex flex-col gap-5">
           <AppText>
             Вас запрошують до команди «{invite.teamName ?? 'Команда'}».
           </AppText>
           <AppText tone="muted">
             Після підтвердження ви бачитимете дані команди та поточні задачі.
           </AppText>
-          <Button loading={joining} onPress={() => void join()} color="primary">
+          <Button color="primary" loading={joining} onClick={() => void join()}>
             Приєднатися
           </Button>
-          <Button onPress={() => void goToTeams()} variant="ghost">
+          <Button onClick={() => void goToTeams()} variant="ghost">
             До моїх команд
           </Button>
-        </View>
+        </div>
       </Card>
     </Screen>
   );

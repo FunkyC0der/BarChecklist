@@ -4,7 +4,9 @@ export function joinPath(token: string) {
   return `/join/${token}`;
 }
 
-export function safeJoinReturnPath(value: string | string[] | undefined) {
+export function safeJoinReturnPath(
+  value: string | string[] | null | undefined,
+) {
   if (typeof value !== 'string') return null;
 
   const match = /^\/join\/([a-f0-9]{64})$/.exec(value);
@@ -12,7 +14,7 @@ export function safeJoinReturnPath(value: string | string[] | undefined) {
 }
 
 export function isInviteToken(
-  value: string | string[] | undefined,
+  value: string | string[] | null | undefined,
 ): value is string {
   return typeof value === 'string' && inviteTokenPattern.test(value);
 }

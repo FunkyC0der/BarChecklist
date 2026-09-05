@@ -43,7 +43,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   const refreshTeams = useCallback(
     async (preferredTeamId?: string) => {
-      if (!session || configIssue) {
+      if (!session) {
+        setTeams([]);
+        setActiveTeamId(null);
+        setStatus('idle');
+        hasLoadedTeams.current = false;
+        return [];
+      }
+
+      if (configIssue) {
         setTeams([]);
         setActiveTeamId(null);
         setStatus('ready');

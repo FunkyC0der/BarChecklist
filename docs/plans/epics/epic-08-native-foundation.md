@@ -1,6 +1,6 @@
 # Епік 8. iOS та Android foundation
 
-Статус: `DEFERRED` до завершення Web beta та stabilization.
+Статус: `SUPERSEDED` — Expo native не виконується. Capacitor/iOS свідомо відкладено; native — окремий епік після Web MVP.
 
 ## Мета
 

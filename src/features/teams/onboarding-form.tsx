@@ -1,7 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { View } from 'react-native';
 import { z } from 'zod';
 
 import { AppText, Button, Input } from '@/components/ui';
@@ -61,13 +60,15 @@ export function OnboardingForm() {
   });
 
   return (
-    <View className="gap-5">
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={(event) => void onSubmit(event)}
+    >
       <Controller
         control={control}
         name="name"
         render={({ field, fieldState }) => (
           <Input
-            autoCapitalize="words"
             error={fieldState.error?.message}
             label="Назва команди"
             onBlur={field.onBlur}
@@ -82,29 +83,24 @@ export function OnboardingForm() {
         name="timezone"
         render={({ field, fieldState }) => (
           <Input
-            autoCapitalize="none"
-            autoCorrect={false}
             error={fieldState.error?.message}
             helperText="Використовуйте IANA назву, наприклад Europe/Kyiv."
             label="Timezone команди"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
+            spellCheck={false}
             value={field.value}
           />
         )}
       />
       {submitError ? (
-        <AppText accessibilityLiveRegion="polite" tone="error">
+        <AppText aria-live="polite" tone="error">
           {submitError}
         </AppText>
       ) : null}
-      <Button
-        loading={isSubmitting}
-        onPress={() => void onSubmit()}
-        color="primary"
-      >
+      <Button color="primary" loading={isSubmitting} type="submit">
         Створити команду
       </Button>
-    </View>
+    </form>
   );
 }
