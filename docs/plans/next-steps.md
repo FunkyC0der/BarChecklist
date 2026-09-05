@@ -59,7 +59,7 @@
 
 План: [epic-03-checklists-tasks.md](./epics/epic-03-checklists-tasks.md)
 
-Team context і owner/member permissions готові, тому епік узятий у роботу. Відкриті рішення зафіксовані у файлі плану: nested route `/checklists/:checklistId`, reorder кнопками через RPC, soft-delete замість hard delete, ліміти 20 чеклістів і 100 задач.
+Реалізація CRUD, RPC, pgTAP і UI на гілці готова. Відкриті рішення: nested route `/checklists/:checklistId`, reorder кнопками через RPC, soft-delete замість hard delete, ліміти 20 чеклістів і 100 задач. Локальний `supabase test db`, hosted migration і браузерна QA лишаються після доступного Supabase.
 
 ### Епік 4. Today workflow та Realtime
 

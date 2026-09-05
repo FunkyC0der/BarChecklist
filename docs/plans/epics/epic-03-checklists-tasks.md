@@ -1,6 +1,6 @@
 # Епік 3. Checklist і task management
 
-Статус: `NEXT` — план погоджено, реалізація не починалася.
+Статус: `NEXT` — реалізація на гілці готова; локальний `supabase test db` і hosted migration ще не прогнані в цьому середовищі.
 
 ## Мета
 
@@ -136,13 +136,24 @@ where t.id = ordered.task_id;
 - Видалення команди (`deleteTeam` у `team-api.ts`) робить hard `DELETE`, а `task_completions.team_id` і `task_id` мають `on delete restrict`. Після появи перших completions в Епіку 4 видалення команди з історією почне падати. Цей епік лише фіксує проблему; лагодити її треба разом із completions в Епіку 4.
 - Прибирання `DELETE`-політик змінює наявний permission matrix, тому pgTAP має явно перевіряти, що owner більше не може зробити hard delete.
 
+## Реалізація
+
+Код епіка додано:
+
+- міграція [supabase/migrations/202609050001_checklist_task_management.sql](../../../supabase/migrations/202609050001_checklist_task_management.sql) з RPC, тригерами лімітів і revoke hard `DELETE`;
+- pgTAP [supabase/tests/checklists_tasks.test.sql](../../../supabase/tests/checklists_tasks.test.sql);
+- data-access, Zod-схеми, форми, `/checklists` і `/checklists/:checklistId`, tab-root persistence;
+- unit-тести схем, reorder і deep-link tab root.
+
+`src/types/database.generated.ts` оновлено вручну під нові RPC, бо `pnpm db:types` потребує локального Supabase.
+
 ## Definition of Done
 
 - [ ] Owner повністю налаштовує робочий checklist у браузері: створення, редагування, reorder, soft-delete.
 - [ ] Member бачить той самий результат у read-only режимі.
 - [ ] Міграція, RPC і тригери лімітів застосовані локально; `src/types/database.generated.ts` перегенеровано.
 - [ ] `pnpm supabase:test` покриває owner/member/outsider, cadence, weekdays, reorder, soft-delete і ліміти.
-- [ ] `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test` і `pnpm build` проходять.
+- [x] `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test` і `pnpm build` проходять.
 - [ ] Браузерна QA на мобільній ширині пройдена, включно з reload на detail-роуті.
 - [ ] Hosted міграція застосована, статус епіка оновлено в master roadmap.
 
