@@ -10,9 +10,9 @@ import {
 import { useAuth } from '@/features/auth/auth-context';
 import { useTeams } from '@/features/teams/team-context';
 import {
-  isTeamTabPath,
   readStoredActiveTeamTab,
   resolveActiveTeamTab,
+  resolveTeamTabRoot,
   writeStoredActiveTeamTab,
 } from '@/features/teams/team-tab-storage';
 import { cn } from '@/lib/cn';
@@ -60,8 +60,9 @@ export function AppLayout() {
 
   useEffect(() => {
     if (!session || !activeTeam || !restoredTab.current) return;
-    if (isTeamTabPath(location.pathname)) {
-      writeStoredActiveTeamTab(session.user.id, location.pathname);
+    const tabRoot = resolveTeamTabRoot(location.pathname);
+    if (tabRoot) {
+      writeStoredActiveTeamTab(session.user.id, tabRoot);
     }
   }, [activeTeam, location.pathname, session]);
 
@@ -78,7 +79,7 @@ export function AppLayout() {
         <nav aria-label="Розділи" className="pb-[env(safe-area-inset-bottom)]">
           <div className="tabs tabs-lift w-full tabs-bottom" role="tablist">
             {tabs.map((tab) => {
-              const isActive = location.pathname === tab.to;
+              const isActive = resolveTeamTabRoot(location.pathname) === tab.to;
 
               return (
                 <NavLink

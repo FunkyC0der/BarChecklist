@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { Team } from './team-api';
 import { isInviteToken, joinPath, safeJoinReturnPath } from './team-routes';
 import { resolveActiveTeamId } from './team-storage';
-import { isTeamTabPath, resolveActiveTeamTab } from './team-tab-storage';
+import {
+  isTeamTabPath,
+  resolveActiveTeamTab,
+  resolveTeamTabRoot,
+} from './team-tab-storage';
 
 const teams: Team[] = [
   {
@@ -69,5 +73,16 @@ describe('active tab persistence', () => {
     expect(resolveActiveTeamTab(null, '/unknown')).toBe('/today');
     expect(isTeamTabPath('/checklists')).toBe(true);
     expect(isTeamTabPath('/unknown')).toBe(false);
+  });
+
+  it('treats checklist detail as the checklists tab without leaving the deep link', () => {
+    expect(resolveTeamTabRoot('/checklists/abc')).toBe('/checklists');
+    expect(isTeamTabPath('/checklists/abc')).toBe(false);
+    expect(resolveActiveTeamTab('/checklists', '/checklists/abc')).toBe(
+      '/checklists/abc',
+    );
+    expect(resolveActiveTeamTab('/team', '/checklists/abc')).toBe(
+      '/checklists/abc',
+    );
   });
 });

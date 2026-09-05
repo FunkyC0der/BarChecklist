@@ -285,6 +285,18 @@ export type Database = {
           team_id: string
         }[]
       }
+      create_checklist_task: {
+        Args: { p_checklist_id: string; p_title: string }
+        Returns: {
+          checklist_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          position: number
+          title: string
+          updated_at: string
+        }[]
+      }
       create_team_invite: {
         Args: { p_team_id: string }
         Returns: {
@@ -306,7 +318,16 @@ export type Database = {
         Args: { p_team_id: string; p_user_id: string }
         Returns: undefined
       }
+      reorder_checklist_tasks: {
+        Args: { p_checklist_id: string; p_task_ids: string[] }
+        Returns: undefined
+      }
       revoke_team_invite: { Args: { p_team_id: string }; Returns: undefined }
+      soft_delete_checklist: {
+        Args: { p_checklist_id: string }
+        Returns: undefined
+      }
+      soft_delete_task: { Args: { p_task_id: string }; Returns: undefined }
     }
     Enums: {
       checklist_cadence: "daily" | "weekly"
