@@ -148,7 +148,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
       <Button
         loading={isSubmitting}
         onPress={() => void onSubmit()}
-        tone="primary"
+        color="primary"
       >
         Створити акаунт
       </Button>

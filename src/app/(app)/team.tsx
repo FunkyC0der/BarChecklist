@@ -301,8 +301,8 @@ export default function TeamScreen() {
         <Button
           key={team.id}
           onPress={() => selectTeam(team.id)}
-          size="small"
-          tone={team.id === activeTeam?.id ? 'primary' : 'secondary'}
+          size="sm"
+          color={team.id === activeTeam?.id ? 'primary' : 'secondary'}
         >
           {team.name}
         </Button>
@@ -313,7 +313,7 @@ export default function TeamScreen() {
   if (status === 'loading' || !activeTeam) {
     return (
       <Screen scroll={false}>
-        <Loading label="Завантажуємо команду…" size="large" />
+        <Loading label="Завантажуємо команду…" size="lg" />
       </Screen>
     );
   }
@@ -325,7 +325,7 @@ export default function TeamScreen() {
           <AppText variant="title">Команда</AppText>
           <AppText tone="muted">{session?.user.email}</AppText>
         </View>
-        <Button onPress={() => void signOut()} tone="ghost">
+        <Button onPress={() => void signOut()} variant="ghost">
           Вийти
         </Button>
       </View>
@@ -372,7 +372,7 @@ export default function TeamScreen() {
             <Button
               loading={savingTeam}
               onPress={() => void saveTeam()}
-              tone="primary"
+              color="primary"
             >
               Зберегти зміни
             </Button>
@@ -406,8 +406,8 @@ export default function TeamScreen() {
                   <Button
                     loading={memberActionId === member.user_id}
                     onPress={() => void removeMember(member.user_id)}
-                    size="small"
-                    tone="error"
+                    size="sm"
+                    color="error"
                   >
                     Видалити
                   </Button>
@@ -422,7 +422,7 @@ export default function TeamScreen() {
             <Button
               loading={leaveLoading}
               onPress={() => void leave()}
-              tone="secondary"
+              color="secondary"
             >
               Вийти з команди
             </Button>
@@ -450,7 +450,7 @@ export default function TeamScreen() {
               <Button
                 loading={inviteLoading}
                 onPress={() => void createInvite()}
-                tone="primary"
+                color="primary"
               >
                 {inviteExpiry
                   ? 'Створити нове посилання'
@@ -460,7 +460,7 @@ export default function TeamScreen() {
                 <Button
                   loading={inviteLoading}
                   onPress={() => void revokeInvite()}
-                  tone="error"
+                  color="error"
                 >
                   Відкликати
                 </Button>
@@ -495,13 +495,13 @@ export default function TeamScreen() {
                 <AppText tone="muted">{inviteDialogMessage}</AppText>
               ) : null}
               <View className="flex-row flex-wrap justify-end gap-3">
-                <Button onPress={() => void shareInvite()} tone="secondary">
+                <Button onPress={() => void shareInvite()} color="secondary">
                   Поділитися
                 </Button>
-                <Button onPress={() => void copyInvite()} tone="primary">
+                <Button onPress={() => void copyInvite()} color="primary">
                   Копіювати
                 </Button>
-                <Button onPress={closeInviteDialog} tone="ghost">
+                <Button onPress={closeInviteDialog} variant="ghost">
                   Закрити
                 </Button>
               </View>
@@ -530,7 +530,7 @@ export default function TeamScreen() {
               disabled={deleteName !== activeTeam.name}
               loading={deleteLoading}
               onPress={() => void removeTeam()}
-              tone="error"
+              color="error"
             >
               Видалити назавжди
             </Button>

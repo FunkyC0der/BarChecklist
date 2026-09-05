@@ -86,7 +86,7 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
       <Button
         loading={isSubmitting}
         onPress={() => void onSubmit()}
-        tone="primary"
+        color="primary"
       >
         Увійти
       </Button>

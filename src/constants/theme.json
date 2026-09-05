@@ -46,7 +46,12 @@
     "error-content": { "oklch": "oklch(27% 0.105 12.094)", "rgb": "77 2 24" }
   },
   "radii": { "selector": 16, "field": 32, "box": 16 },
+  "sizes": {
+    "field": { "xs": 24, "sm": 32, "md": 40, "lg": 48, "xl": 56 },
+    "selector": { "xs": 16, "sm": 20, "md": 24, "lg": 28, "xl": 32 }
+  },
   "border": 2,
   "depth": 1,
-  "noise": 0
+  "noise": 0,
+  "sourceVersion": "5.7.28"
 }

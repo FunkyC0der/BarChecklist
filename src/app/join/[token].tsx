@@ -148,7 +148,7 @@ export default function JoinInviteScreen() {
   if (loading) {
     return (
       <Screen scroll={false}>
-        <Loading label="Перевіряємо запрошення…" size="large" />
+        <Loading label="Перевіряємо запрошення…" size="lg" />
       </Screen>
     );
   }
@@ -159,10 +159,10 @@ export default function JoinInviteScreen() {
         <Card title="Не вдалося відкрити запрошення">
           <View className="gap-4">
             <AppText tone="error">{error}</AppText>
-            <Button onPress={() => void loadInvite()} tone="secondary">
+            <Button onPress={() => void loadInvite()} color="secondary">
               Спробувати ще раз
             </Button>
-            <Button onPress={() => void goToTeams()} tone="ghost">
+            <Button onPress={() => void goToTeams()} variant="ghost">
               До моїх команд
             </Button>
           </View>
@@ -183,7 +183,7 @@ export default function JoinInviteScreen() {
         <Card title="Запрошення недоступне">
           <View className="gap-4">
             <AppText tone="error">{statusMessages[unavailableStatus]}</AppText>
-            <Button onPress={() => void goToTeams()} tone="primary">
+            <Button onPress={() => void goToTeams()} color="primary">
               До моїх команд
             </Button>
           </View>
@@ -202,7 +202,7 @@ export default function JoinInviteScreen() {
             </AppText>
             <Button
               onPress={() => void goToTeams(invite.teamId ?? undefined)}
-              tone="primary"
+              color="primary"
             >
               Відкрити команду
             </Button>
@@ -222,10 +222,10 @@ export default function JoinInviteScreen() {
           <AppText tone="muted">
             Після підтвердження ви бачитимете дані команди та поточні задачі.
           </AppText>
-          <Button loading={joining} onPress={() => void join()} tone="primary">
+          <Button loading={joining} onPress={() => void join()} color="primary">
             Приєднатися
           </Button>
-          <Button onPress={() => void goToTeams()} tone="ghost">
+          <Button onPress={() => void goToTeams()} variant="ghost">
             До моїх команд
           </Button>
         </View>

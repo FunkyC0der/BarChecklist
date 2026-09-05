@@ -101,7 +101,7 @@ export function OnboardingForm() {
       <Button
         loading={isSubmitting}
         onPress={() => void onSubmit()}
-        tone="primary"
+        color="primary"
       >
         Створити команду
       </Button>

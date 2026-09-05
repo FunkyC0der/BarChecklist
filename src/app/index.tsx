@@ -12,7 +12,7 @@ export default function IndexScreen() {
   if (status === 'idle' || status === 'loading') {
     return (
       <Screen scroll={false}>
-        <Loading label="Завантажуємо команди…" size="large" />
+        <Loading label="Завантажуємо команди…" size="lg" />
       </Screen>
     );
   }

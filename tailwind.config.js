@@ -14,10 +14,6 @@ module.exports = {
         box: '16px',
       },
       borderWidth: { DEFAULT: '2px' },
-      boxShadow: {
-        cupcake:
-          '0 2px 0 rgba(41, 19, 52, 0.08), 0 8px 20px rgba(41, 19, 52, 0.08)',
-      },
     },
   },
   plugins: [],

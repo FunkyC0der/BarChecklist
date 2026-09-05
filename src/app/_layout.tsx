@@ -14,7 +14,7 @@ function RootNavigator() {
   if (!initialized) {
     return (
       <Screen scroll={false}>
-        <Loading label="Відновлюємо сесію…" size="large" />
+        <Loading label="Відновлюємо сесію…" size="lg" />
       </Screen>
     );
   }
