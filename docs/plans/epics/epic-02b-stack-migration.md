@@ -66,8 +66,8 @@ Vercel project `bar-checklist` (`prj_XCIx1mf3i46eDHGt3tHg9dqQuyyz`):
 
 - Dashboard: https://vercel.com/krasochenkodev-2202s-projects/bar-checklist
 - Env (Config, Production + Preview + Development): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` → hosted `https://ujpbumiognmqmgvomvtm.supabase.co`
-- Git ще не підключено, деплою немає. Після першого `*.vercel.app` URL варто додати точний домен у Redirect URLs і оновити Site URL.
+- Production deployment `dpl_53FGhBzap9c8KKtsGNeTC9uQ67Y7` (`READY`) підтверджено 6 вересня 2026 року в Епіку 4: https://project-ygm8l.vercel.app. Git integration окремо не підтверджувалася.
 
 ## Наступний gate
 
-Ручна QA епіка 2 на hosted (після Git → Vercel), далі епік 3.
+Hosted Vercel/Supabase flow остаточно підтверджено production QA Епіка 4; актуальний наступний gate визначає master roadmap.

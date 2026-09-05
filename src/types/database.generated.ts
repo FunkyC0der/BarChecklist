@@ -104,6 +104,8 @@ export type Database = {
           id: string
           task_id: string
           team_id: string
+          undone_at: string | null
+          undone_by: string | null
         }
         Insert: {
           completed_at?: string
@@ -112,6 +114,8 @@ export type Database = {
           id?: string
           task_id: string
           team_id: string
+          undone_at?: string | null
+          undone_by?: string | null
         }
         Update: {
           completed_at?: string
@@ -120,6 +124,8 @@ export type Database = {
           id?: string
           task_id?: string
           team_id?: string
+          undone_at?: string | null
+          undone_by?: string | null
         }
         Relationships: [
           {
@@ -285,6 +291,7 @@ export type Database = {
           team_id: string
         }[]
       }
+      complete_task: { Args: { p_task_id: string }; Returns: Json }
       create_checklist_task: {
         Args: {
           p_cadence: Database["public"]["Enums"]["task_cadence"]
@@ -317,6 +324,7 @@ export type Database = {
           token: string
         }[]
       }
+      get_today_snapshot: { Args: { p_team_id: string }; Returns: Json }
       inspect_team_invite: {
         Args: { p_token: string }
         Returns: {
@@ -341,6 +349,7 @@ export type Database = {
         Returns: undefined
       }
       soft_delete_task: { Args: { p_task_id: string }; Returns: undefined }
+      uncomplete_task: { Args: { p_completion_id: string }; Returns: Json }
     }
     Enums: {
       task_cadence: "daily" | "weekly"

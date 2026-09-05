@@ -494,19 +494,13 @@ select is(
   'soft-deleted task business fields stay immutable'
 );
 
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000011', true);
+update public.tasks
+set cadence = 'daily', weekdays = '{}'
+where id = '30000000-0000-0000-0000-000000000011';
+
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000012', true);
-insert into public.task_completions (
-  task_id,
-  team_id,
-  completion_date,
-  completed_by
-)
-values (
-  '30000000-0000-0000-0000-000000000011',
-  '00000000-0000-0000-0000-000000000999',
-  '2000-01-01',
-  '00000000-0000-0000-0000-000000000011'
-);
+select public.complete_task('30000000-0000-0000-0000-000000000011');
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000011', true);
 select public.soft_delete_checklist('20000000-0000-0000-0000-000000000011');
@@ -541,18 +535,7 @@ select is(
 
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000012', true);
 select throws_ok(
-  $$insert into public.task_completions (
-    task_id,
-    team_id,
-    completion_date,
-    completed_by
-  )
-  values (
-    '30000000-0000-0000-0000-000000000012',
-    '00000000-0000-0000-0000-000000000999',
-    '2000-01-02',
-    '00000000-0000-0000-0000-000000000012'
-  )$$,
+  $$select public.complete_task('30000000-0000-0000-0000-000000000012')$$,
   '23514',
   null,
   'soft-deleted tasks cannot be completed'

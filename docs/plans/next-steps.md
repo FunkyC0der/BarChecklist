@@ -1,6 +1,6 @@
 # Bar Checklist: покрокова roadmap
 
-Оновлено: 5 вересня 2026 року.
+Оновлено: 6 вересня 2026 року.
 
 Цей документ є master roadmap. Кожен епік має окремий файл-план і реалізується окремим циклом: уточнення рішень → погодження плану → реалізація → перевірка → закриття епіка.
 
@@ -25,8 +25,8 @@
 | 2b   | Stack migration                    | DONE       | React + Vite + daisyUI 5 (web-only); Auth URLs і Vercel env готові           |
 | 3    | Checklist і task management        | DONE       | Owner CRUD/reorder; mobile browser gate закрито QA Епіка 3b (5 вересня 2026) |
 | 3b   | Mobile UI shell                    | DONE       | Todoist-like shell: dock, FAB, Sheet, DnD reorder, style guide, `/ui-kit`    |
-| 4    | Today workflow та Realtime         | NEXT       | Команда виконує актуальні задачі дня зі синхронізацією між браузерами        |
-| 5    | History та Web MVP stabilization   | PLANNED    | Історія, повні UI states і стабільний наскрізний Web MVP                     |
+| 4    | Today workflow та Realtime         | DONE       | Hosted Today/Realtime flow пройшов у трьох ізольованих сесіях                |
+| 5    | History та Web MVP stabilization   | NEXT       | Історія, повні UI states і стабільний наскрізний Web MVP                     |
 | 6    | Closed Web beta                    | PLANNED    | Реальні команди тестують продукт у контрольованому beta-середовищі           |
 | 7    | Beta fixes та production hardening | PLANNED    | Виправлені реальні проблеми, стабілізовані UX, security і data model         |
 | 8    | iOS та Android foundation          | SUPERSEDED | Expo native / EAS Build скасовано; Capacitor відкладено                      |
@@ -54,7 +54,7 @@
 
 План: [epic-02b-stack-migration.md](./epics/epic-02b-stack-migration.md)
 
-Завершено: React + Vite + Tailwind 4 + daisyUI 5 + Supabase (web-only). Hosted Auth Site URL / Redirect URLs оновлені під Vite `5173` і `*.vercel.app`. Vercel project `bar-checklist` має `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY`. Git і перший деплой ще не підключені.
+Завершено: React + Vite + Tailwind 4 + daisyUI 5 + Supabase (web-only). Hosted Auth Site URL / Redirect URLs оновлені під Vite `5173` і `*.vercel.app`. Vercel project `bar-checklist` має `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY`; production deployment підтверджено в Епіку 4.
 
 ### Епік 3. Checklist і task management — DONE
 
@@ -68,13 +68,13 @@
 
 Завершено: Todoist-like оболонка (floating toolbar, full-bleed `list-row`, pill dock, FAB, bottom `Sheet`, DnD reorder через `@dnd-kit` з optimistic rollback), UI-примітиви (`Page`, `Toolbar`, `ListRow`, `Sheet`, `Fab`, `Skeleton`, `Toast`, `Icon`, `IconButton`), style guide [ui-style.md](../design/ui-style.md) і `/ui-kit`. Quality gates (`lint`, `format`, `typecheck`, `test` — 13 файлів, 40 тестів) і browser QA в Chromium (desktop + 390×844) пройдені 5 вересня 2026 року. Реальні iOS/Android — follow-up для Епіка 5.
 
-### Епік 4. Today workflow та Realtime — NEXT
+### Епік 4. Today workflow та Realtime — DONE
 
 План: [epic-04-today-realtime.md](./epics/epic-04-today-realtime.md)
 
-Починається після завершення Епіка 3b, на шаблоні Tab-root із тим самим рядком задачі (маркер стає чекбоксом виконання).
+Завершено 6 вересня 2026 року: timezone-aware Today, безпечні complete/uncomplete RPC, optimistic conflict recovery та team-scoped Realtime. Local gates — 52 Vitest і 136 pgTAP; hosted migration та production deployment https://project-ygm8l.vercel.app підтверджені. Owner/member/outsider browser QA пройшов без console errors, disposable team data очищено.
 
-### Епік 5. History та Web MVP stabilization
+### Епік 5. History та Web MVP stabilization — NEXT
 
 План: [epic-05-history-web-mvp.md](./epics/epic-05-history-web-mvp.md)
 

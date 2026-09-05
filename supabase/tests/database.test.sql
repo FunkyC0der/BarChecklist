@@ -93,7 +93,7 @@ select throws_ok(
   'member cannot manage checklists'
 );
 select lives_ok(
-  $$insert into public.task_completions (task_id, team_id, completion_date, completed_by) values ('30000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000999', '2000-01-01', '00000000-0000-0000-0000-000000000001')$$,
+  $$select public.complete_task('30000000-0000-0000-0000-000000000001')$$,
   'member can complete an active task'
 );
 select is(

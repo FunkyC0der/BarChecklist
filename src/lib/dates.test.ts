@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { isoWeekday, isTaskScheduled, logicalDate } from './dates';
+import {
+  isoWeekday,
+  isTaskScheduled,
+  logicalDate,
+  watchLogicalDate,
+} from './dates';
 
 describe('timezone schedule utilities', () => {
   it('crosses the logical date before UTC midnight in Kyiv', () => {
@@ -37,5 +42,24 @@ describe('timezone schedule utilities', () => {
     expect(
       isTaskScheduled({ cadence: 'weekly', weekdays: [2, 4] }, monday, 'UTC'),
     ).toBe(false);
+  });
+
+  it('notifies once when the logical date crosses a fall DST boundary', () => {
+    let instant = new Date('2026-10-25T00:30:00.000Z');
+    let tick: (() => void) | undefined;
+    const dates: string[] = [];
+    const stop = watchLogicalDate('Europe/Kyiv', (date) => dates.push(date), {
+      now: () => instant,
+      setInterval: (callback) => {
+        tick = callback;
+        return 1 as ReturnType<typeof setInterval>;
+      },
+      clearInterval: () => undefined,
+    });
+    instant = new Date('2026-10-26T21:30:00.000Z');
+    tick?.();
+    tick?.();
+    stop();
+    expect(dates).toEqual(['2026-10-26']);
   });
 });

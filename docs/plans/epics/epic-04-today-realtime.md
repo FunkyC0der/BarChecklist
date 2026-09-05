@@ -1,6 +1,6 @@
 # Епік 4. Today workflow та Realtime
 
-Статус: `PLANNED`.
+Статус: `DONE` — завершено 6 вересня 2026 року.
 
 ## Мета
 
@@ -13,11 +13,11 @@
 
 ## Рішення перед стартом
 
-- Хто може скасовувати completion.
-- Чи показувати ім’я та час виконавця одразу в Today.
-- Поведінка після зміни timezone або schedule посеред дня.
-- UX конфлікту, коли два користувачі виконують одну задачу одночасно.
-- Чи потрібен optimistic update або достатньо server-confirmed state.
+- Completion може скасувати його автор або owner команди.
+- Today одразу показує ім’я виконавця та локальний час команди.
+- Зміна timezone або schedule застосовується до поточного стану Today і синхронізується через Realtime.
+- Конкурентне виконання є ідемпотентним: один completion, другий клієнт сходиться до canonical snapshot без помилки.
+- UI використовує optimistic update з rollback/retry після помилки та canonical refresh після відповіді сервера.
 
 ## Scope
 
@@ -42,7 +42,7 @@
 
 ## Перевірка
 
-- Показуються лише checklist, активні для logical date команди.
+- Показуються лише активні за logical date задачі всередині активних checklist.
 - Completion user/team/date неможливо підробити клієнтом.
 - Неактивну або soft-deleted задачу не можна виконати.
 - Два браузери однієї команди бачать update без reload.
@@ -52,9 +52,21 @@
 
 ## Definition of Done
 
-- Два members проходять повний спільний Today flow.
-- Дані залишаються коректними після reload і конкурентних дій.
-- Realtime/RLS/date quality gate проходить.
+- [x] Два members проходять повний спільний Today flow.
+- [x] Дані залишаються коректними після reload і конкурентних дій.
+- [x] Realtime/RLS/date quality gate проходить.
+
+## Стан реалізації — 6 вересня 2026
+
+- Реалізовано timezone-aware Today snapshot, server-owned complete/uncomplete RPC, author-or-owner undo і soft undo для надійного Realtime payload під RLS.
+- Додано team-scoped Realtime для completion, checklist, task і timezone/team updates; midnight transition оновлює snapshot без reload.
+- Локальні gates пройдені: ESLint, Prettier, TypeScript, Vite build, Vitest — 16 файлів / 52 тести, pgTAP — 4 файли / 136 тестів.
+- Локальний browser QA пройдено у двох незалежних сесіях: member/owner completion і undo, performer/time, reload persistence, live schedule/timezone зміни, outsider boundary, mobile 390×844 і desktop 768×900; console errors відсутні.
+- Міграцію `20260905140000_epic04_today_realtime.sql` застосовано до hosted Supabase і підтверджено remote migration history.
+- Hosted `supabase test db --linked` не запускає suite, бо в remote database не встановлено pgTAP; локальний pgTAP gate повністю зелений.
+- Production deployment `dpl_53FGhBzap9c8KKtsGNeTC9uQ67Y7` має статус `READY`: https://project-ygm8l.vercel.app. Vercel збирає Vite output з `dist/`; deployment створено з Git HEAD `93a9a3a000994a747746d780d85c3fbf06c4c38f` і поточних незакомічених змін Epic 4.
+- Hosted browser QA пройдено в ізольованих owner/member/outsider сесіях: schedule filtering, completion/author undo/owner undo, performer/time, reload persistence, near-concurrent UI convergence до одного completion, live schedule і timezone transitions, outsider isolation, mobile 390×844 і desktop 768×900. Console errors застосунку відсутні.
+- Disposable QA-команду з checklist, tasks, memberships і completions видалено штатним owner flow; owner і member синхронно повернулися до onboarding. Тестові auth-акаунти залишено, тимчасові Vercel aliases видалено.
 
 ## Наступний gate
 

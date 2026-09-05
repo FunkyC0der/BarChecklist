@@ -63,3 +63,49 @@ export function isTaskScheduled(
   if (schedule.cadence === 'daily') return true;
   return schedule.weekdays.includes(isoWeekday(date, timeZone));
 }
+
+export type LogicalDateWatcherOptions = {
+  now?: () => Date;
+  intervalMs?: number;
+  setInterval?: (
+    callback: () => void,
+    ms: number,
+  ) => ReturnType<typeof globalThis.setInterval>;
+  clearInterval?: (id: ReturnType<typeof globalThis.setInterval>) => void;
+};
+
+/** Watches the team's logical date and invokes the callback once it changes. */
+export function watchLogicalDate(
+  timeZone: string,
+  onChange: (date: string) => void,
+  options: LogicalDateWatcherOptions = {},
+): () => void {
+  const now = options.now ?? (() => new Date());
+  const setTimer = options.setInterval ?? globalThis.setInterval;
+  const clearTimer = options.clearInterval ?? globalThis.clearInterval;
+  let current = logicalDate(now(), timeZone);
+
+  const check = () => {
+    const next = logicalDate(now(), timeZone);
+    if (next !== current) {
+      current = next;
+      onChange(next);
+    }
+  };
+  const timer = setTimer(check, options.intervalMs ?? 30_000);
+  const onVisibilityChange = () => {
+    if (
+      typeof document === 'undefined' ||
+      document.visibilityState === 'visible'
+    )
+      check();
+  };
+  if (typeof document !== 'undefined')
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+  return () => {
+    clearTimer(timer);
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+  };
+}
