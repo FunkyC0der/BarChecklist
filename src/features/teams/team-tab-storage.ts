@@ -10,12 +10,23 @@ export function isTeamTabPath(pathname: string): pathname is TeamTabPath {
   return teamTabPaths.some((path) => path === pathname);
 }
 
+export function resolveTeamTabRoot(pathname: string): TeamTabPath | null {
+  for (const path of teamTabPaths) {
+    if (pathname === path || pathname.startsWith(`${path}/`)) return path;
+  }
+  return null;
+}
+
 export function resolveActiveTeamTab(
   storedPath: string | null,
   pathname: string,
-): TeamTabPath {
-  if (storedPath && isTeamTabPath(storedPath)) return storedPath;
-  if (isTeamTabPath(pathname)) return pathname;
+): string {
+  const currentRoot = resolveTeamTabRoot(pathname);
+  if (currentRoot && pathname !== currentRoot) return pathname;
+
+  const storedRoot = storedPath ? resolveTeamTabRoot(storedPath) : null;
+  if (storedRoot) return storedRoot;
+  if (currentRoot) return currentRoot;
   return '/today';
 }
 

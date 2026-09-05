@@ -1,4 +1,4 @@
-export type ChecklistSchedule =
+export type TaskSchedule =
   | { cadence: 'daily'; weekdays?: never }
   | { cadence: 'weekly'; weekdays: readonly number[] };
 
@@ -55,8 +55,8 @@ export function isoWeekday(date: Date, timeZone: string): number {
   return weekday;
 }
 
-export function isChecklistScheduled(
-  schedule: ChecklistSchedule,
+export function isTaskScheduled(
+  schedule: TaskSchedule,
   date: Date,
   timeZone: string,
 ): boolean {

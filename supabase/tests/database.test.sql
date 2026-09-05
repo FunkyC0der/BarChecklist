@@ -18,13 +18,11 @@ values (
 insert into public.team_members (team_id, user_id)
 values ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002');
 
-insert into public.checklists (id, team_id, name, cadence, weekdays, created_by)
+insert into public.checklists (id, team_id, name, created_by)
 values (
   '20000000-0000-0000-0000-000000000001',
   '10000000-0000-0000-0000-000000000001',
   'Opening',
-  'daily',
-  '{}',
   '00000000-0000-0000-0000-000000000001'
 );
 

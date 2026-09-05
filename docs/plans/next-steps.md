@@ -23,8 +23,8 @@
 | 1    | Cloud development preview          | DONE       | Робочий development URL на EAS Hosting із hosted Supabase             |
 | 2    | Team lifecycle та membership       | DONE       | Повний цикл create → invite → join → remove підтверджений вручну      |
 | 2b   | Stack migration                    | DONE       | React + Vite + daisyUI 5 (web-only); Auth URLs і Vercel env готові    |
-| 3    | Checklist і task management        | NEXT       | Owner створює, редагує, видаляє та впорядковує чеклісти й задачі      |
-| 4    | Today workflow та Realtime         | PLANNED    | Команда виконує актуальні задачі дня зі синхронізацією між браузерами |
+| 3    | Checklist і task management        | DONE       | Owner створює, редагує, видаляє та впорядковує чеклісти й задачі      |
+| 4    | Today workflow та Realtime         | NEXT       | Команда виконує актуальні задачі дня зі синхронізацією між браузерами |
 | 5    | History та Web MVP stabilization   | PLANNED    | Історія, повні UI states і стабільний наскрізний Web MVP              |
 | 6    | Closed Web beta                    | PLANNED    | Реальні команди тестують продукт у контрольованому beta-середовищі    |
 | 7    | Beta fixes та production hardening | PLANNED    | Виправлені реальні проблеми, стабілізовані UX, security і data model  |
@@ -55,13 +55,13 @@
 
 Завершено: React + Vite + Tailwind 4 + daisyUI 5 + Supabase (web-only). Hosted Auth Site URL / Redirect URLs оновлені під Vite `5173` і `*.vercel.app`. Vercel project `bar-checklist` має `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY`. Git і перший деплой ще не підключені.
 
-### Епік 3. Checklist і task management — NEXT
+### Епік 3. Checklist і task management — DONE
 
 План: [epic-03-checklists-tasks.md](./epics/epic-03-checklists-tasks.md)
 
-Team context і owner/member permissions готові, тому епік узятий у роботу. Відкриті рішення зафіксовані у файлі плану: nested route `/checklists/:checklistId`, reorder кнопками через RPC, soft-delete замість hard delete, ліміти 20 чеклістів і 100 задач.
+Завершено: checklist є контейнером, cadence і weekdays належать кожній задачі; owner CRUD/reorder, member read-only, soft-delete, ліміти й deep link перевірені. Локальні pgTAP/frontend gates, browser QA fixed scrollable detail UI та hosted migration/smoke test пройдені 5 вересня 2026 року.
 
-### Епік 4. Today workflow та Realtime
+### Епік 4. Today workflow та Realtime — NEXT
 
 План: [epic-04-today-realtime.md](./epics/epic-04-today-realtime.md)
 

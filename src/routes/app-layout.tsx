@@ -10,9 +10,9 @@ import {
 import { useAuth } from '@/features/auth/auth-context';
 import { useTeams } from '@/features/teams/team-context';
 import {
-  isTeamTabPath,
   readStoredActiveTeamTab,
   resolveActiveTeamTab,
+  resolveTeamTabRoot,
   writeStoredActiveTeamTab,
 } from '@/features/teams/team-tab-storage';
 import { cn } from '@/lib/cn';
@@ -60,8 +60,9 @@ export function AppLayout() {
 
   useEffect(() => {
     if (!session || !activeTeam || !restoredTab.current) return;
-    if (isTeamTabPath(location.pathname)) {
-      writeStoredActiveTeamTab(session.user.id, location.pathname);
+    const tabRoot = resolveTeamTabRoot(location.pathname);
+    if (tabRoot) {
+      writeStoredActiveTeamTab(session.user.id, tabRoot);
     }
   }, [activeTeam, location.pathname, session]);
 
@@ -70,15 +71,22 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col bg-base-200 pt-[env(safe-area-inset-top)]">
-      <main className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col px-3 pt-3">
+    <div className="flex h-dvh flex-col overflow-hidden bg-base-200 pt-[env(safe-area-inset-top)]">
+      <main className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col overflow-hidden px-3 pt-3">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-t-box border border-b-0 border-base-300 bg-base-100 p-4">
           <Outlet />
         </div>
-        <nav aria-label="Розділи" className="pb-[env(safe-area-inset-bottom)]">
+        <nav
+          aria-label="Розділи"
+          className="relative z-20 shrink-0 pb-[env(safe-area-inset-bottom)]"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-full h-5 bg-linear-to-t from-base-100 to-transparent"
+          />
           <div className="tabs tabs-lift w-full tabs-bottom" role="tablist">
             {tabs.map((tab) => {
-              const isActive = location.pathname === tab.to;
+              const isActive = resolveTeamTabRoot(location.pathname) === tab.to;
 
               return (
                 <NavLink

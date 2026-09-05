@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isoWeekday, isChecklistScheduled, logicalDate } from './dates';
+import { isoWeekday, isTaskScheduled, logicalDate } from './dates';
 
 describe('timezone schedule utilities', () => {
   it('crosses the logical date before UTC midnight in Kyiv', () => {
@@ -26,22 +26,16 @@ describe('timezone schedule utilities', () => {
 
   it('applies daily and ISO-weekday schedules', () => {
     const monday = new Date('2026-09-07T10:00:00.000Z');
-    expect(isChecklistScheduled({ cadence: 'daily' }, monday, 'UTC')).toBe(
-      true,
-    );
+    expect(isTaskScheduled({ cadence: 'daily' }, monday, 'UTC')).toBe(true);
     expect(
-      isChecklistScheduled(
+      isTaskScheduled(
         { cadence: 'weekly', weekdays: [1, 3, 5] },
         monday,
         'UTC',
       ),
     ).toBe(true);
     expect(
-      isChecklistScheduled(
-        { cadence: 'weekly', weekdays: [2, 4] },
-        monday,
-        'UTC',
-      ),
+      isTaskScheduled({ cadence: 'weekly', weekdays: [2, 4] }, monday, 'UTC'),
     ).toBe(false);
   });
 });

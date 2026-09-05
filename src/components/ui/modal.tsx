@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 export function Modal({
   children,
@@ -14,6 +14,8 @@ export function Modal({
   title: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -25,13 +27,21 @@ export function Modal({
 
   return (
     <dialog
+      aria-describedby={description ? descriptionId : undefined}
+      aria-labelledby={titleId}
       className="modal modal-bottom sm:modal-middle"
       onClose={onClose}
       ref={dialogRef}
     >
       <div className="modal-box">
-        <h3 className="text-lg font-bold">{title}</h3>
-        {description ? <p className="py-4">{description}</p> : null}
+        <h3 className="text-lg font-bold" id={titleId}>
+          {title}
+        </h3>
+        {description ? (
+          <p className="py-4" id={descriptionId}>
+            {description}
+          </p>
+        ) : null}
         {children}
       </div>
       <form className="modal-backdrop" method="dialog">

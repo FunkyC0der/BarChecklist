@@ -4,6 +4,7 @@ import { AuthProvider } from '@/features/auth/auth-context';
 import { TeamProvider } from '@/features/teams/team-context';
 
 import { AppLayout } from './routes/app-layout';
+import { ChecklistDetailRoute } from './routes/checklist-detail';
 import { ChecklistsRoute } from './routes/checklists';
 import { RequireAuth, RequireGuest, SessionGate } from './routes/guards';
 import { HistoryRoute } from './routes/history';
@@ -35,6 +36,10 @@ export function App() {
                 <Route element={<AppLayout />}>
                   <Route element={<TodayRoute />} path="/today" />
                   <Route element={<ChecklistsRoute />} path="/checklists" />
+                  <Route
+                    element={<ChecklistDetailRoute />}
+                    path="/checklists/:checklistId"
+                  />
                   <Route element={<HistoryRoute />} path="/history" />
                   <Route element={<TeamRoute />} path="/team" />
                 </Route>

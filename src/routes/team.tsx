@@ -330,21 +330,27 @@ export function TeamRoute() {
 
   return (
     <Screen inset>
-      <div className="navbar min-h-0 px-0">
-        <div className="navbar-start">
-          <div>
-            <h1 className="text-xl font-semibold">{activeTeam.name}</h1>
-            <p className="text-sm text-base-content/60">
-              {session?.user.email}
-            </p>
+      <header className="sticky -top-4 z-20 -mx-4 -mt-4 border-b border-base-300 bg-base-100 px-4 py-2 shadow-sm">
+        <div className="navbar min-h-0 px-0">
+          <div className="navbar-start">
+            <div>
+              <h1 className="text-xl font-semibold">{activeTeam.name}</h1>
+              <p className="text-sm text-base-content/60">
+                {session?.user.email}
+              </p>
+            </div>
+          </div>
+          <div className="navbar-end">
+            <Button onClick={() => void signOut()} size="sm" variant="ghost">
+              Вийти
+            </Button>
           </div>
         </div>
-        <div className="navbar-end">
-          <Button onClick={() => void signOut()} size="sm" variant="ghost">
-            Вийти
-          </Button>
-        </div>
-      </div>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-full h-5 bg-linear-to-b from-base-100 to-transparent"
+        />
+      </header>
 
       {teamsError ? <Alert color="error">{teamsError}</Alert> : null}
 

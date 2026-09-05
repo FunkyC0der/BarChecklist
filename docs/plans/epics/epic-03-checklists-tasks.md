@@ -1,10 +1,10 @@
 # Епік 3. Checklist і task management
 
-Статус: `NEXT` — план погоджено, реалізація не починалася.
+Статус: `DONE` — реалізацію, локальні/hosted gates і браузерну QA завершено 5 вересня 2026 року.
 
 ## Мета
 
-Дозволити owner створювати структуру роботи команди: daily/weekly чеклісти, дні розкладу, задачі та їх порядок. Member бачить ту саму структуру в режимі читання.
+Дозволити owner створювати структуру роботи команди: чеклісти-контейнери, задачі з індивідуальним daily/weekly розкладом та їх порядок. Member бачить ту саму структуру в режимі читання.
 
 ## Залежності
 
@@ -15,7 +15,7 @@
 ## Зафіксовані рішення
 
 1. Навігація: `/checklists` — список чеклістів команди; `/checklists/:checklistId` — деталі чекліста із задачами. Deep link має виживати reload, тому tab persistence переходить із точного порівняння шляху на tab root.
-2. Create/edit виконуються в `Modal` через React Hook Form + Zod. Cadence обирається двома radio-кнопками (`daily` / `weekly`), weekdays — групою checkbox для ISO-днів 1–7, яка з'являється лише для `weekly`.
+2. Create/edit checklist виконується в `Modal` через React Hook Form + Zod і містить лише назву. Розклад належить задачі: cadence обирається двома radio-кнопками (`daily` / `weekly`), weekdays — групою checkbox для ISO-днів 1–7, яка з'являється лише для `weekly`.
 3. Ліміти MVP: до 20 активних чеклістів на команду і до 100 активних задач на чекліст. Ліміт є справжньою межею в БД (тригер), а UI лише повідомляє про його досягнення.
 4. Reorder робиться кнопками «вгору» / «вниз» без нових залежностей. Drag-and-drop не входить у MVP, бо кнопки одразу дають keyboard і touch доступність. Запис порядку йде через RPC, що перенумеровує всі активні задачі чекліста в одній транзакції.
 5. Видалення завжди soft: `update ... set deleted_at = now()`. Hard `DELETE` на `checklists` і `tasks` прибирається (політики + grants), щоб клієнт не міг фізично зруйнувати майбутню історію (`task_completions.task_id` має `on delete restrict`).
@@ -24,10 +24,12 @@
 8. Відновлення видалених чеклістів і задач — поза MVP. Підтвердження видалення прямо описує наслідки: елемент зникає з Today, історія зберігається, повернути його в UI не можна.
 9. Realtime для `checklists` і `tasks` не входить у цей епік. Структуру змінює лише owner, тому список перечитується після власних мутацій. Публікацію Realtime для цих таблиць додає Епік 4 разом із Today flow.
 10. `position` не задається клієнтом. Створення задачі йде через RPC, який рахує наступну позицію під блокуванням рядка чекліста, тому паралельні вкладки не ловлять помилку унікального індексу.
+11. Міграція `task_schedules` переносить schedule із `checklists` у `tasks`: перейменовує enum у `task_cadence`, backfill-ить активні й soft-deleted задачі, а потім прибирає schedule колонки чекліста.
+12. На detail-роуті нерухомими лишаються заголовок, owner actions, alerts і «Додати задачу». Скролиться лише `ul.list` у фокусованому `min-h-0 flex-1` регіоні з `overflow-y-auto overscroll-contain`.
 
 ## Scope
 
-### 1. Міграція `supabase/migrations/2026XXXXXXXX_checklist_task_management.sql`
+### 1. Міграції
 
 - `public.create_checklist_task(p_checklist_id uuid, p_title text)` — `security definer`, `set search_path = ''`, повертає рядок `public.tasks`. Перевіряє `auth.uid()`, owner-права через `private.is_team_owner`, блокує рядок чекліста (`select ... for update`), відхиляє soft-deleted чекліст, обчислює `coalesce(max(position) + 1, 0)` серед активних задач.
 - `public.reorder_checklist_tasks(p_checklist_id uuid, p_task_ids uuid[])` — `security definer`, `set search_path = ''`. Перевіряє owner-права, вимагає, щоб масив точно дорівнював множині активних задач чекліста (без пропусків і дублів), і перенумеровує у дві фази, бо partial unique index `tasks_active_position_unique` перевіряється по рядках:
@@ -51,6 +53,7 @@ where t.id = ordered.task_id;
 - Тригери лімітів: `private.enforce_active_checklist_limit` (20 активних на `team_id`) і `private.enforce_active_task_limit` (100 активних на `checklist_id`), обидва `before insert` та `before update` з `errcode = '23514'`.
 - Прибрати hard delete: `drop policy checklists_delete_owner on public.checklists;`, `drop policy tasks_delete_owner on public.tasks;`, `revoke delete on public.checklists, public.tasks from authenticated;`.
 - `revoke all ... from public` і `grant execute ... to authenticated` для кожної нової функції — за зразком [202609040004_team_membership.sql](../../../supabase/migrations/202609040004_team_membership.sql).
+- [20260905125542_task_schedules.sql](../../../supabase/migrations/20260905125542_task_schedules.sql) перейменовує enum у `task_cadence`, переносить `cadence` / `weekdays` в `tasks` із повним backfill, робить ці поля `not null` з daily defaults та constraint-ами ISO-днів. Після цього прибирає schedule з `checklists` і перевизначає `create_checklist_task(uuid, text, task_cadence, smallint[])`.
 
 ### 2. pgTAP `supabase/tests/checklists_tasks.test.sql`
 
@@ -58,11 +61,11 @@ where t.id = ordered.task_id;
 
 Покриття:
 
-- Owner створює daily чекліст; `weekdays` для daily лишається порожнім.
-- Weekly чекліст із валідними ISO-днями створюється, а `cadence = 'weekly'` з порожнім масивом, днем `0`, днем `8` або дублями відхиляється базою.
+- Owner створює checklist без schedule.
+- Daily і weekly задачі з валідними ISO-днями зберігаються, а `cadence = 'weekly'` з порожнім масивом, днем `0`, днем `8` або дублями відхиляється базою.
 - Member не може вставити, оновити або soft-delete чекліст і задачу (`42501`).
 - Outsider не бачить чеклістів і задач команди (0 рядків).
-- `create_checklist_task` дає послідовні позиції `0, 1, 2` і відхиляє виклик member-а та soft-deleted чекліст.
+- `create_checklist_task` дає послідовні позиції `0, 1, 2`, зберігає schedule і відхиляє виклик member-а та soft-deleted чекліст.
 - `reorder_checklist_tasks` змінює порядок без порушення `tasks_active_position_unique` і відхиляє неповний або сторонній масив id.
 - `soft_delete_checklist` ставить `deleted_at` чеклісту і його задачам; `task_completions` для цих задач лишаються в таблиці.
 - Виконання soft-deleted задачі блокується наявним тригером `private.prepare_task_completion`.
@@ -79,7 +82,7 @@ where t.id = ordered.task_id;
 
 - `fetchChecklists(teamId)` — активні чеклісти, `order('created_at')`.
 - `fetchChecklist(checklistId)` — один активний чекліст для detail-роуту.
-- `createChecklist({ teamId, name, cadence, weekdays, createdBy })`, `updateChecklist(checklistId, values)`.
+- `createChecklist({ teamId, name, createdBy })`, `updateChecklist(checklistId, { name })`.
 - `fetchTasks(checklistId)` — активні задачі, `order('position')`.
 - `createTask`, `updateTask`, `reorderTasks`, `deleteChecklist`, `deleteTask` — обгортки над RPC.
 
@@ -89,8 +92,8 @@ where t.id = ordered.task_id;
 
 ### 6. Роути та UI
 
-- [src/routes/checklists.tsx](../../../src/routes/checklists.tsx) — список: назва, badge cadence, короткий опис розкладу, кількість активних задач, кнопка створення для owner.
-- `src/routes/checklist-detail.tsx` — задачі чекліста, редагування чекліста, створення задачі, кнопки переміщення, soft-delete задачі й чекліста.
+- [src/routes/checklists.tsx](../../../src/routes/checklists.tsx) — список: назва, кількість активних задач, кнопка створення для owner.
+- `src/routes/checklist-detail.tsx` — задачі чекліста показують badge cadence та короткий опис schedule; нерухома частина detail-екрана відділена від scrollable `ul.list` через daisyUI `list` / `list-row`.
 - `src/features/checklists/checklist-form.tsx` і `task-form.tsx` — RHF + Zod + `Controller` + спільний `Input`, за зразком [src/features/teams/onboarding-form.tsx](../../../src/features/teams/onboarding-form.tsx).
 - Реєстрація роуту `/checklists/:checklistId` в [src/app.tsx](../../../src/app.tsx) всередині `AppLayout`.
 - Tab persistence: у [src/features/teams/team-tab-storage.ts](../../../src/features/teams/team-tab-storage.ts) додати визначення tab root за префіксом шляху, а в [src/routes/app-layout.tsx](../../../src/routes/app-layout.tsx) підсвічувати таб і зберігати його за цим root, щоб reload на `/checklists/:id` не викидав користувача на `/checklists`.
@@ -107,7 +110,7 @@ where t.id = ordered.task_id;
 
 ### 8. Frontend-тести
 
-- Unit-тести Zod-схем: daily без днів, weekly з днями, межові довжини, відхилення дублів і днів поза 1–7.
+- Unit-тести Zod-схем: checklist name only; task daily/weekly, межові довжини, відхилення дублів і днів поза 1–7; task schedule formatter і active-day calculation.
 - Unit-тести чистої функції обчислення нового порядку для кнопок «вгору» / «вниз» (масив id, індекс, напрямок).
 - Unit-тести tab root resolution у `team-storage.test.ts` для `/checklists/:id`.
 
@@ -122,8 +125,7 @@ where t.id = ordered.task_id;
 
 ## Перевірка
 
-- Owner створює daily checklist.
-- Owner створює weekly checklist лише з валідними ISO weekdays.
+- Owner створює checklist без schedule та daily/weekly задачі з валідними ISO weekdays.
 - Member бачить структуру, але не може її змінювати.
 - Reorder зберігається після reload.
 - Soft-delete не видаляє пов'язану історію фізично.
@@ -138,14 +140,14 @@ where t.id = ordered.task_id;
 
 ## Definition of Done
 
-- [ ] Owner повністю налаштовує робочий checklist у браузері: створення, редагування, reorder, soft-delete.
-- [ ] Member бачить той самий результат у read-only режимі.
-- [ ] Міграція, RPC і тригери лімітів застосовані локально; `src/types/database.generated.ts` перегенеровано.
-- [ ] `pnpm supabase:test` покриває owner/member/outsider, cadence, weekdays, reorder, soft-delete і ліміти.
-- [ ] `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test` і `pnpm build` проходять.
-- [ ] Браузерна QA на мобільній ширині пройдена, включно з reload на detail-роуті.
-- [ ] Hosted міграція застосована, статус епіка оновлено в master roadmap.
+- [x] Owner повністю налаштовує робочий checklist у браузері: створення, редагування, task schedule, reorder, soft-delete.
+- [x] Member бачить той самий результат у read-only режимі.
+- [x] Міграція, RPC і тригери лімітів застосовані локально; `src/types/database.generated.ts` перегенеровано.
+- [x] `pnpm supabase:test` покриває owner/member/outsider, task cadence, weekdays, reorder, soft-delete і ліміти.
+- [x] `pnpm lint`, `pnpm format:check`, `pnpm typecheck`, `pnpm test` і `pnpm build` проходять.
+- [x] Браузерна QA, включно з fixed detail UI, isolated task-list scroll, мобільною шириною та reload на detail-роуті.
+- [x] Hosted міграція застосована, статус епіка оновлено в master roadmap.
 
-## Наступний gate
+## Результат
 
-Today workflow починається після стабільного checklist/task CRUD.
+Checklist став контейнером задач із власними daily/weekly schedules. Browser QA підтвердила owner/member режими, persisted reorder і deep link, task-only wheel/keyboard scrolling, нерухомі controls/tab bar, мобільний layout та limit state. Hosted schema і grants звірені read-only smoke test.

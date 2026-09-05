@@ -36,7 +36,6 @@ export type Database = {
     Tables: {
       checklists: {
         Row: {
-          cadence: Database["public"]["Enums"]["checklist_cadence"]
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -44,10 +43,8 @@ export type Database = {
           name: string
           team_id: string
           updated_at: string
-          weekdays: number[]
         }
         Insert: {
-          cadence?: Database["public"]["Enums"]["checklist_cadence"]
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -55,10 +52,8 @@ export type Database = {
           name: string
           team_id: string
           updated_at?: string
-          weekdays?: number[]
         }
         Update: {
-          cadence?: Database["public"]["Enums"]["checklist_cadence"]
           created_at?: string
           created_by?: string
           deleted_at?: string | null
@@ -66,7 +61,6 @@ export type Database = {
           name?: string
           team_id?: string
           updated_at?: string
-          weekdays?: number[]
         }
         Relationships: [
           {
@@ -146,6 +140,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          cadence: Database["public"]["Enums"]["task_cadence"]
           checklist_id: string
           created_at: string
           deleted_at: string | null
@@ -153,8 +148,10 @@ export type Database = {
           position: number
           title: string
           updated_at: string
+          weekdays: number[]
         }
         Insert: {
+          cadence?: Database["public"]["Enums"]["task_cadence"]
           checklist_id: string
           created_at?: string
           deleted_at?: string | null
@@ -162,8 +159,10 @@ export type Database = {
           position: number
           title: string
           updated_at?: string
+          weekdays?: number[]
         }
         Update: {
+          cadence?: Database["public"]["Enums"]["task_cadence"]
           checklist_id?: string
           created_at?: string
           deleted_at?: string | null
@@ -171,6 +170,7 @@ export type Database = {
           position?: number
           title?: string
           updated_at?: string
+          weekdays?: number[]
         }
         Relationships: [
           {
@@ -285,6 +285,31 @@ export type Database = {
           team_id: string
         }[]
       }
+      create_checklist_task: {
+        Args: {
+          p_cadence: Database["public"]["Enums"]["task_cadence"]
+          p_checklist_id: string
+          p_title: string
+          p_weekdays: number[]
+        }
+        Returns: {
+          cadence: Database["public"]["Enums"]["task_cadence"]
+          checklist_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          position: number
+          title: string
+          updated_at: string
+          weekdays: number[]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tasks"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       create_team_invite: {
         Args: { p_team_id: string }
         Returns: {
@@ -306,10 +331,19 @@ export type Database = {
         Args: { p_team_id: string; p_user_id: string }
         Returns: undefined
       }
+      reorder_checklist_tasks: {
+        Args: { p_checklist_id: string; p_task_ids: string[] }
+        Returns: undefined
+      }
       revoke_team_invite: { Args: { p_team_id: string }; Returns: undefined }
+      soft_delete_checklist: {
+        Args: { p_checklist_id: string }
+        Returns: undefined
+      }
+      soft_delete_task: { Args: { p_task_id: string }; Returns: undefined }
     }
     Enums: {
-      checklist_cadence: "daily" | "weekly"
+      task_cadence: "daily" | "weekly"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -440,7 +474,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      checklist_cadence: ["daily", "weekly"],
+      task_cadence: ["daily", "weekly"],
     },
   },
 } as const
