@@ -17,19 +17,20 @@
 
 ## Загальна послідовність
 
-| Епік | Назва                              | Статус     | Результат                                                             |
-| ---- | ---------------------------------- | ---------- | --------------------------------------------------------------------- |
-| 0    | Web foundation                     | DONE       | Локальний Web-фундамент, UI kit, Auth, БД, RLS, Realtime і тести      |
-| 1    | Cloud development preview          | DONE       | Робочий development URL на EAS Hosting із hosted Supabase             |
-| 2    | Team lifecycle та membership       | DONE       | Повний цикл create → invite → join → remove підтверджений вручну      |
-| 2b   | Stack migration                    | DONE       | React + Vite + daisyUI 5 (web-only); Auth URLs і Vercel env готові    |
-| 3    | Checklist і task management        | DONE       | Owner створює, редагує, видаляє та впорядковує чеклісти й задачі      |
-| 4    | Today workflow та Realtime         | NEXT       | Команда виконує актуальні задачі дня зі синхронізацією між браузерами |
-| 5    | History та Web MVP stabilization   | PLANNED    | Історія, повні UI states і стабільний наскрізний Web MVP              |
-| 6    | Closed Web beta                    | PLANNED    | Реальні команди тестують продукт у контрольованому beta-середовищі    |
-| 7    | Beta fixes та production hardening | PLANNED    | Виправлені реальні проблеми, стабілізовані UX, security і data model  |
-| 8    | iOS та Android foundation          | SUPERSEDED | Expo native / EAS Build скасовано; Capacitor відкладено               |
-| 9    | Mobile beta та release readiness   | SUPERSEDED | Store-релізи залишаються окремим рішенням після майбутнього native    |
+| Епік | Назва                              | Статус     | Результат                                                                    |
+| ---- | ---------------------------------- | ---------- | ---------------------------------------------------------------------------- |
+| 0    | Web foundation                     | DONE       | Локальний Web-фундамент, UI kit, Auth, БД, RLS, Realtime і тести             |
+| 1    | Cloud development preview          | DONE       | Робочий development URL на EAS Hosting із hosted Supabase                    |
+| 2    | Team lifecycle та membership       | DONE       | Повний цикл create → invite → join → remove підтверджений вручну             |
+| 2b   | Stack migration                    | DONE       | React + Vite + daisyUI 5 (web-only); Auth URLs і Vercel env готові           |
+| 3    | Checklist і task management        | DONE       | Owner CRUD/reorder; mobile browser gate закрито QA Епіка 3b (5 вересня 2026) |
+| 3b   | Mobile UI shell                    | DONE       | Todoist-like shell: dock, FAB, Sheet, DnD reorder, style guide, `/ui-kit`    |
+| 4    | Today workflow та Realtime         | NEXT       | Команда виконує актуальні задачі дня зі синхронізацією між браузерами        |
+| 5    | History та Web MVP stabilization   | PLANNED    | Історія, повні UI states і стабільний наскрізний Web MVP                     |
+| 6    | Closed Web beta                    | PLANNED    | Реальні команди тестують продукт у контрольованому beta-середовищі           |
+| 7    | Beta fixes та production hardening | PLANNED    | Виправлені реальні проблеми, стабілізовані UX, security і data model         |
+| 8    | iOS та Android foundation          | SUPERSEDED | Expo native / EAS Build скасовано; Capacitor відкладено                      |
+| 9    | Mobile beta та release readiness   | SUPERSEDED | Store-релізи залишаються окремим рішенням після майбутнього native           |
 
 ## Епіки
 
@@ -59,13 +60,19 @@
 
 План: [epic-03-checklists-tasks.md](./epics/epic-03-checklists-tasks.md)
 
-Завершено: checklist є контейнером, cadence і weekdays належать кожній задачі; owner CRUD/reorder, member read-only, soft-delete, ліміти й deep link перевірені. Локальні pgTAP/frontend gates, browser QA fixed scrollable detail UI та hosted migration/smoke test пройдені 5 вересня 2026 року.
+Завершено: checklist є контейнером, cadence і weekdays належать кожній задачі; owner CRUD/reorder, member read-only, soft-delete, ліміти й deep link перевірені. Локальні pgTAP/frontend gates, browser QA fixed scrollable detail UI та hosted migration/smoke test пройдені 5 вересня 2026 року. Mobile browser gate закрито QA Епіка 3b 5 вересня 2026 року.
+
+### Епік 3b. Mobile UI shell — DONE
+
+План: [epic-03b-mobile-ui-shell.md](./epics/epic-03b-mobile-ui-shell.md)
+
+Завершено: Todoist-like оболонка (floating toolbar, full-bleed `list-row`, pill dock, FAB, bottom `Sheet`, DnD reorder через `@dnd-kit` з optimistic rollback), UI-примітиви (`Page`, `Toolbar`, `ListRow`, `Sheet`, `Fab`, `Skeleton`, `Toast`, `Icon`, `IconButton`), style guide [ui-style.md](../design/ui-style.md) і `/ui-kit`. Quality gates (`lint`, `format`, `typecheck`, `test` — 13 файлів, 40 тестів) і browser QA в Chromium (desktop + 390×844) пройдені 5 вересня 2026 року. Реальні iOS/Android — follow-up для Епіка 5.
 
 ### Епік 4. Today workflow та Realtime — NEXT
 
 План: [epic-04-today-realtime.md](./epics/epic-04-today-realtime.md)
 
-Починається після стабільного CRUD чеклістів і задач.
+Починається після завершення Епіка 3b, на шаблоні Tab-root із тим самим рядком задачі (маркер стає чекбоксом виконання).
 
 ### Епік 5. History та Web MVP stabilization
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import {
@@ -6,11 +6,13 @@ import {
   AppText,
   Badge,
   Button,
-  Card,
+  Icon,
+  IconButton,
   Input,
-  Loading,
-  Modal,
-  Screen,
+  ListRow,
+  Page,
+  Skeleton,
+  useToast,
 } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import {
@@ -24,10 +26,11 @@ import {
   type TeamMember,
   updateTeam,
 } from '@/features/teams/team-api';
+import { initials } from '@/features/teams/team-display';
+import { DeleteTeamSheet, InviteSheet } from '@/features/teams/team-sheets';
 import { joinPath } from '@/features/teams/team-routes';
 import { useTeams } from '@/features/teams/team-context';
 import { useTeamRealtime } from '@/features/teams/use-team-realtime';
-import { cn } from '@/lib/cn';
 import { buildAppUrl, shareLink } from '@/lib/platform';
 
 function formatExpiry(value: string) {
@@ -38,6 +41,7 @@ function formatExpiry(value: string) {
 }
 
 export function TeamRoute() {
+  const toast = useToast();
   const { session, signOut } = useAuth();
   const {
     activeTeam,
@@ -68,6 +72,7 @@ export function TeamRoute() {
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [deleteName, setDeleteName] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
 
   const isOwner = Boolean(
     activeTeam && session?.user.id === activeTeam.owner_id,
@@ -161,7 +166,7 @@ export function TeamRoute() {
     try {
       await updateTeam(activeTeam.id, { name, timezone });
       await refreshTeams();
-      setTeamMessage('Зміни збережено.');
+      toast('Зміни збережено');
     } catch (error) {
       setTeamMessage(
         error instanceof Error ? error.message : 'Не вдалося зберегти зміни.',
@@ -198,7 +203,7 @@ export function TeamRoute() {
 
     try {
       await navigator.clipboard.writeText(inviteLink);
-      setInviteDialogMessage('Посилання скопійовано.');
+      toast('Посилання скопійовано');
     } catch {
       setInviteDialogMessage('Скопіюйте посилання вручну з поля вище.');
     }
@@ -226,6 +231,10 @@ export function TeamRoute() {
     setInviteLink(null);
   };
 
+  const openInviteSheet = () => {
+    setInviteDialogOpen(true);
+  };
+
   const revokeInvite = async () => {
     if (!activeTeam) return;
 
@@ -235,7 +244,7 @@ export function TeamRoute() {
       await revokeTeamInvite(activeTeam.id);
       closeInviteDialog();
       setInviteExpiry(null);
-      setInviteMessage('Запрошення відкликано.');
+      toast('Запрошення відкликано.');
     } catch (error) {
       setInviteMessage(
         error instanceof Error
@@ -302,252 +311,233 @@ export function TeamRoute() {
     }
   };
 
-  const teamButtons = useMemo(
-    () =>
-      teams.map((team) => (
-        <Button
-          className={cn(
-            'join-item',
-            team.id === activeTeam?.id && 'btn-active',
-          )}
-          key={team.id}
-          onClick={() => selectTeam(team.id)}
-          size="sm"
+  const closeDeleteSheet = () => {
+    setDeleteSheetOpen(false);
+    setDeleteName('');
+  };
+
+  const toolbarActions = (
+    <>
+      {teams.length > 1 ? (
+        <div className="dropdown dropdown-end dropdown-bottom">
+          <IconButton
+            icon="arrow-left-right"
+            label="Змінити команду"
+            tabIndex={0}
+          />
+          <ul
+            className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm"
+            tabIndex={0}
+          >
+            {teams.map((team) => (
+              <li key={team.id}>
+                <button
+                  className={team.id === activeTeam?.id ? 'menu-active' : ''}
+                  onClick={() => selectTeam(team.id)}
+                  type="button"
+                >
+                  {team.name}
+                  {team.id === activeTeam?.id ? (
+                    <Icon className="size-4" name="check" />
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      <IconButton
+        icon="log-out"
+        label="Вийти з акаунта"
+        onClick={() => void signOut()}
+      />
+      <div className="dropdown dropdown-end dropdown-bottom">
+        <IconButton icon="more-horizontal" label="Ще" tabIndex={0} />
+        <ul
+          className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm"
+          tabIndex={0}
         >
-          {team.name}
-        </Button>
-      )),
-    [activeTeam?.id, selectTeam, teams],
+          {isOwner ? (
+            <li>
+              <button
+                className="text-error"
+                onClick={() => setDeleteSheetOpen(true)}
+                type="button"
+              >
+                Видалити команду
+              </button>
+            </li>
+          ) : (
+            <li>
+              <button
+                className="text-error"
+                disabled={leaveLoading}
+                onClick={() => void leave()}
+                type="button"
+              >
+                Вийти з команди
+              </button>
+            </li>
+          )}
+        </ul>
+      </div>
+    </>
   );
 
   if (status === 'loading' || !activeTeam) {
     return (
-      <Screen inset scroll={false}>
-        <Loading label="Завантажуємо команду…" size="lg" />
-      </Screen>
+      <Page title="Команда">
+        <Skeleton />
+      </Page>
     );
   }
 
   return (
-    <Screen inset>
-      <header className="sticky -top-4 z-20 -mx-4 -mt-4 border-b border-base-300 bg-base-100 px-4 py-2 shadow-sm">
-        <div className="navbar min-h-0 px-0">
-          <div className="navbar-start">
-            <div>
-              <h1 className="text-xl font-semibold">{activeTeam.name}</h1>
-              <p className="text-sm text-base-content/60">
-                {session?.user.email}
-              </p>
-            </div>
-          </div>
-          <div className="navbar-end">
-            <Button onClick={() => void signOut()} size="sm" variant="ghost">
-              Вийти
-            </Button>
-          </div>
-        </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-full h-5 bg-linear-to-b from-base-100 to-transparent"
-        />
-      </header>
+    <Page actions={toolbarActions} title={activeTeam.name}>
+      <AppText className="block max-w-full truncate" variant="caption">
+        {session?.user.email}
+      </AppText>
 
       {teamsError ? <Alert color="error">{teamsError}</Alert> : null}
-
-      {teams.length > 1 ? (
-        <Card
-          description="Виберіть команду, дані якої хочете переглянути."
-          title="Активна команда"
-        >
-          <div className="join join-horizontal flex-wrap">{teamButtons}</div>
-        </Card>
+      {!isOwner && teamMessage ? (
+        <Alert color="error">{teamMessage}</Alert>
       ) : null}
 
-      <Card
-        description="Timezone використовується для визначення робочого дня команди."
-        title="Налаштування команди"
-      >
-        <div className="flex flex-col gap-5">
-          <Input
-            disabled={!isOwner}
-            label="Назва"
-            onChangeText={setName}
-            value={name}
-          />
-          <Input
-            disabled={!isOwner}
-            helperText="IANA timezone, наприклад Europe/Kyiv."
-            label="Timezone"
-            onChangeText={setTimezone}
-            spellCheck={false}
-            value={timezone}
-          />
-          {teamMessage ? (
-            <Alert
-              color={teamMessage === 'Зміни збережено.' ? 'success' : 'error'}
-            >
-              {teamMessage}
-            </Alert>
-          ) : null}
-          {isOwner ? (
+      <section className="flex flex-col gap-1">
+        <AppText as="h2" variant="overline">
+          Команда
+        </AppText>
+        {isOwner ? (
+          <div className="flex flex-col gap-4">
+            <Input label="Назва" onChangeText={setName} value={name} />
+            <Input
+              helperText="IANA timezone, наприклад Europe/Kyiv."
+              label="Timezone"
+              onChangeText={setTimezone}
+              spellCheck={false}
+              value={timezone}
+            />
+            {teamMessage ? <Alert color="error">{teamMessage}</Alert> : null}
             <Button
               className="btn-block"
-              color="primary"
               loading={savingTeam}
               onClick={() => void saveTeam()}
             >
               Зберегти зміни
             </Button>
-          ) : (
-            <AppText tone="muted">Лише owner може змінювати ці дані.</AppText>
-          )}
-        </div>
-      </Card>
-
-      <Card
-        description="Усі учасники можуть переглядати командні дані."
-        title="Учасники"
-      >
-        <div className="flex flex-col gap-4">
-          {membersLoading ? <Loading label="Завантажуємо учасників…" /> : null}
-          {membersError ? <Alert color="error">{membersError}</Alert> : null}
+          </div>
+        ) : (
           <ul className="list">
-            {members.map((member) => {
-              const memberIsOwner = member.user_id === activeTeam.owner_id;
-              return (
-                <li className="list-row" key={member.user_id}>
-                  <div className="list-col-grow">
-                    <AppText variant="label">{member.displayName}</AppText>
-                    <Badge
-                      className={memberIsOwner ? undefined : 'badge-ghost'}
-                    >
-                      {memberIsOwner ? 'Owner' : 'Учасник'}
-                    </Badge>
-                  </div>
-                  {isOwner && !memberIsOwner ? (
-                    <Button
-                      color="error"
-                      loading={memberActionId === member.user_id}
-                      onClick={() => void removeMember(member.user_id)}
-                      size="sm"
-                    >
-                      Видалити
-                    </Button>
-                  ) : null}
-                </li>
-              );
-            })}
+            <ListRow meta={activeTeam.name} title="Назва" />
+            <ListRow meta={activeTeam.timezone} title="Timezone" />
           </ul>
-          {!membersLoading && members.length === 0 ? (
-            <AppText tone="muted">У команді поки немає учасників.</AppText>
-          ) : null}
-          {!isOwner ? (
-            <Button
-              className="btn-block"
-              loading={leaveLoading}
-              onClick={() => void leave()}
-            >
-              Вийти з команди
-            </Button>
-          ) : null}
-        </div>
-      </Card>
+        )}
+      </section>
 
-      {isOwner ? (
-        <Card
-          description="Посилання дійсне 7 днів і може бути використане багатьма людьми."
-          title="Запрошення"
-        >
-          <div className="flex flex-col gap-4">
-            {inviteExpiry ? (
-              <AppText tone="muted">
-                Активне запрошення до {formatExpiry(inviteExpiry)}.
+      <section className="flex flex-col gap-1">
+        <AppText as="h2" variant="overline">
+          Учасники
+        </AppText>
+        {membersLoading ? <Skeleton rows={2} /> : null}
+        {membersError ? <Alert color="error">{membersError}</Alert> : null}
+        {!membersLoading ? (
+          <>
+            <ul className="list">
+              {members.map((member) => {
+                const memberIsOwner = member.user_id === activeTeam.owner_id;
+                return (
+                  <ListRow
+                    key={member.user_id}
+                    leading={
+                      <div className="avatar avatar-placeholder">
+                        <div className="w-10 rounded-full bg-neutral text-neutral-content">
+                          <span className="text-sm">
+                            {initials(member.displayName)}
+                          </span>
+                        </div>
+                      </div>
+                    }
+                    title={member.displayName}
+                    trailing={
+                      memberIsOwner ? (
+                        <Badge color="primary" size="sm" soft>
+                          Owner
+                        </Badge>
+                      ) : isOwner ? (
+                        <IconButton
+                          className="text-error"
+                          disabled={memberActionId === member.user_id}
+                          icon="trash"
+                          label={`Видалити ${member.displayName}`}
+                          onClick={() => void removeMember(member.user_id)}
+                          size="sm"
+                        />
+                      ) : undefined
+                    }
+                  />
+                );
+              })}
+            </ul>
+            {members.length === 0 ? (
+              <AppText variant="caption">
+                У команді поки немає учасників.
               </AppText>
-            ) : (
-              <AppText tone="muted">Активного запрошення немає.</AppText>
-            )}
-            {inviteMessage ? <Alert>{inviteMessage}</Alert> : null}
-            <div className="flex flex-col gap-2">
-              <Button
-                className="btn-block"
-                loading={inviteLoading}
-                onClick={() => void createInvite()}
-              >
-                {inviteExpiry
-                  ? 'Створити нове посилання'
-                  : 'Створити посилання'}
-              </Button>
-              {inviteExpiry ? (
-                <Button
-                  className="btn-block"
-                  color="error"
-                  loading={inviteLoading}
-                  onClick={() => void revokeInvite()}
-                >
-                  Відкликати
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </Card>
-      ) : null}
-
-      <Modal
-        description="Скопіюйте або поширте посилання зараз. Після закриття цього вікна його не можна буде відновити."
-        onClose={closeInviteDialog}
-        open={inviteDialogOpen}
-        title="Запрошення до команди"
-      >
-        <div className="flex flex-col gap-4">
-          {inviteLink ? (
-            <Input readOnly label="Посилання" value={inviteLink} />
-          ) : null}
-          {inviteExpiry ? (
-            <AppText tone="muted">
-              Дійсне до {formatExpiry(inviteExpiry)}.
-            </AppText>
-          ) : null}
-          {inviteDialogMessage ? <Alert>{inviteDialogMessage}</Alert> : null}
-          <div className="modal-action flex-wrap">
-            <Button onClick={() => void shareInvite()}>Поділитися</Button>
-            <Button color="primary" onClick={() => void copyInvite()}>
-              Копіювати
-            </Button>
-            <Button onClick={closeInviteDialog} variant="ghost">
-              Закрити
-            </Button>
-          </div>
-        </div>
-      </Modal>
+            ) : null}
+          </>
+        ) : null}
+      </section>
 
       {isOwner ? (
-        <Card
-          description="Ця дія назавжди видалить команду й усі її дочірні дані."
-          title="Видалити команду"
-        >
-          <div className="flex flex-col gap-4">
-            <Input
-              error={
-                deleteName.length > 0 && deleteName !== activeTeam.name
-                  ? 'Введіть точну назву команди.'
-                  : undefined
+        <section className="flex flex-col gap-1">
+          <AppText as="h2" variant="overline">
+            Запрошення
+          </AppText>
+          {inviteMessage ? <Alert color="error">{inviteMessage}</Alert> : null}
+          <ul className="list">
+            <ListRow
+              meta={
+                inviteExpiry
+                  ? `До ${formatExpiry(inviteExpiry)}`
+                  : 'Створіть посилання для нових учасників'
               }
-              label={`Введіть «${activeTeam.name}» для підтвердження`}
-              onChangeText={setDeleteName}
-              value={deleteName}
+              onClick={openInviteSheet}
+              title={
+                inviteExpiry ? 'Активне запрошення' : 'Запрошення неактивне'
+              }
+              trailing={
+                <Icon className="text-base-content/40" name="chevron-right" />
+              }
             />
-            <Button
-              className="btn-block"
-              color="error"
-              disabled={deleteName !== activeTeam.name}
-              loading={deleteLoading}
-              onClick={() => void removeTeam()}
-            >
-              Видалити назавжди
-            </Button>
-          </div>
-        </Card>
+          </ul>
+        </section>
       ) : null}
-    </Screen>
+
+      <InviteSheet
+        formatExpiry={formatExpiry}
+        inviteDialogMessage={inviteDialogMessage}
+        inviteExpiry={inviteExpiry}
+        inviteLink={inviteLink}
+        inviteLoading={inviteLoading}
+        onClose={closeInviteDialog}
+        onCopyInvite={() => void copyInvite()}
+        onCreateInvite={() => void createInvite()}
+        onRevokeInvite={() => void revokeInvite()}
+        onShareInvite={() => void shareInvite()}
+        open={inviteDialogOpen}
+      />
+
+      {isOwner ? (
+        <DeleteTeamSheet
+          deleteError={deleteSheetOpen ? teamMessage : null}
+          deleteLoading={deleteLoading}
+          deleteName={deleteName}
+          onClose={closeDeleteSheet}
+          onDelete={() => void removeTeam()}
+          onDeleteNameChange={setDeleteName}
+          open={deleteSheetOpen}
+          teamName={activeTeam.name}
+        />
+      ) : null}
+    </Page>
   );
 }

@@ -61,7 +61,7 @@ export function OnboardingForm() {
 
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
       onSubmit={(event) => void onSubmit(event)}
     >
       <Controller
@@ -102,6 +102,7 @@ export function OnboardingForm() {
         className="btn-block"
         color="primary"
         loading={isSubmitting}
+        size="lg"
         type="submit"
       >
         Створити команду

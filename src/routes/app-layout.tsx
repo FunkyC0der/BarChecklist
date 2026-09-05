@@ -7,6 +7,7 @@ import {
   useNavigate,
 } from 'react-router';
 
+import { Icon, ToastViewport, type IconName } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import { useTeams } from '@/features/teams/team-context';
 import {
@@ -18,10 +19,18 @@ import {
 import { cn } from '@/lib/cn';
 
 const tabs = [
-  { to: '/today', label: 'Сьогодні' },
-  { to: '/checklists', label: 'Чеклісти' },
-  { to: '/history', label: 'Історія' },
-  { to: '/team', label: 'Команда' },
+  { icon: 'sun' as const satisfies IconName, label: 'Сьогодні', to: '/today' },
+  {
+    icon: 'clipboard-list' as const satisfies IconName,
+    label: 'Чеклісти',
+    to: '/checklists',
+  },
+  {
+    icon: 'clock' as const satisfies IconName,
+    label: 'Історія',
+    to: '/history',
+  },
+  { icon: 'users' as const satisfies IconName, label: 'Команда', to: '/team' },
 ] as const;
 
 export function AppLayout() {
@@ -71,41 +80,39 @@ export function AppLayout() {
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-base-200 pt-[env(safe-area-inset-top)]">
-      <main className="mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col overflow-hidden px-3 pt-3">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-t-box border border-b-0 border-base-300 bg-base-100 p-4">
-          <Outlet />
-        </div>
+    <div className="flex h-dvh flex-col bg-base-100 pt-[env(safe-area-inset-top)]">
+      <div className="relative mx-auto flex min-h-0 w-full flex-1 flex-col sm:max-w-md">
+        <Outlet />
         <nav
           aria-label="Розділи"
-          className="relative z-20 shrink-0 pb-[env(safe-area-inset-bottom)]"
+          className={cn(
+            'dock fixed dock-sm sm:absolute',
+            'inset-x-3 z-20 w-auto',
+            'bottom-[max(0.75rem,env(safe-area-inset-bottom))]',
+            'h-14 rounded-full border-0 bg-base-200 p-1 pb-1 shadow-sm',
+            '[&>*]:mb-0 [&>*]:rounded-full [&>*]:after:hidden',
+          )}
         >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-full h-5 bg-linear-to-t from-base-100 to-transparent"
-          />
-          <div className="tabs tabs-lift w-full tabs-bottom" role="tablist">
-            {tabs.map((tab) => {
-              const isActive = resolveTeamTabRoot(location.pathname) === tab.to;
+          {tabs.map((tab) => {
+            const isActive = resolveTeamTabRoot(location.pathname) === tab.to;
 
-              return (
-                <NavLink
-                  aria-selected={isActive}
-                  className={cn(
-                    'tab h-12 min-h-12 flex-1 touch-manipulation px-1 text-xs leading-tight sm:text-sm',
-                    isActive && 'tab-active',
-                  )}
-                  key={tab.to}
-                  role="tab"
-                  to={tab.to}
-                >
-                  {tab.label}
-                </NavLink>
-              );
-            })}
-          </div>
+            return (
+              <NavLink
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  isActive && 'dock-active bg-primary text-primary-content',
+                )}
+                key={tab.to}
+                to={tab.to}
+              >
+                <Icon className="size-6" name={tab.icon} />
+                <span className="dock-label">{tab.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
-      </main>
+        <ToastViewport />
+      </div>
     </div>
   );
 }

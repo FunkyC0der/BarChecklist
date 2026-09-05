@@ -46,7 +46,7 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
 
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
       onSubmit={(event) => void onSubmit(event)}
     >
       <Controller
@@ -88,6 +88,7 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
         className="btn-block"
         color="primary"
         loading={isSubmitting}
+        size="lg"
         type="submit"
       >
         Увійти

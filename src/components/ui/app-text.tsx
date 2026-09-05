@@ -11,10 +11,12 @@ const tones = {
 
 const variants = {
   body: 'text-base',
-  caption: 'text-sm',
-  heading: 'text-xl font-semibold',
-  label: 'font-semibold',
-  title: 'text-3xl font-bold',
+  caption: 'text-sm text-base-content/60',
+  display: 'text-3xl font-bold tracking-tight',
+  heading: 'text-lg font-semibold',
+  label: 'text-base',
+  overline: 'text-xs font-medium tracking-wide text-base-content/60 uppercase',
+  title: 'text-3xl font-bold tracking-tight',
 } as const;
 
 export type AppTextProps = {

@@ -22,11 +22,10 @@ export function resolveActiveTeamTab(
   pathname: string,
 ): string {
   const currentRoot = resolveTeamTabRoot(pathname);
-  if (currentRoot && pathname !== currentRoot) return pathname;
+  if (currentRoot) return pathname;
 
   const storedRoot = storedPath ? resolveTeamTabRoot(storedPath) : null;
   if (storedRoot) return storedRoot;
-  if (currentRoot) return currentRoot;
   return '/today';
 }
 

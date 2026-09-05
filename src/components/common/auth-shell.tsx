@@ -1,35 +1,47 @@
 import type { ReactNode } from 'react';
 
-import { AppText, Card } from '@/components/ui';
+import { AppText } from '@/components/ui';
 
 type AuthShellProps = {
-  children: ReactNode;
+  brand?: boolean;
+  children?: ReactNode;
   description: string;
   footer: ReactNode;
   title: string;
 };
 
 export function AuthShell({
+  brand = true,
   children,
   description,
   footer,
   title,
 }: AuthShellProps) {
   return (
-    <div className="hero min-h-dvh bg-base-200 pt-[env(safe-area-inset-top)]">
-      <div className="hero-content w-full max-w-sm flex-col px-4 py-8 pb-[max(2rem,env(safe-area-inset-bottom))]">
-        <div className="text-center">
-          <AppText as="h1" variant="title">
-            Bar Checklist
-          </AppText>
-          <AppText tone="muted">
-            Щоденні чеклісти команди без зайвого шуму.
-          </AppText>
+    <div className="flex min-h-dvh flex-col overflow-x-hidden bg-base-100 px-4 pt-[max(3rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:items-center sm:justify-center sm:bg-base-200">
+      <div className="flex w-full max-w-full flex-1 flex-col sm:card sm:max-w-sm sm:flex-none sm:overflow-hidden sm:bg-base-100 sm:card-border">
+        <div className="flex flex-1 flex-col sm:card-body">
+          {brand ? (
+            <div className="mb-8 text-center">
+              <AppText as="h1" variant="display">
+                Bar Checklist
+              </AppText>
+              <AppText variant="caption">
+                Щоденні чеклісти команди без зайвого шуму.
+              </AppText>
+            </div>
+          ) : null}
+          <main>
+            <AppText as="h2" variant="heading">
+              {title}
+            </AppText>
+            <AppText className="mt-1" variant="caption">
+              {description}
+            </AppText>
+            <div className="mt-6 flex flex-col gap-4">{children ?? null}</div>
+          </main>
+          <div className="mt-auto pt-8 text-center text-sm">{footer}</div>
         </div>
-        <Card className="w-full" description={description} title={title}>
-          {children}
-        </Card>
-        <div className="text-center">{footer}</div>
       </div>
     </div>
   );

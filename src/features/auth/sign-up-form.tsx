@@ -79,7 +79,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
 
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
       onSubmit={(event) => void onSubmit(event)}
     >
       <Controller
@@ -153,6 +153,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
         className="btn-block"
         color="primary"
         loading={isSubmitting}
+        size="lg"
         type="submit"
       >
         Створити акаунт

@@ -13,14 +13,16 @@ export function Alert({
   children,
   className,
   color = 'info',
+  soft = true,
   ...props
 }: {
   children: ReactNode;
   color?: keyof typeof colors;
+  soft?: boolean | undefined;
 } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('alert', colors[color], className)}
+      className={cn('alert', soft && 'alert-soft', colors[color], className)}
       role="alert"
       {...props}
     >

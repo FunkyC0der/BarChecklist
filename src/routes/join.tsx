@@ -2,7 +2,8 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { AuthShell } from '@/components/common/auth-shell';
-import { Alert, AppText, Button, Card, Loading, Screen } from '@/components/ui';
+import { ConfigNotice } from '@/components/common/config-notice';
+import { Alert, AppText, Button, Loading } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import {
   acceptTeamInvite,
@@ -21,6 +22,8 @@ const statusMessages: Record<
   invalid: 'Це посилання-запрошення недійсне.',
   revoked: 'Власник команди відкликав це запрошення.',
 };
+
+const invalidTokenMessage = 'Це посилання-запрошення має некоректний формат.';
 
 export function JoinRoute() {
   const { token } = useParams<{ token: string }>();
@@ -66,13 +69,15 @@ export function JoinRoute() {
 
   if (!validToken) {
     return (
-      <Screen>
-        <Card title="Недійсне посилання">
-          <Alert color="error">
-            Це посилання-запрошення має некоректний формат.
-          </Alert>
-        </Card>
-      </Screen>
+      <AuthShell
+        description={invalidTokenMessage}
+        footer={
+          <Link className="link" to={`/sign-in${returnQuery}`}>
+            Увійти
+          </Link>
+        }
+        title="Недійсне посилання"
+      />
     );
   }
 
@@ -135,35 +140,54 @@ export function JoinRoute() {
 
   if (configIssue) {
     return (
-      <Screen>
-        <Card title="Supabase не налаштовано">
-          <Alert color="warning">{configIssue}</Alert>
-        </Card>
-      </Screen>
+      <AuthShell
+        brand={false}
+        description="Додайте локальні або hosted development значення Supabase."
+        footer={<span />}
+        title="Supabase не налаштовано"
+      >
+        <ConfigNotice message={configIssue} />
+      </AuthShell>
     );
   }
 
   if (loading) {
     return (
-      <Screen scroll={false}>
+      <AuthShell
+        brand={false}
+        description="Зачекайте, будь ласка."
+        footer={<span />}
+        title="Запрошення до команди"
+      >
         <Loading label="Перевіряємо запрошення…" size="lg" />
-      </Screen>
+      </AuthShell>
     );
   }
 
   if (error) {
     return (
-      <Screen>
-        <Card title="Не вдалося відкрити запрошення">
-          <div className="flex flex-col gap-4">
-            <Alert color="error">{error}</Alert>
-            <Button onClick={() => void loadInvite()}>Спробувати ще раз</Button>
-            <Button onClick={() => void goToTeams()} variant="ghost">
-              До моїх команд
-            </Button>
-          </div>
-        </Card>
-      </Screen>
+      <AuthShell
+        brand={false}
+        description="Спробуйте ще раз або поверніться до своїх команд."
+        footer={<span />}
+        title="Не вдалося відкрити запрошення"
+      >
+        <Alert color="error">{error}</Alert>
+        <Button
+          className="btn-block"
+          onClick={() => void loadInvite()}
+          size="lg"
+        >
+          Спробувати ще раз
+        </Button>
+        <Button
+          className="btn-block"
+          onClick={() => void goToTeams()}
+          variant="ghost"
+        >
+          До моїх команд
+        </Button>
+      </AuthShell>
     );
   }
 
@@ -175,57 +199,78 @@ export function JoinRoute() {
         ? invite.status
         : 'invalid';
     return (
-      <Screen>
-        <Card title="Запрошення недоступне">
-          <div className="flex flex-col gap-4">
-            <Alert color="error">{statusMessages[unavailableStatus]}</Alert>
-            <Button color="primary" onClick={() => void goToTeams()}>
-              До моїх команд
-            </Button>
-          </div>
-        </Card>
-      </Screen>
+      <AuthShell
+        brand={false}
+        description={statusMessages[unavailableStatus]}
+        footer={<span />}
+        title="Запрошення недоступне"
+      >
+        <Alert color="error">{statusMessages[unavailableStatus]}</Alert>
+        <Button
+          className="btn-block"
+          color="primary"
+          onClick={() => void goToTeams()}
+          size="lg"
+        >
+          До моїх команд
+        </Button>
+      </AuthShell>
     );
   }
 
   if (invite.alreadyMember) {
     return (
-      <Screen>
-        <Card title="Ви вже в команді">
-          <div className="flex flex-col gap-4">
-            <AppText>
-              Ви вже є учасником команди «{invite.teamName ?? 'Команда'}».
-            </AppText>
-            <Button
-              color="primary"
-              onClick={() => void goToTeams(invite.teamId ?? undefined)}
-            >
-              Відкрити команду
-            </Button>
-          </div>
-        </Card>
-      </Screen>
+      <AuthShell
+        brand={false}
+        description={`Ви вже є учасником команди «${invite.teamName ?? 'Команда'}».`}
+        footer={<span />}
+        title="Ви вже в команді"
+      >
+        <Button
+          className="btn-block"
+          color="primary"
+          onClick={() => void goToTeams(invite.teamId ?? undefined)}
+          size="lg"
+        >
+          Відкрити команду
+        </Button>
+        <Button
+          className="btn-block"
+          onClick={() => void goToTeams()}
+          variant="ghost"
+        >
+          До моїх команд
+        </Button>
+      </AuthShell>
     );
   }
 
   return (
-    <Screen>
-      <Card title="Приєднатися до команди">
-        <div className="flex flex-col gap-5">
-          <AppText>
-            Вас запрошують до команди «{invite.teamName ?? 'Команда'}».
-          </AppText>
-          <AppText tone="muted">
-            Після підтвердження ви бачитимете дані команди та поточні задачі.
-          </AppText>
-          <Button color="primary" loading={joining} onClick={() => void join()}>
-            Приєднатися
-          </Button>
-          <Button onClick={() => void goToTeams()} variant="ghost">
-            До моїх команд
-          </Button>
-        </div>
-      </Card>
-    </Screen>
+    <AuthShell
+      brand={false}
+      description="Після підтвердження ви бачитимете дані команди та поточні задачі."
+      footer={<span />}
+      title="Приєднатися до команди"
+    >
+      <AppText>
+        Вас запрошують до команди «{invite.teamName ?? 'Команда'}».
+      </AppText>
+      <Button
+        className="btn-block"
+        color="primary"
+        loading={joining}
+        onClick={() => void join()}
+        size="lg"
+      >
+        Приєднатися
+      </Button>
+      <Button
+        className="btn-block"
+        onClick={() => void goToTeams()}
+        variant="ghost"
+      >
+        До моїх команд
+      </Button>
+    </AuthShell>
   );
 }

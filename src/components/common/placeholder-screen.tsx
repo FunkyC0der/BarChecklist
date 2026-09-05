@@ -1,22 +1,19 @@
-import { EmptyState, Screen } from '@/components/ui';
+import { EmptyState, Page, type IconName } from '@/components/ui';
 
 type PlaceholderScreenProps = {
   description: string;
+  icon: IconName;
   title: string;
 };
 
 export function PlaceholderScreen({
   description,
+  icon,
   title,
 }: PlaceholderScreenProps) {
   return (
-    <Screen inset>
-      <h1 className="sr-only">{title}</h1>
-      <EmptyState
-        bordered={false}
-        description={description}
-        title="Фундамент готовий"
-      />
-    </Screen>
+    <Page title={title}>
+      <EmptyState description={description} icon={icon} title="Скоро" />
+    </Page>
   );
 }

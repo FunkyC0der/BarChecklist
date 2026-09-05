@@ -2,6 +2,10 @@ import { Navigate } from 'react-router';
 
 import { Loading, Screen } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
+import {
+  readStoredActiveTeamTab,
+  resolveActiveTeamTab,
+} from '@/features/teams/team-tab-storage';
 import { useTeams } from '@/features/teams/team-context';
 
 export function IndexRoute() {
@@ -17,5 +21,9 @@ export function IndexRoute() {
     );
   }
 
-  return <Navigate replace to={activeTeam ? '/today' : '/onboarding'} />;
+  const target = activeTeam
+    ? resolveActiveTeamTab(readStoredActiveTeamTab(session.user.id), '/')
+    : '/onboarding';
+
+  return <Navigate replace to={target} />;
 }

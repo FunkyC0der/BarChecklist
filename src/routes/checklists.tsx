@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router';
 
 import {
   Alert,
-  AppText,
+  Badge,
   Button,
   EmptyState,
-  Loading,
-  Modal,
-  Screen,
+  Fab,
+  Icon,
+  ListRow,
+  Page,
+  Sheet,
+  Skeleton,
 } from '@/components/ui';
+import { IconTile } from '@/components/ui/list-row';
+import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/features/auth/auth-context';
 import {
   createChecklist,
@@ -27,6 +31,7 @@ import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
 
 export function ChecklistsRoute() {
+  const toast = useToast();
   const { session } = useAuth();
   const { activeTeam, status } = useTeams();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -77,53 +82,38 @@ export function ChecklistsRoute() {
       teamId: activeTeam.id,
     });
     setCreateOpen(false);
+    toast('Чекліст створено');
     await loadChecklists();
   };
 
   if (status === 'loading' || !activeTeam) {
     return (
-      <Screen inset scroll={false}>
-        <Loading label="Завантажуємо чеклісти…" size="lg" />
-      </Screen>
+      <Page title="Чеклісти">
+        <Skeleton />
+      </Page>
     );
   }
 
   return (
-    <Screen inset>
-      <div className="navbar min-h-0 px-0">
-        <div className="navbar-start">
-          <h1 className="text-xl font-semibold">Чеклісти</h1>
-        </div>
-        {isOwner ? (
-          <div className="navbar-end">
-            <Button
-              color="primary"
-              disabled={atChecklistLimit}
-              onClick={() => setCreateOpen(true)}
-              size="sm"
-            >
-              Створити
-            </Button>
-          </div>
-        ) : null}
-      </div>
-
-      {atChecklistLimit && isOwner ? (
-        <Alert color="warning">
-          У команди може бути щонайбільше {MAX_ACTIVE_CHECKLISTS_PER_TEAM}{' '}
-          активних чеклістів.
-        </Alert>
-      ) : null}
-
+    <Page
+      title="Чеклісти"
+      titleBadge={
+        isOwner ? (
+          <Badge size="sm" soft>
+            {`${checklists.length} / ${MAX_ACTIVE_CHECKLISTS_PER_TEAM}`}
+          </Badge>
+        ) : undefined
+      }
+    >
       {error ? <Alert color="error">{error}</Alert> : null}
 
-      {loading ? <Loading label="Завантажуємо чеклісти…" /> : null}
+      {loading ? <Skeleton /> : null}
 
       {!loading && checklists.length === 0 ? (
         <EmptyState
           action={
             isOwner && !atChecklistLimit ? (
-              <Button onClick={() => setCreateOpen(true)}>
+              <Button color="primary" onClick={() => setCreateOpen(true)}>
                 Створити чекліст
               </Button>
             ) : undefined
@@ -133,6 +123,7 @@ export function ChecklistsRoute() {
               ? 'Додайте перший чекліст для команди.'
               : 'Owner ще не додав жодного чекліста.'
           }
+          icon="clipboard-list"
           title="Чеклістів поки немає"
         />
       ) : null}
@@ -140,41 +131,38 @@ export function ChecklistsRoute() {
       {!loading && checklists.length > 0 ? (
         <ul className="list">
           {checklists.map((checklist) => (
-            <li className="list-row" key={checklist.id}>
-              <Link
-                className="list-col-grow"
-                to={`/checklists/${checklist.id}`}
-              >
-                <AppText variant="label">{checklist.name}</AppText>
-                <div className="mt-1">
-                  <AppText tone="muted" variant="caption">
-                    {taskCountLabel(taskCounts.get(checklist.id) ?? 0)}
-                  </AppText>
-                </div>
-              </Link>
-            </li>
+            <ListRow
+              key={checklist.id}
+              leading={<IconTile icon="clipboard-list" />}
+              meta={taskCountLabel(taskCounts.get(checklist.id) ?? 0)}
+              title={checklist.name}
+              to={`/checklists/${checklist.id}`}
+              trailing={
+                <Icon className="text-base-content/40" name="chevron-right" />
+              }
+            />
           ))}
         </ul>
       ) : null}
 
-      {!isOwner && !loading ? (
-        <AppText tone="muted">Лише owner може змінювати структуру.</AppText>
+      {isOwner ? (
+        <Fab
+          disabled={atChecklistLimit}
+          disabledHint="Ліміт 20 чеклістів"
+          label="Створити чекліст"
+          onClick={() => setCreateOpen(true)}
+        />
       ) : null}
 
-      <Modal
-        description="Чекліст об’єднує задачі. Періодичність задається для кожної задачі окремо."
+      <Sheet
         onClose={() => setCreateOpen(false)}
         open={createOpen}
         title="Новий чекліст"
       >
         {createOpen ? (
-          <ChecklistForm
-            onCancel={() => setCreateOpen(false)}
-            onSubmit={submitCreate}
-            submitLabel="Створити"
-          />
+          <ChecklistForm onSubmit={submitCreate} submitLabel="Створити" />
         ) : null}
-      </Modal>
-    </Screen>
+      </Sheet>
+    </Page>
   );
 }

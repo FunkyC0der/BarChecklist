@@ -1,22 +1,18 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react';
-import { Link, useNavigate, useParams } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 
 import {
   Alert,
-  AppText,
   Badge,
   Button,
   EmptyState,
-  Loading,
-  Modal,
-  Screen,
+  Fab,
+  IconButton,
+  Page,
+  Sheet,
+  Skeleton,
 } from '@/components/ui';
+import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/features/auth/auth-context';
 import {
   createTask,
@@ -32,16 +28,12 @@ import {
 } from '@/features/checklists/checklist-api';
 import { ChecklistForm } from '@/features/checklists/checklist-form';
 import {
-  cadenceLabel,
-  formatTaskSchedule,
-} from '@/features/checklists/checklist-schedule';
-import {
   MAX_ACTIVE_TASKS_PER_CHECKLIST,
   type ChecklistFormValues,
   type TaskFormValues,
 } from '@/features/checklists/checklist-schema';
+import { SortableTaskList } from '@/features/checklists/sortable-task-list';
 import { TaskForm } from '@/features/checklists/task-form';
-import { moveTaskIds } from '@/features/checklists/task-order';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -54,6 +46,7 @@ type Dialog =
   | null;
 
 export function ChecklistDetailRoute() {
+  const toast = useToast();
   const { checklistId } = useParams<{ checklistId: string }>();
   const navigate = useNavigate();
   const { session } = useAuth();
@@ -66,9 +59,6 @@ export function ChecklistDetailRoute() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [reordering, setReordering] = useState(false);
-  const [reorderStatus, setReorderStatus] = useState('');
-  const taskListRef = useRef<HTMLUListElement>(null);
 
   const isOwner = Boolean(
     activeTeam && session?.user.id === activeTeam.owner_id,
@@ -121,6 +111,7 @@ export function ChecklistDetailRoute() {
     if (!checklist) return;
     await updateChecklist(checklist.id, values);
     closeDialog();
+    toast('Чекліст збережено');
     await loadDetail();
   };
 
@@ -128,6 +119,7 @@ export function ChecklistDetailRoute() {
     if (!checklist) return;
     await createTask(checklist.id, values);
     closeDialog();
+    toast('Задачу додано');
     await loadDetail();
   };
 
@@ -135,6 +127,7 @@ export function ChecklistDetailRoute() {
     if (dialog?.type !== 'edit-task') return;
     await updateTask(dialog.task.id, values);
     closeDialog();
+    toast('Задачу збережено');
     await loadDetail();
   };
 
@@ -145,9 +138,9 @@ export function ChecklistDetailRoute() {
     try {
       await deleteChecklist(checklist.id);
       navigate('/checklists', { replace: true });
-    } catch (deleteError) {
+    } catch (deleteFailure) {
       setDeleteError(
-        getErrorMessage(deleteError, 'Не вдалося видалити чекліст.'),
+        getErrorMessage(deleteFailure, 'Не вдалося видалити чекліст.'),
       );
       setDeleting(false);
     }
@@ -160,262 +153,150 @@ export function ChecklistDetailRoute() {
     try {
       await deleteTask(dialog.task.id);
       closeDialog();
+      toast('Задачу видалено');
       await loadDetail();
-    } catch (deleteError) {
+    } catch (deleteFailure) {
       setDeleteError(
-        getErrorMessage(deleteError, 'Не вдалося видалити задачу.'),
+        getErrorMessage(deleteFailure, 'Не вдалося видалити задачу.'),
       );
     } finally {
       setDeleting(false);
     }
   };
 
-  const moveTask = async (index: number, direction: 'down' | 'up') => {
+  const handleReorder = async (ids: string[]) => {
     if (!checklist) return;
 
-    const nextIds = moveTaskIds(
-      tasks.map((task) => task.id),
-      index,
-      direction,
-    );
-    if (nextIds.join() === tasks.map((task) => task.id).join()) return;
-
-    setReordering(true);
     setError(null);
     try {
-      await reorderTasks(checklist.id, nextIds);
+      await reorderTasks(checklist.id, ids);
       setTasks(await fetchTasks(checklist.id));
-      setReorderStatus(
-        direction === 'up'
-          ? 'Задачу переміщено вгору.'
-          : 'Задачу переміщено вниз.',
-      );
+      toast('Порядок збережено');
     } catch (reorderError) {
       setError(getErrorMessage(reorderError, 'Не вдалося змінити порядок.'));
-    } finally {
-      setReordering(false);
-    }
-  };
-
-  const scrollTaskListWithKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) return;
-
-    const taskList = taskListRef.current;
-    if (!taskList) return;
-
-    const pageDistance = Math.max(taskList.clientHeight * 0.9, 40);
-    const distances: Partial<Record<string, number>> = {
-      ArrowDown: 40,
-      ArrowUp: -40,
-      PageDown: pageDistance,
-      PageUp: -pageDistance,
-    };
-    const distance = distances[event.key];
-
-    if (distance !== undefined) {
-      event.preventDefault();
-      taskList.scrollBy({ behavior: 'auto', top: distance });
-      return;
-    }
-
-    if (event.key === 'Home' || event.key === 'End') {
-      event.preventDefault();
-      taskList.scrollTo({
-        behavior: 'auto',
-        top: event.key === 'Home' ? 0 : taskList.scrollHeight,
-      });
+      throw reorderError;
     }
   };
 
   if (status === 'loading' || !activeTeam) {
     return (
-      <Screen inset scroll={false}>
-        <Loading label="Завантажуємо чекліст…" size="lg" />
-      </Screen>
+      <Page back="/checklists" hideTitle title=" ">
+        <Skeleton />
+      </Page>
     );
   }
 
   if (loading) {
     return (
-      <Screen inset scroll={false}>
-        <Loading label="Завантажуємо чекліст…" size="lg" />
-      </Screen>
+      <Page back="/checklists" hideTitle title=" ">
+        <Skeleton />
+      </Page>
     );
   }
 
   if (notFound || !checklist) {
     return (
-      <Screen inset>
+      <Page back="/checklists" title="Чекліст не знайдено">
         <EmptyState
-          action={
-            <Link className="btn" to="/checklists">
-              До списку чеклістів
-            </Link>
-          }
           description="Його видалено або він не належить цій команді."
+          icon="clipboard-list"
           title="Чекліст не знайдено"
         />
-      </Screen>
+      </Page>
     );
   }
 
   return (
-    <Screen className="h-full min-h-0 overflow-hidden" inset scroll={false}>
-      <div className="shrink-0">
-        <div className="flex flex-col gap-3">
-          <Link className="link text-sm link-hover" to="/checklists">
-            ← До чеклістів
-          </Link>
-          <div className="navbar min-h-0 px-0">
-            <div className="navbar-start">
-              <div>
-                <h1 className="text-xl font-semibold">{checklist.name}</h1>
-              </div>
+    <Page
+      actions={
+        isOwner ? (
+          <>
+            <IconButton
+              icon="pencil"
+              label="Редагувати назву"
+              onClick={() => openDialog({ type: 'edit-checklist' })}
+            />
+            <div className="dropdown dropdown-end">
+              <IconButton
+                icon="more-horizontal"
+                label="Ще"
+                role="button"
+                tabIndex={0}
+              />
+              <ul className="menu dropdown-content z-30 w-52 rounded-box bg-base-100 shadow-sm">
+                <li>
+                  <button
+                    className="text-error"
+                    onClick={() => openDialog({ type: 'delete-checklist' })}
+                    type="button"
+                  >
+                    Видалити чекліст
+                  </button>
+                </li>
+              </ul>
             </div>
-          </div>
-          {isOwner ? (
-            <div className="join">
-              <Button
-                className="join-item"
-                onClick={() => openDialog({ type: 'edit-checklist' })}
-                size="sm"
-              >
-                Редагувати
-              </Button>
-              <Button
-                className="join-item"
-                color="error"
-                onClick={() => openDialog({ type: 'delete-checklist' })}
-                size="sm"
-              >
-                Видалити
-              </Button>
-            </div>
-          ) : (
-            <AppText tone="muted">Лише owner може змінювати структуру.</AppText>
-          )}
-        </div>
+          </>
+        ) : undefined
+      }
+      back="/checklists"
+      title={checklist.name}
+      titleBadge={
+        isOwner ? (
+          <Badge size="sm" soft>
+            {`${tasks.length} / ${MAX_ACTIVE_TASKS_PER_CHECKLIST}`}
+          </Badge>
+        ) : undefined
+      }
+    >
+      {error ? <Alert color="error">{error}</Alert> : null}
 
-        {atTaskLimit && isOwner ? (
-          <Alert color="warning">
-            У чеклісті може бути щонайбільше {MAX_ACTIVE_TASKS_PER_CHECKLIST}{' '}
-            активних задач.
-          </Alert>
-        ) : null}
+      {tasks.length === 0 ? (
+        <EmptyState
+          description={
+            isOwner
+              ? 'Додайте першу задачу. Порядок можна змінити перетягуванням.'
+              : 'У цьому чеклісті ще немає задач.'
+          }
+          icon="clipboard-list"
+          title="Задач поки немає"
+        />
+      ) : (
+        <SortableTaskList
+          isOwner={isOwner}
+          onReorder={handleReorder}
+          onSelect={
+            isOwner
+              ? (task) => openDialog({ task, type: 'edit-task' })
+              : undefined
+          }
+          tasks={tasks}
+        />
+      )}
 
-        {error ? <Alert color="error">{error}</Alert> : null}
-        <div aria-live="polite" className="sr-only">
-          {reorderStatus}
-        </div>
+      {isOwner ? (
+        <Fab
+          disabled={atTaskLimit}
+          disabledHint="Ліміт 100 задач"
+          label="Додати задачу"
+          onClick={() => openDialog({ type: 'create-task' })}
+        />
+      ) : null}
 
-        {isOwner ? (
-          <Button
-            color="primary"
-            disabled={atTaskLimit}
-            onClick={() => openDialog({ type: 'create-task' })}
-          >
-            Додати задачу
-          </Button>
-        ) : null}
-      </div>
-
-      <div
-        aria-label="Задачі чекліста"
-        className="min-h-0 flex-1"
-        onKeyDown={scrollTaskListWithKeyboard}
-        role="region"
-        tabIndex={0}
-      >
-        {tasks.length === 0 ? (
-          <EmptyState
-            description={
-              isOwner
-                ? 'Додайте першу задачу. Порядок можна змінити кнопками вгору і вниз.'
-                : 'У цьому чеклісті ще немає задач.'
-            }
-            title="Задач поки немає"
-          />
-        ) : (
-          <ul
-            className="list h-full overflow-y-auto overscroll-contain"
-            ref={taskListRef}
-          >
-            {tasks.map((task, index) => (
-              <li className="list-row items-center" key={task.id}>
-                <div className="list-col-grow">
-                  <AppText variant="label">{task.title}</AppText>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <Badge className="badge-ghost">
-                      {cadenceLabel(task.cadence)}
-                    </Badge>
-                    <AppText tone="muted" variant="caption">
-                      {formatTaskSchedule(task)}
-                    </AppText>
-                  </div>
-                </div>
-                {isOwner ? (
-                  <div className="list-col-wrap flex flex-wrap justify-end gap-1">
-                    <div className="join">
-                      <Button
-                        aria-label={`Перемістити «${task.title}» вгору`}
-                        className="join-item"
-                        disabled={reordering || index === 0}
-                        onClick={() => void moveTask(index, 'up')}
-                        size="sm"
-                      >
-                        Вгору
-                      </Button>
-                      <Button
-                        aria-label={`Перемістити «${task.title}» вниз`}
-                        className="join-item"
-                        disabled={reordering || index === tasks.length - 1}
-                        onClick={() => void moveTask(index, 'down')}
-                        size="sm"
-                      >
-                        Вниз
-                      </Button>
-                    </div>
-                    <Button
-                      onClick={() => openDialog({ task, type: 'edit-task' })}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      Змінити
-                    </Button>
-                    <Button
-                      color="error"
-                      onClick={() => openDialog({ task, type: 'delete-task' })}
-                      size="sm"
-                      variant="ghost"
-                    >
-                      Видалити
-                    </Button>
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <Modal
+      <Sheet
         onClose={closeDialog}
         open={dialog?.type === 'edit-checklist'}
         title="Редагувати чекліст"
       >
         {dialog?.type === 'edit-checklist' ? (
           <ChecklistForm
-            initialValues={{
-              name: checklist.name,
-            }}
-            onCancel={closeDialog}
+            initialValues={{ name: checklist.name }}
             onSubmit={submitChecklistEdit}
             submitLabel="Зберегти"
           />
         ) : null}
-      </Modal>
+      </Sheet>
 
-      <Modal
+      <Sheet
         description="Чекліст зникне з розділу «Сьогодні». Історія виконань збережеться, але відновити його в цьому інтерфейсі не можна."
         onClose={closeDialog}
         open={dialog?.type === 'delete-checklist'}
@@ -426,11 +307,12 @@ export function ChecklistDetailRoute() {
             {deleteError}
           </Alert>
         ) : null}
-        <div className="modal-action">
-          <Button onClick={closeDialog} variant="ghost">
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Button className="btn-block" onClick={closeDialog} variant="ghost">
             Скасувати
           </Button>
           <Button
+            className="btn-block"
             color="error"
             loading={deleting}
             onClick={() => void confirmDeleteChecklist()}
@@ -438,42 +320,70 @@ export function ChecklistDetailRoute() {
             Видалити
           </Button>
         </div>
-      </Modal>
+      </Sheet>
 
-      <Modal
+      <Sheet
         onClose={closeDialog}
         open={dialog?.type === 'create-task'}
         title="Нова задача"
       >
         {dialog?.type === 'create-task' ? (
           <TaskForm
-            onCancel={closeDialog}
+            checklistName={checklist.name}
             onSubmit={submitTaskCreate}
             submitLabel="Додати"
           />
         ) : null}
-      </Modal>
+      </Sheet>
 
-      <Modal
+      <Sheet
+        ariaLabel="Редагування задачі"
+        more={
+          dialog?.type === 'edit-task' ? (
+            <div className="dropdown dropdown-end">
+              <IconButton
+                icon="more-horizontal"
+                label="Ще"
+                role="button"
+                tabIndex={0}
+              />
+              <ul className="menu dropdown-content z-30 w-52 rounded-box bg-base-100 shadow-sm">
+                <li>
+                  <button
+                    className="text-error"
+                    onClick={() => {
+                      if (dialog?.type !== 'edit-task') return;
+                      const task = dialog.task;
+                      closeDialog();
+                      openDialog({ task, type: 'delete-task' });
+                    }}
+                    type="button"
+                  >
+                    Видалити задачу
+                  </button>
+                </li>
+              </ul>
+            </div>
+          ) : undefined
+        }
         onClose={closeDialog}
         open={dialog?.type === 'edit-task'}
-        title="Редагувати задачу"
       >
         {dialog?.type === 'edit-task' ? (
           <TaskForm
+            checklistName={checklist.name}
             initialValues={{
               cadence: dialog.task.cadence,
               title: dialog.task.title,
               weekdays: dialog.task.weekdays,
             }}
-            onCancel={closeDialog}
             onSubmit={submitTaskEdit}
             submitLabel="Зберегти"
           />
         ) : null}
-      </Modal>
+      </Sheet>
 
-      <Modal
+      <Sheet
         description="Задача зникне з розділу «Сьогодні». Історія виконань збережеться, але відновити її в цьому інтерфейсі не можна."
         onClose={closeDialog}
         open={dialog?.type === 'delete-task'}
@@ -484,11 +394,12 @@ export function ChecklistDetailRoute() {
             {deleteError}
           </Alert>
         ) : null}
-        <div className="modal-action">
-          <Button onClick={closeDialog} variant="ghost">
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <Button className="btn-block" onClick={closeDialog} variant="ghost">
             Скасувати
           </Button>
           <Button
+            className="btn-block"
             color="error"
             loading={deleting}
             onClick={() => void confirmDeleteTask()}
@@ -496,7 +407,7 @@ export function ChecklistDetailRoute() {
             Видалити
           </Button>
         </div>
-      </Modal>
-    </Screen>
+      </Sheet>
+    </Page>
   );
 }

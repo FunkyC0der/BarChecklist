@@ -64,8 +64,15 @@ describe('invite routes', () => {
 });
 
 describe('active tab persistence', () => {
-  it('restores a stored tab before the navigator default', () => {
-    expect(resolveActiveTeamTab('/team', '/today')).toBe('/team');
+  it('restores a stored tab when landing without an explicit tab', () => {
+    expect(resolveActiveTeamTab('/team', '/')).toBe('/team');
+    expect(resolveActiveTeamTab(null, '/')).toBe('/today');
+  });
+
+  it('honours an explicit tab root over a stored tab', () => {
+    expect(resolveActiveTeamTab('/today', '/checklists')).toBe('/checklists');
+    expect(resolveActiveTeamTab('/team', '/history')).toBe('/history');
+    expect(resolveActiveTeamTab('/team', '/today')).toBe('/today');
   });
 
   it('keeps a valid current tab when no preference exists', () => {

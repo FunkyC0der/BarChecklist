@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
-import { Alert, Button, Input } from '@/components/ui';
+import { Alert, Button } from '@/components/ui';
 import { getErrorMessage } from '@/lib/errors';
 
 import {
@@ -16,12 +16,10 @@ const defaultValues: ChecklistFormValues = {
 
 export function ChecklistForm({
   initialValues,
-  onCancel,
   onSubmit,
   submitLabel,
 }: {
   initialValues?: Partial<ChecklistFormValues>;
-  onCancel: () => void;
   onSubmit: (values: ChecklistFormValues) => Promise<void>;
   submitLabel: string;
 }) {
@@ -46,22 +44,27 @@ export function ChecklistForm({
 
   return (
     <form
-      className="flex flex-col gap-5"
+      className="flex flex-col gap-4"
       onSubmit={(event) => void submit(event)}
     >
       <Controller
         control={control}
         name="name"
         render={({ field, fieldState }) => (
-          <Input
-            autoFocus
-            error={fieldState.error?.message}
-            label="Назва"
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            placeholder="Наприклад, Відкриття зміни"
-            value={field.value}
-          />
+          <>
+            <input
+              aria-label="Назва чекліста"
+              autoFocus
+              className="input w-full input-ghost px-0 text-xl font-semibold input-lg"
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              placeholder="Назва чекліста"
+              value={field.value}
+            />
+            {fieldState.error?.message ? (
+              <p className="label text-error">{fieldState.error.message}</p>
+            ) : null}
+          </>
         )}
       />
       {submitError ? (
@@ -69,14 +72,15 @@ export function ChecklistForm({
           {submitError}
         </Alert>
       ) : null}
-      <div className="modal-action">
-        <Button onClick={onCancel} type="button" variant="ghost">
-          Скасувати
-        </Button>
-        <Button color="primary" loading={isSubmitting} type="submit">
-          {submitLabel}
-        </Button>
-      </div>
+      <Button
+        className="mt-2 btn-block"
+        color="primary"
+        loading={isSubmitting}
+        size="lg"
+        type="submit"
+      >
+        {submitLabel}
+      </Button>
     </form>
   );
 }
