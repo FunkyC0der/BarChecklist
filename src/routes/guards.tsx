@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, useSearchParams } from 'react-router';
 
-import { Loading, Screen } from '@/components/ui';
+import { Alert, Button, Loading, Screen } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import { safeJoinReturnPath } from '@/features/teams/team-routes';
 
@@ -35,12 +35,32 @@ export function RequireGuest() {
 }
 
 export function SessionGate({ children }: { children: ReactNode }) {
-  const { initialized } = useAuth();
+  const { initializationError, initialized, retrySessionInitialization } =
+    useAuth();
 
   if (!initialized) {
     return (
       <Screen scroll={false}>
         <Loading label="Відновлюємо сесію…" size="lg" />
+      </Screen>
+    );
+  }
+
+  if (initializationError) {
+    return (
+      <Screen scroll={false}>
+        <div className="flex w-full max-w-md flex-col gap-4">
+          <Alert color="warning">
+            Не вдалося відновити сесію. Перевірте з’єднання та повторіть.
+          </Alert>
+          <Button
+            className="btn-block"
+            color="primary"
+            onClick={() => void retrySessionInitialization()}
+          >
+            Спробувати ще раз
+          </Button>
+        </div>
       </Screen>
     );
   }

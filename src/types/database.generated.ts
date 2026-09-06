@@ -324,6 +324,19 @@ export type Database = {
           token: string
         }[]
       }
+      get_history: {
+        Args: {
+          p_before_date?: string
+          p_checklist_id?: string
+          p_from_date?: string
+          p_limit?: number
+          p_team_id: string
+          p_to_date?: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
+      get_history_filter_options: { Args: { p_team_id: string }; Returns: Json }
       get_today_snapshot: { Args: { p_team_id: string }; Returns: Json }
       inspect_team_invite: {
         Args: { p_token: string }

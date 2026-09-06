@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -20,7 +21,9 @@ type SignUpValues = {
 
 type AuthContextValue = {
   configIssue: string | null;
+  initializationError: string | null;
   initialized: boolean;
+  retrySessionInitialization: () => Promise<void>;
   session: Session | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -35,7 +38,37 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const configIssue = getPublicEnvIssue();
   const [initialized, setInitialized] = useState(false);
+  const [initializationError, setInitializationError] = useState<string | null>(
+    null,
+  );
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRequestGeneration = useRef(0);
+
+  const initializeSession = useCallback(async () => {
+    if (configIssue) return;
+
+    const generation = ++sessionRequestGeneration.current;
+    setInitialized(false);
+    setInitializationError(null);
+    try {
+      const { data, error } = await getSupabase().auth.getSession();
+      if (error) throw error;
+      if (generation !== sessionRequestGeneration.current) return;
+      setSession(data.session);
+    } catch (error) {
+      if (generation !== sessionRequestGeneration.current) return;
+      setSession(null);
+      setInitializationError(
+        error instanceof Error
+          ? error.message
+          : 'Не вдалося відновити сесію. Перевірте з’єднання й повторіть.',
+      );
+    } finally {
+      if (generation === sessionRequestGeneration.current) {
+        setInitialized(true);
+      }
+    }
+  }, [configIssue]);
 
   useEffect(() => {
     if (configIssue) {
@@ -44,24 +77,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const supabase = getSupabase();
     let active = true;
-
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) {
-        setSession(data.session);
-        setInitialized(true);
-      }
-    });
+    const timer = window.setTimeout(() => {
+      void initializeSession();
+    }, 0);
 
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (!active) return;
+      sessionRequestGeneration.current += 1;
       setSession(nextSession);
+      setInitializationError(null);
       setInitialized(true);
     });
 
     return () => {
       active = false;
+      sessionRequestGeneration.current += 1;
+      window.clearTimeout(timer);
       data.subscription.unsubscribe();
     };
-  }, [configIssue]);
+  }, [configIssue, initializeSession]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await getSupabase().auth.signInWithPassword({
@@ -98,13 +132,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       configIssue,
+      initializationError,
       initialized: initialized || Boolean(configIssue),
+      retrySessionInitialization: initializeSession,
       session,
       signIn,
       signOut,
       signUp,
     }),
-    [configIssue, initialized, session, signIn, signOut, signUp],
+    [
+      configIssue,
+      initializationError,
+      initialized,
+      initializeSession,
+      session,
+      signIn,
+      signOut,
+      signUp,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { InputHTMLAttributes } from 'react';
 
 import { cn } from '@/lib/cn';
@@ -18,13 +19,19 @@ export function Input({
   onChangeText,
   ...props
 }: InputProps) {
-  const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-');
+  const generatedId = useId();
+  const inputId = id ?? `input-${generatedId.replaceAll(':', '')}`;
+  const messageId = `${inputId}-message`;
   const message = error ?? helperText;
 
   return (
     <fieldset className="fieldset p-0">
-      <legend className="fieldset-legend">{label}</legend>
+      <label className="fieldset-legend" htmlFor={inputId}>
+        {label}
+      </label>
       <input
+        aria-describedby={message ? messageId : undefined}
+        aria-invalid={error ? true : undefined}
         className={cn('input w-full', error && 'input-error', className)}
         id={inputId}
         onChange={
@@ -33,7 +40,9 @@ export function Input({
         {...props}
       />
       {message ? (
-        <p className={cn('label', error && 'text-error')}>{message}</p>
+        <p className={cn('label', error && 'text-error')} id={messageId}>
+          {message}
+        </p>
       ) : null}
     </fieldset>
   );

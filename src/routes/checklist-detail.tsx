@@ -7,6 +7,7 @@ import {
   Button,
   EmptyState,
   Fab,
+  Icon,
   IconButton,
   Page,
   Sheet,
@@ -194,6 +195,21 @@ export function ChecklistDetailRoute() {
     );
   }
 
+  if (error) {
+    return (
+      <Page back="/checklists" title="Чекліст">
+        <Alert color="error">
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <Button color="primary" size="sm" onClick={() => void loadDetail()}>
+              Повторити
+            </Button>
+          </div>
+        </Alert>
+      </Page>
+    );
+  }
+
   if (notFound || !checklist) {
     return (
       <Page back="/checklists" title="Чекліст не знайдено">
@@ -216,25 +232,30 @@ export function ChecklistDetailRoute() {
               label="Редагувати назву"
               onClick={() => openDialog({ type: 'edit-checklist' })}
             />
-            <div className="dropdown dropdown-end">
-              <IconButton
-                icon="more-horizontal"
-                label="Ще"
-                role="button"
-                tabIndex={0}
-              />
+            <details className="dropdown dropdown-end">
+              <summary
+                aria-label="Ще"
+                className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
+              >
+                <Icon name="more-horizontal" />
+              </summary>
               <ul className="menu dropdown-content z-30 w-52 rounded-box bg-base-100 shadow-sm">
                 <li>
                   <button
                     className="text-error"
-                    onClick={() => openDialog({ type: 'delete-checklist' })}
+                    onClick={(event) => {
+                      event.currentTarget
+                        .closest('details')
+                        ?.removeAttribute('open');
+                      openDialog({ type: 'delete-checklist' });
+                    }}
                     type="button"
                   >
                     Видалити чекліст
                   </button>
                 </li>
               </ul>
-            </div>
+            </details>
           </>
         ) : undefined
       }
@@ -340,13 +361,13 @@ export function ChecklistDetailRoute() {
         ariaLabel="Редагування задачі"
         more={
           dialog?.type === 'edit-task' ? (
-            <div className="dropdown dropdown-end">
-              <IconButton
-                icon="more-horizontal"
-                label="Ще"
-                role="button"
-                tabIndex={0}
-              />
+            <details className="dropdown dropdown-end">
+              <summary
+                aria-label="Ще"
+                className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
+              >
+                <Icon name="more-horizontal" />
+              </summary>
               <ul className="menu dropdown-content z-30 w-52 rounded-box bg-base-100 shadow-sm">
                 <li>
                   <button
@@ -354,6 +375,9 @@ export function ChecklistDetailRoute() {
                     onClick={() => {
                       if (dialog?.type !== 'edit-task') return;
                       const task = dialog.task;
+                      document.activeElement
+                        ?.closest('details')
+                        ?.removeAttribute('open');
                       closeDialog();
                       openDialog({ task, type: 'delete-task' });
                     }}
@@ -363,7 +387,7 @@ export function ChecklistDetailRoute() {
                   </button>
                 </li>
               </ul>
-            </div>
+            </details>
           ) : undefined
         }
         onClose={closeDialog}

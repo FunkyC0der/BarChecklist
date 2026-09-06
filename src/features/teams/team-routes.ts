@@ -8,9 +8,32 @@ export function safeJoinReturnPath(
   value: string | string[] | null | undefined,
 ) {
   if (typeof value !== 'string') return null;
+  if (!value.startsWith('/')) return null;
 
-  const match = /^\/join\/([a-f0-9]{64})$/.exec(value);
-  return match && inviteTokenPattern.test(match[1] ?? '') ? value : null;
+  try {
+    const url = new URL(value, 'https://bar-checklist.invalid');
+    if (url.origin !== 'https://bar-checklist.invalid') return null;
+
+    const inviteMatch = /^\/join\/([a-f0-9]{64})$/.exec(url.pathname);
+    const isKnownProductPath =
+      url.pathname === '/onboarding' ||
+      url.pathname === '/today' ||
+      url.pathname === '/checklists' ||
+      /^\/checklists\/[^/]+$/.test(url.pathname) ||
+      url.pathname === '/history' ||
+      url.pathname === '/team';
+
+    if (
+      !(inviteMatch && inviteTokenPattern.test(inviteMatch[1] ?? '')) &&
+      !isKnownProductPath
+    ) {
+      return null;
+    }
+
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return null;
+  }
 }
 
 export function isInviteToken(

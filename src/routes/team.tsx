@@ -150,7 +150,7 @@ export function TeamRoute() {
     void refreshTeams();
   }, [refreshTeams]);
 
-  useTeamRealtime({
+  const { retry: retryRealtime, status: realtimeStatus } = useTeamRealtime({
     isOwner,
     onInviteChange: loadInviteStatus,
     onMembersChange: loadMembers,
@@ -319,21 +319,24 @@ export function TeamRoute() {
   const toolbarActions = (
     <>
       {teams.length > 1 ? (
-        <div className="dropdown dropdown-end dropdown-bottom">
-          <IconButton
-            icon="arrow-left-right"
-            label="Змінити команду"
-            tabIndex={0}
-          />
-          <ul
-            className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm"
-            tabIndex={0}
+        <details className="dropdown dropdown-end dropdown-bottom">
+          <summary
+            aria-label="Змінити команду"
+            className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
           >
+            <Icon name="arrow-left-right" />
+          </summary>
+          <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
             {teams.map((team) => (
               <li key={team.id}>
                 <button
                   className={team.id === activeTeam?.id ? 'menu-active' : ''}
-                  onClick={() => selectTeam(team.id)}
+                  onClick={(event) => {
+                    event.currentTarget
+                      .closest('details')
+                      ?.removeAttribute('open');
+                    selectTeam(team.id);
+                  }}
                   type="button"
                 >
                   {team.name}
@@ -344,24 +347,31 @@ export function TeamRoute() {
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       ) : null}
       <IconButton
         icon="log-out"
         label="Вийти з акаунта"
         onClick={() => void signOut()}
       />
-      <div className="dropdown dropdown-end dropdown-bottom">
-        <IconButton icon="more-horizontal" label="Ще" tabIndex={0} />
-        <ul
-          className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm"
-          tabIndex={0}
+      <details className="dropdown dropdown-end dropdown-bottom">
+        <summary
+          aria-label="Ще"
+          className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
         >
+          <Icon name="more-horizontal" />
+        </summary>
+        <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
           {isOwner ? (
             <li>
               <button
                 className="text-error"
-                onClick={() => setDeleteSheetOpen(true)}
+                onClick={(event) => {
+                  event.currentTarget
+                    .closest('details')
+                    ?.removeAttribute('open');
+                  setDeleteSheetOpen(true);
+                }}
                 type="button"
               >
                 Видалити команду
@@ -372,7 +382,12 @@ export function TeamRoute() {
               <button
                 className="text-error"
                 disabled={leaveLoading}
-                onClick={() => void leave()}
+                onClick={(event) => {
+                  event.currentTarget
+                    .closest('details')
+                    ?.removeAttribute('open');
+                  void leave();
+                }}
                 type="button"
               >
                 Вийти з команди
@@ -380,7 +395,7 @@ export function TeamRoute() {
             </li>
           )}
         </ul>
-      </div>
+      </details>
     </>
   );
 
@@ -398,7 +413,36 @@ export function TeamRoute() {
         {session?.user.email}
       </AppText>
 
-      {teamsError ? <Alert color="error">{teamsError}</Alert> : null}
+      {teamsError ? (
+        <Alert color="error">
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+            <span>{teamsError}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void refreshTeams()}
+            >
+              Повторити
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
+      {realtimeStatus !== 'connected' ? (
+        <Alert color="warning">
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+            <span>
+              {realtimeStatus === 'connecting'
+                ? 'Підключаємо оновлення команди…'
+                : 'Оновлення команди тимчасово недоступні.'}
+            </span>
+            {realtimeStatus === 'degraded' ? (
+              <Button size="sm" variant="ghost" onClick={retryRealtime}>
+                Повторити
+              </Button>
+            ) : null}
+          </div>
+        </Alert>
+      ) : null}
       {!isOwner && teamMessage ? (
         <Alert color="error">{teamMessage}</Alert>
       ) : null}
@@ -439,7 +483,20 @@ export function TeamRoute() {
           Учасники
         </AppText>
         {membersLoading ? <Skeleton rows={2} /> : null}
-        {membersError ? <Alert color="error">{membersError}</Alert> : null}
+        {membersError ? (
+          <Alert color="error">
+            <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+              <span>{membersError}</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => void loadMembers()}
+              >
+                Повторити
+              </Button>
+            </div>
+          </Alert>
+        ) : null}
         {!membersLoading ? (
           <>
             <ul className="list">

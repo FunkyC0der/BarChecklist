@@ -18,7 +18,7 @@ export function AuthShell({
   title,
 }: AuthShellProps) {
   return (
-    <div className="flex min-h-dvh flex-col overflow-x-hidden bg-base-100 px-4 pt-[max(3rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:items-center sm:justify-center sm:bg-base-200">
+    <main className="flex min-h-dvh flex-col overflow-x-hidden bg-base-100 px-4 pt-[max(3rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:items-center sm:justify-center sm:bg-base-200">
       <div className="flex w-full max-w-full flex-1 flex-col sm:card sm:max-w-sm sm:flex-none sm:overflow-hidden sm:bg-base-100 sm:card-border">
         <div className="flex flex-1 flex-col sm:card-body">
           {brand ? (
@@ -26,23 +26,21 @@ export function AuthShell({
               <AppText as="h1" variant="display">
                 Bar Checklist
               </AppText>
-              <AppText variant="caption">
+              <AppText className="text-sm" variant="body">
                 Щоденні чеклісти команди без зайвого шуму.
               </AppText>
             </div>
           ) : null}
-          <main>
-            <AppText as="h2" variant="heading">
-              {title}
-            </AppText>
-            <AppText className="mt-1" variant="caption">
-              {description}
-            </AppText>
-            <div className="mt-6 flex flex-col gap-4">{children ?? null}</div>
-          </main>
+          <AppText as="h2" variant="heading">
+            {title}
+          </AppText>
+          <AppText className="mt-1 text-sm" variant="body">
+            {description}
+          </AppText>
+          <div className="mt-6 flex flex-col gap-4">{children ?? null}</div>
           <div className="mt-auto pt-8 text-center text-sm">{footer}</div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

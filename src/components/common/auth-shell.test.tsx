@@ -24,6 +24,10 @@ describe('AuthShell', () => {
     expect(screen.getByText('Test description')).toBeInTheDocument();
     expect(screen.getByText('Footer link')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+    expect(screen.getByRole('main')).toContainElement(
+      screen.getByRole('heading', { level: 2, name: 'Test title' }),
+    );
+    expect(screen.getAllByRole('main')).toHaveLength(1);
   });
 
   it('hides brand when brand={false}', () => {

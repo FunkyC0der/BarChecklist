@@ -57,9 +57,26 @@ describe('invite routes', () => {
 
   it('rejects malformed and external return paths', () => {
     expect(safeJoinReturnPath('https://example.com')).toBeNull();
+    expect(safeJoinReturnPath('//example.com/today')).toBeNull();
+    expect(safeJoinReturnPath('javascript:alert(1)')).toBeNull();
+    expect(safeJoinReturnPath('today')).toBeNull();
     expect(safeJoinReturnPath('/join/not-a-token')).toBeNull();
+    expect(safeJoinReturnPath('/checklists/a/b')).toBeNull();
+    expect(safeJoinReturnPath('/unknown')).toBeNull();
     expect(safeJoinReturnPath(['/join/' + 'a'.repeat(64)])).toBeNull();
     expect(isInviteToken('A'.repeat(64))).toBe(false);
+  });
+
+  it('allows known product paths and retains their search query', () => {
+    expect(safeJoinReturnPath('/today?date=2026-09-06')).toBe(
+      '/today?date=2026-09-06',
+    );
+    expect(safeJoinReturnPath('/history?from=2026-09-01')).toBe(
+      '/history?from=2026-09-01',
+    );
+    expect(safeJoinReturnPath('/checklists/checklist-1?tab=tasks')).toBe(
+      '/checklists/checklist-1?tab=tasks',
+    );
   });
 });
 

@@ -105,7 +105,20 @@ export function ChecklistsRoute() {
         ) : undefined
       }
     >
-      {error ? <Alert color="error">{error}</Alert> : null}
+      {error ? (
+        <Alert color="error">
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void loadChecklists()}
+            >
+              Повторити
+            </Button>
+          </div>
+        </Alert>
+      ) : null}
 
       {loading ? <Skeleton /> : null}
 
