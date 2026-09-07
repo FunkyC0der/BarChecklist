@@ -19,7 +19,7 @@ export function IconButton({
     <button
       aria-label={label}
       className={cn(
-        'btn btn-circle btn-ghost transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
+        'btn btn-circle btn-ghost transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100',
         size === 'sm' && 'btn-sm',
         className,
       )}
