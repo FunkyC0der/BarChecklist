@@ -108,6 +108,18 @@ export function ChecklistDetailRoute() {
     setDialog(nextDialog);
   };
 
+  useEffect(() => {
+    const onDeleteRequest = () => {
+      if (isOwner) openDialog({ type: 'delete-checklist' });
+    };
+    window.addEventListener('checklister:delete-checklist', onDeleteRequest);
+    return () =>
+      window.removeEventListener(
+        'checklister:delete-checklist',
+        onDeleteRequest,
+      );
+  }, [isOwner]);
+
   const submitChecklistEdit = async (values: ChecklistFormValues) => {
     if (!checklist) return;
     await updateChecklist(checklist.id, values);
@@ -234,30 +246,6 @@ export function ChecklistDetailRoute() {
               label="Редагувати назву"
               onClick={() => openDialog({ type: 'edit-checklist' })}
             />
-            <details className="dropdown dropdown-end">
-              <summary
-                aria-label="Ще"
-                className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
-              >
-                <Icon name="more-horizontal" />
-              </summary>
-              <ul className="menu dropdown-content z-30 w-52 rounded-box bg-base-100 shadow-sm">
-                <li>
-                  <button
-                    className="text-error"
-                    onClick={(event) => {
-                      event.currentTarget
-                        .closest('details')
-                        ?.removeAttribute('open');
-                      openDialog({ type: 'delete-checklist' });
-                    }}
-                    type="button"
-                  >
-                    Видалити чекліст
-                  </button>
-                </li>
-              </ul>
-            </details>
           </>
         ) : undefined
       }

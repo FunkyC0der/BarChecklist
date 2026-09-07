@@ -12,7 +12,6 @@ import {
   ListRow,
   Modal,
   Page,
-  Sheet,
   Skeleton,
   useToast,
 } from '@/components/ui';
@@ -44,15 +43,8 @@ function formatExpiry(value: string) {
 
 export function TeamRoute() {
   const toast = useToast();
-  const { session, signOut } = useAuth();
-  const {
-    activeTeam,
-    error: teamsError,
-    refreshTeams,
-    selectTeam,
-    status,
-    teams,
-  } = useTeams();
+  const { session } = useAuth();
+  const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const navigate = useNavigate();
   const location = useLocation();
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -80,7 +72,6 @@ export function TeamRoute() {
   const [deleteName, setDeleteName] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
-  const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const activeTeamIdRef = useRef(activeTeam?.id ?? null);
   const inviteStatusRequestId = useRef(0);
   const inviteCreateRequestId = useRef(0);
@@ -342,35 +333,6 @@ export function TeamRoute() {
     setInviteLink(null);
   };
 
-  const switchTeam = (teamId: string) => {
-    if (teamId === activeTeam?.id) return;
-    const nextTeam = teams.find((team) => team.id === teamId);
-    if (!nextTeam) return;
-
-    activeTeamIdRef.current = teamId;
-    membersRequestId.current += 1;
-    inviteStatusRequestId.current += 1;
-    inviteCreateRequestId.current += 1;
-    setMembers([]);
-    setMembersError(null);
-    setMembersLoading(true);
-    setName(nextTeam.name);
-    setTimezone(nextTeam.timezone);
-    setEditingField(null);
-    setEditingValue('');
-    setTeamMessage(null);
-    setInviteLink(null);
-    setInviteExpiry(null);
-    setInviteDialogOpen(false);
-    setInviteFeedback(null);
-    setInviteMessage(null);
-    setInviteLoading(false);
-    setMemberActionId(null);
-    setDeleteName('');
-    setDeleteSheetOpen(false);
-    selectTeam(teamId);
-  };
-
   const removeMember = async (userId: string) => {
     if (!activeTeam) return;
 
@@ -435,45 +397,6 @@ export function TeamRoute() {
     setDeleteName('');
   };
 
-  const toolbarActions = (
-    <>
-      <div className="tooltip tooltip-bottom" data-tip="Вийти з акаунта">
-        <IconButton
-          icon="log-out"
-          label="Вийти з акаунта"
-          onClick={() => void signOut()}
-        />
-      </div>
-      {!isOwner ? (
-        <details className="dropdown dropdown-end dropdown-bottom">
-          <summary
-            aria-label="Ще"
-            className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
-          >
-            <Icon name="more-horizontal" />
-          </summary>
-          <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
-            <li>
-              <button
-                className="text-error"
-                disabled={leaveLoading}
-                onClick={(event) => {
-                  event.currentTarget
-                    .closest('details')
-                    ?.removeAttribute('open');
-                  void leave();
-                }}
-                type="button"
-              >
-                Вийти з команди
-              </button>
-            </li>
-          </ul>
-        </details>
-      ) : null}
-    </>
-  );
-
   if (status === 'idle' || status === 'loading') {
     return (
       <Page title="Команда">
@@ -484,21 +407,7 @@ export function TeamRoute() {
 
   if (!activeTeam) {
     return (
-      <Page
-        actions={
-          <div className="tooltip tooltip-bottom" data-tip="Вийти з акаунта">
-            <IconButton
-              icon="log-out"
-              label="Вийти з акаунта"
-              onClick={() => void signOut()}
-            />
-          </div>
-        }
-        title="Команда"
-      >
-        <AppText className="block max-w-full truncate" variant="caption">
-          {session?.user.email}
-        </AppText>
+      <Page title="Команда">
         {teamsError ? (
           <Alert color="error">
             <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
@@ -533,11 +442,7 @@ export function TeamRoute() {
   }
 
   return (
-    <Page actions={toolbarActions} title={activeTeam.name}>
-      <AppText className="block max-w-full truncate" variant="caption">
-        {session?.user.email}
-      </AppText>
-
+    <Page title="Команда">
       {teamsError ? (
         <Alert color="error">
           <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
@@ -572,77 +477,35 @@ export function TeamRoute() {
         <Alert color="error">{teamMessage}</Alert>
       ) : null}
 
-      <section
-        className="flex flex-col gap-2"
-        aria-labelledby="team-switcher-title"
-      >
-        <label className="fieldset p-0">
-          <span className="fieldset-legend" id="team-switcher-title">
-            Поточна команда
-          </span>
-          <select
-            aria-label="Поточна команда"
-            className="select w-full"
-            disabled={
-              savingTeam ||
-              leaveLoading ||
-              deleteLoading ||
-              memberActionId !== null ||
-              inviteLoading
-            }
-            onChange={(event) => switchTeam(event.currentTarget.value)}
-            value={activeTeam.id}
-          >
-            {teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button
-          className="btn-block"
-          onClick={() => setCreateTeamOpen(true)}
-          variant="outline"
-        >
-          <Icon name="plus" />
-          Створити іншу команду
-        </Button>
-      </section>
-
       <section className="flex flex-col gap-1 border-t border-base-300 pt-5">
         <AppText as="h2" variant="overline">
           Команда
         </AppText>
         <ul className="list">
-          <ListRow
-            meta={name}
-            title="Назва"
-            trailing={
-              isOwner ? (
+          {(
+            [
+              ['name', 'Назва', name, 'Редагувати назву команди'],
+              ['timezone', 'Timezone', timezone, 'Редагувати часовий пояс'],
+            ] as const
+          ).map(([field, label, value, editLabel]) => (
+            <li
+              className="flex min-h-14 items-center justify-between gap-3 border-b border-base-300/60 px-0"
+              key={field}
+            >
+              <div className="min-w-0">
+                <div className="text-sm text-base-content/60">{label}</div>
+                <div className="truncate text-base">{value}</div>
+              </div>
+              {isOwner ? (
                 <IconButton
                   icon="pencil"
-                  label="Редагувати назву команди"
-                  onClick={() => openTeamEditor('name')}
+                  label={editLabel}
+                  onClick={() => openTeamEditor(field)}
                   size="sm"
                 />
-              ) : undefined
-            }
-          />
-          <ListRow
-            meta={timezone}
-            title="Timezone"
-            trailing={
-              isOwner ? (
-                <IconButton
-                  icon="pencil"
-                  label="Редагувати часовий пояс"
-                  onClick={() => openTeamEditor('timezone')}
-                  size="sm"
-                />
-              ) : undefined
-            }
-          />
+              ) : null}
+            </li>
+          ))}
         </ul>
         {teamMessage && !editingField ? (
           <Alert color="error">{teamMessage}</Alert>
@@ -733,6 +596,7 @@ export function TeamRoute() {
                 У команді поки немає учасників.
               </AppText>
             ) : null}
+            <div className="divider my-2" />
             {isOwner ? (
               <Button
                 className="btn-block"
@@ -742,7 +606,18 @@ export function TeamRoute() {
               >
                 Видалити команду
               </Button>
-            ) : null}
+            ) : (
+              <Button
+                className="btn-block"
+                color="error"
+                disabled={leaveLoading}
+                loading={leaveLoading}
+                onClick={() => void leave()}
+                variant="outline"
+              >
+                Вийти з команди
+              </Button>
+            )}
           </>
         ) : null}
       </section>
@@ -756,16 +631,6 @@ export function TeamRoute() {
         onShareInvite={() => void shareInvite()}
         open={inviteDialogOpen}
       />
-
-      <Sheet
-        onClose={() => setCreateTeamOpen(false)}
-        open={createTeamOpen}
-        title="Нова команда"
-      >
-        {createTeamOpen ? (
-          <OnboardingForm compact onCreated={() => setCreateTeamOpen(false)} />
-        ) : null}
-      </Sheet>
 
       {isOwner ? (
         <DeleteTeamSheet

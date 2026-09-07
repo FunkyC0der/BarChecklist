@@ -27,13 +27,6 @@ const teamTwo = {
   timezone: 'UTC',
   updated_at: '2026-09-02T00:00:00Z',
 };
-const member = (teamId: string, userId: string, displayName: string) => ({
-  displayName,
-  joined_at: '2026-09-01T00:00:00Z',
-  team_id: teamId,
-  user_id: userId,
-});
-
 const api = vi.hoisted(() => ({
   createTeam: vi.fn(),
   createTeamInvite: vi.fn(),
@@ -51,6 +44,13 @@ const teamState = vi.hoisted(() => ({
   status: 'ready' as 'error' | 'idle' | 'loading' | 'ready',
   teams: [] as (typeof teamOne)[],
 }));
+
+const member = (teamId: string, userId: string, displayName: string) => ({
+  displayName,
+  joined_at: '2026-09-01T00:00:00Z',
+  team_id: teamId,
+  user_id: userId,
+});
 
 vi.mock('@/features/auth/auth-context', () => ({
   useAuth: () => ({
@@ -155,7 +155,7 @@ describe('TeamRoute', () => {
     });
   });
 
-  it('always shows team selection and a working create-another action', async () => {
+  it('shows the active team settings without an inline team selector', async () => {
     teamState.activeTeam = teamOne;
     teamState.teams = [teamOne, teamTwo];
     renderTeam();
@@ -164,41 +164,17 @@ describe('TeamRoute', () => {
       expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
     );
 
-    const select = screen.getByRole('combobox', { name: 'Поточна команда' });
-    expect(select).toHaveValue('team-1');
     expect(
-      screen.getAllByRole('option').map((option) => option.textContent),
-    ).toEqual(['Бар Один', 'Бар Два']);
-
-    fireEvent.click(
-      screen.getByRole('button', { name: 'Створити іншу команду' }),
-    );
-    const createTeamDialog = await screen.findByRole('dialog', {
-      name: 'Нова команда',
-    });
+      screen.queryByRole('combobox', { name: 'Поточна команда' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('Бар Один')).toBeInTheDocument();
+    expect(screen.getByText('Europe/Kyiv')).toBeInTheDocument();
     expect(
-      within(createTeamDialog).getByLabelText('Назва команди'),
-    ).toHaveClass('input-sm');
-    fireEvent.change(screen.getByLabelText('Назва команди'), {
-      target: { value: 'Третя команда' },
-    });
-    const teamThree = {
-      ...teamTwo,
-      id: 'team-3',
-      name: 'Третя команда',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    };
-    teamState.teams = [teamOne, teamTwo, teamThree];
-    fireEvent.click(screen.getByRole('button', { name: 'Створити команду' }));
-
-    await waitFor(() => {
-      expect(refreshTeams).toHaveBeenNthCalledWith(1);
-      expect(refreshTeams).toHaveBeenNthCalledWith(2, 'team-3');
-    });
-    await waitFor(() => expect(createTeamDialog).not.toHaveAttribute('open'));
+      screen.getByRole('button', { name: 'Видалити команду' }),
+    ).toBeInTheDocument();
   });
 
-  it('invalidates an old member request while switching teams', async () => {
+  it('does not let a stale member request overwrite the selected team', async () => {
     let resolveOldMembers:
       ((members: ReturnType<typeof member>[]) => void) | undefined;
     api.fetchTeamMembers.mockImplementation((teamId: string) => {
@@ -211,21 +187,14 @@ describe('TeamRoute', () => {
     });
     teamState.activeTeam = teamOne;
     teamState.teams = [teamOne, teamTwo];
-    teamState.selectTeam.mockImplementation((teamId: string) => {
-      teamState.activeTeam = teamId === 'team-2' ? teamTwo : teamOne;
-    });
     const view = renderTeam();
     await waitFor(() =>
       expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
     );
 
-    fireEvent.change(
-      screen.getByRole('combobox', { name: 'Поточна команда' }),
-      {
-        target: { value: 'team-2' },
-      },
-    );
-    expect(teamState.selectTeam).toHaveBeenCalledWith('team-2');
+    // The popup calls selectTeam; update the mocked context as that callback
+    // would, then rerender the route with the newly selected team.
+    teamState.activeTeam = teamTwo;
     view.rerender(
       <ToastProvider>
         <MemoryRouter>

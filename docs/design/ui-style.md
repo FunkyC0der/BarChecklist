@@ -9,7 +9,7 @@
 ### Принципи (з рефу Todoist)
 
 - Один екран = один із трьох шаблонів (Auth / Tab-root / Detail).
-- Full-bleed `bg-base-100`; ніяких карток усередині AppLayout. Ієрархія — типографікою і тонкими розділювачами (`border-base-300/60`). `base-200` — лише для toolbar-пілюлі, dock-пілюлі, chips, плиток іконок і sheet-backdrop-контрасту.
+- Full-bleed `bg-base-100`; ніяких карток усередині AppLayout. Ієрархія — типографікою і тонкими розділювачами (`border-base-300/60`). `base-200` — лише для toolbar-пілюлі, dock-пілюлі, chips, плиток іконок і sheet-backdrop-контрасту. Authenticated shell має один непрозорий header: поточна команда (або `Checklister` без команди) і глобальне меню `⋯`.
 - Заголовок екрана — великий (`text-3xl font-bold`) і живе у скрол-контенті; над ним плаваючий sticky toolbar: кругла back-кнопка ліворуч, пілюля з 1–3 icon-кнопками праворуч.
 - Головна дія екрана — FAB `+` (primary-коло над dock). Другорядні дії об'єкта — у `⋯`. Деструктивні — лише в `⋯` та в confirm-sheet.
 - Редагування будь-якого об'єкта — bottom sheet (без декоративного handle і без явної `X`; закриття через backdrop або Escape, `⋯` праворуч, компактний title-input, параметри — chips).
@@ -34,14 +34,14 @@
 
 - Контент: `px-4`; title `pt-2 pb-3`; між секціями `gap-6`, overline → рядки `gap-1`.
 - Рядок: `min-h-14 py-3 gap-3 items-start`, розділювач знизу `border-b border-base-300/60` крім останнього.
-- Toolbar: `h-14 px-4`, sticky, `bg-base-100/90 backdrop-blur`.
+- Toolbar: `h-14 px-4`, sticky, непрозорий `bg-base-100`.
 - Sheet: `px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))]`; без grab-handle і явної close-кнопки, між heading/description та контентом `mt-4`.
 - Нижній відступ контенту `pb-32` (dock + FAB).
 
 ## 3. Мапа «елемент → daisyUI компонент»
 
-- Dock → `dock dock-sm` + override `inset-x-3 w-auto bottom-[max(0.75rem,env(safe-area-inset-bottom))] rounded-full bg-base-200 shadow-sm pb-0`; кожен пункт `NavLink` = `Icon` + `span.dock-label`; активний `dock-active` + `rounded-full bg-primary text-primary-content` (pill як у Todoist, без underline: `[&>*:after]:hidden`). Ніде більше `tabs` для навігації.
-- Toolbar → `div.sticky.top-0.z-20.flex.h-14.items-center.justify-between.px-4` з `bg-base-100/90 backdrop-blur`; back — `IconButton` у `btn btn-circle bg-base-200 border-0` (`chevron-left`); права група — `div.join.rounded-full.bg-base-200 > IconButton.join-item` (1–3 шт.).
+- Dock → `dock dock-sm` + override `inset-x-3 w-auto bottom-[max(0.75rem,env(safe-area-inset-bottom))] rounded-full bg-base-200 shadow-sm pb-0`; кожен пункт `NavLink` = `Icon` + `span.dock-label`; активний `dock-active` + `rounded-full bg-primary text-primary-content` (pill як у Todoist, без underline: `[&>*:after]:hidden`). Dock непрозорий, без `backdrop-blur`. Ніде більше `tabs` для навігації.
+- Toolbar → `div.sticky.top-0.z-20.flex.h-14.items-center.justify-between.px-4` з непрозорим `bg-base-100`; back — `IconButton` у `btn btn-circle bg-base-200 border-0` (`chevron-left`); права група — `div.join.rounded-full.bg-base-200 > IconButton.join-item` (1–3 шт.).
 - Overflow-меню → `dropdown dropdown-end` + `ul.menu bg-base-100 rounded-box shadow-sm w-52` (деструктивний пункт `text-error`).
 - Заголовок екрана → `h1.display` у контенті (`truncate` не потрібен, може переноситись на 2 рядки).
 - Секція → `section` з `p.overline` + `ul.list` (без картки).
