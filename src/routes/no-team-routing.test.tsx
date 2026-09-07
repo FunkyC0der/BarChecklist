@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -56,5 +56,42 @@ describe('no-team routing', () => {
     expect(
       screen.getByRole('navigation', { name: 'Розділи' }),
     ).toBeInTheDocument();
+  });
+
+  it('dismisses the account menu when pressing outside it', () => {
+    render(
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/today']}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route element={<div>Today content</div>} path="/today" />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+
+    const summary = screen.getByLabelText('Меню акаунта');
+    const menu = summary.closest('details');
+    expect(menu).not.toBeNull();
+
+    fireEvent.pointerDown(summary);
+    fireEvent.pointerUp(summary);
+    fireEvent.click(summary);
+    expect(menu).toHaveAttribute('open');
+
+    const menuContent = menu?.querySelector('ul');
+    expect(menuContent).toBeInstanceOf(HTMLUListElement);
+    if (!menuContent) throw new Error('Account menu content was not rendered');
+    fireEvent.pointerDown(menuContent);
+    fireEvent.pointerUp(menuContent);
+    fireEvent.click(menuContent);
+    expect(menu).toHaveAttribute('open');
+
+    const outside = screen.getByText('Today content');
+    fireEvent.pointerDown(outside);
+    fireEvent.pointerUp(outside);
+    fireEvent.click(outside);
+    expect(menu).not.toHaveAttribute('open');
   });
 });

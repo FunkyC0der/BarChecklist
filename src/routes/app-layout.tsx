@@ -35,6 +35,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const restoredTab = useRef(false);
   const restoreTarget = useRef<string | null>(null);
+  const accountMenuRef = useRef<HTMLDetailsElement>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const isChecklistDetail = /^\/checklists\/[^/]+$/.test(location.pathname);
@@ -76,6 +77,23 @@ export function AppLayout() {
     }
   }, [activeTeam, location.pathname, session]);
 
+  useEffect(() => {
+    const dismissAccountMenu = (event: PointerEvent) => {
+      const menu = accountMenuRef.current;
+      if (
+        menu?.open &&
+        event.target instanceof Node &&
+        !menu.contains(event.target)
+      ) {
+        menu.removeAttribute('open');
+      }
+    };
+
+    document.addEventListener('pointerdown', dismissAccountMenu);
+    return () =>
+      document.removeEventListener('pointerdown', dismissAccountMenu);
+  }, []);
+
   return (
     <div className="flex h-dvh flex-col overflow-x-clip bg-base-100 pt-[env(safe-area-inset-top)]">
       <div className="relative mx-auto flex min-h-0 w-full flex-1 flex-col sm:max-w-md">
@@ -87,7 +105,10 @@ export function AppLayout() {
           >
             {activeTeam?.name ?? 'Checklister'}
           </button>
-          <details className="dropdown dropdown-end dropdown-bottom">
+          <details
+            className="dropdown dropdown-end dropdown-bottom"
+            ref={accountMenuRef}
+          >
             <summary
               aria-label="Меню акаунта"
               className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
