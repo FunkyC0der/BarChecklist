@@ -52,12 +52,17 @@ export async function createChecklist(values: {
   name: string;
   teamId: string;
 }) {
-  const { error } = await getSupabase().from('checklists').insert({
-    created_by: values.createdBy,
-    name: values.name.trim(),
-    team_id: values.teamId,
-  });
+  const { data, error } = await getSupabase()
+    .from('checklists')
+    .insert({
+      created_by: values.createdBy,
+      name: values.name.trim(),
+      team_id: values.teamId,
+    })
+    .select('*')
+    .single();
   if (error) throw error;
+  return data;
 }
 
 export async function updateChecklist(

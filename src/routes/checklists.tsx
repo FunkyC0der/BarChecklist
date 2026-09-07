@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 
 import {
   Alert,
@@ -32,8 +33,9 @@ import { getErrorMessage } from '@/lib/errors';
 
 export function ChecklistsRoute() {
   const toast = useToast();
+  const navigate = useNavigate();
   const { session } = useAuth();
-  const { activeTeam, status } = useTeams();
+  const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [taskCounts, setTaskCounts] = useState<Map<string, number>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -76,20 +78,52 @@ export function ChecklistsRoute() {
   const submitCreate = async (values: ChecklistFormValues) => {
     if (!activeTeam || !session) return;
 
-    await createChecklist({
+    const checklist = await createChecklist({
       createdBy: session.user.id,
       name: values.name,
       teamId: activeTeam.id,
     });
     setCreateOpen(false);
     toast('Чекліст створено');
-    await loadChecklists();
+    navigate(`/checklists/${checklist.id}`);
   };
 
-  if (status === 'loading' || !activeTeam) {
+  if (status === 'idle' || status === 'loading') {
     return (
       <Page title="Чеклісти">
         <Skeleton />
+      </Page>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <Page title="Чеклісти">
+        <Alert color="error">
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+            <span>{teamsError ?? 'Не вдалося завантажити команди.'}</span>
+            <Button onClick={() => void refreshTeams()} size="sm">
+              Повторити
+            </Button>
+          </div>
+        </Alert>
+      </Page>
+    );
+  }
+
+  if (!activeTeam) {
+    return (
+      <Page title="Чеклісти">
+        <EmptyState
+          action={
+            <Link className="btn btn-primary" to="/team">
+              Створити команду
+            </Link>
+          }
+          description="Спочатку створіть команду, а потім додайте її чеклісти."
+          icon="clipboard-list"
+          title="Команди ще немає"
+        />
       </Page>
     );
   }

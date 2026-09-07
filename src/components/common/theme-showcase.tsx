@@ -206,7 +206,7 @@ export function ThemeShowcase() {
       <Section title="Sheet">
         <Button onClick={() => setSheetOpen(true)}>Відкрити Sheet</Button>
         <Sheet
-          description="Демо bottom sheet з grab-handle та X."
+          description="Демо bottom sheet, що закривається через backdrop або Escape."
           onClose={() => setSheetOpen(false)}
           open={sheetOpen}
           title="Помити посуд"

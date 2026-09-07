@@ -11,7 +11,9 @@ export function OnboardingRoute() {
   const { configIssue } = useAuth();
   const { activeTeam, status } = useTeams();
 
-  if (status === 'ready' && activeTeam) return <Navigate replace to="/today" />;
+  if (status === 'ready') {
+    return <Navigate replace to={activeTeam ? '/today' : '/team'} />;
+  }
 
   return (
     <AuthShell

@@ -1,11 +1,5 @@
 import { useEffect, useRef } from 'react';
-import {
-  NavLink,
-  Navigate,
-  Outlet,
-  useLocation,
-  useNavigate,
-} from 'react-router';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { Icon, ToastViewport, type IconName } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
@@ -74,10 +68,6 @@ export function AppLayout() {
       writeStoredActiveTeamTab(session.user.id, tabRoot);
     }
   }, [activeTeam, location.pathname, session]);
-
-  if ((status === 'ready' || status === 'error') && !activeTeam) {
-    return <Navigate replace to="/onboarding" />;
-  }
 
   return (
     <div className="flex h-dvh flex-col bg-base-100 pt-[env(safe-area-inset-top)]">

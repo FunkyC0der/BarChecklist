@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
 
 import {
   Alert,
@@ -63,7 +64,7 @@ function findTask(snapshot: TodaySnapshot | null, taskId: string) {
 export function TodayRoute() {
   const showToast = useToast();
   const { session } = useAuth();
-  const { activeTeam, status } = useTeams();
+  const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const teamId = activeTeam?.id ?? null;
   const [snapshot, setSnapshot] = useState<TodaySnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -240,7 +241,47 @@ export function TodayRoute() {
     0,
   );
 
-  if (status === 'loading' || !activeTeam || (loading && !snapshot)) {
+  if (status === 'idle' || status === 'loading') {
+    return (
+      <Page title="Сьогодні">
+        <Skeleton />
+      </Page>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <Page title="Сьогодні">
+        <Alert color="error">
+          <span className="flex-1">
+            {teamsError ?? 'Не вдалося завантажити команди.'}
+          </span>
+          <Button onClick={() => void refreshTeams()} size="sm">
+            Повторити
+          </Button>
+        </Alert>
+      </Page>
+    );
+  }
+
+  if (!activeTeam) {
+    return (
+      <Page title="Сьогодні">
+        <EmptyState
+          action={
+            <Link className="btn btn-primary" to="/team">
+              Створити команду
+            </Link>
+          }
+          description="Створіть команду, щоб додати чеклісти й бачити задачі на сьогодні."
+          icon="users"
+          title="Почніть із команди"
+        />
+      </Page>
+    );
+  }
+
+  if (loading && !snapshot) {
     return (
       <Page title="Сьогодні">
         <Skeleton />

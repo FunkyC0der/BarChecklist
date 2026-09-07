@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import {
@@ -11,6 +11,7 @@ import {
   Input,
   ListRow,
   Page,
+  Sheet,
   Skeleton,
   useToast,
 } from '@/components/ui';
@@ -22,11 +23,11 @@ import {
   fetchTeamMembers,
   leaveTeam,
   removeTeamMember,
-  revokeTeamInvite,
   type TeamMember,
   updateTeam,
 } from '@/features/teams/team-api';
 import { initials } from '@/features/teams/team-display';
+import { OnboardingForm } from '@/features/teams/onboarding-form';
 import { DeleteTeamSheet, InviteSheet } from '@/features/teams/team-sheets';
 import { joinPath } from '@/features/teams/team-routes';
 import { useTeams } from '@/features/teams/team-context';
@@ -63,9 +64,10 @@ export function TeamRoute() {
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteExpiry, setInviteExpiry] = useState<string | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
-  const [inviteDialogMessage, setInviteDialogMessage] = useState<string | null>(
-    null,
-  );
+  const [inviteFeedback, setInviteFeedback] = useState<{
+    color: 'error' | 'success';
+    text: string;
+  } | null>(null);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [memberActionId, setMemberActionId] = useState<string | null>(null);
@@ -73,6 +75,15 @@ export function TeamRoute() {
   const [deleteName, setDeleteName] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
+  const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const activeTeamIdRef = useRef(activeTeam?.id ?? null);
+  const inviteStatusRequestId = useRef(0);
+  const inviteCreateRequestId = useRef(0);
+  const membersRequestId = useRef(0);
+
+  useEffect(() => {
+    activeTeamIdRef.current = activeTeam?.id ?? null;
+  }, [activeTeam?.id]);
 
   const isOwner = Boolean(
     activeTeam && session?.user.id === activeTeam.owner_id,
@@ -81,33 +92,63 @@ export function TeamRoute() {
   const loadMembers = useCallback(async () => {
     if (!activeTeam) return;
 
+    const teamId = activeTeam.id;
+    const requestId = ++membersRequestId.current;
     setMembersLoading(true);
     setMembersError(null);
     try {
-      setMembers(await fetchTeamMembers(activeTeam.id));
+      const nextMembers = await fetchTeamMembers(teamId);
+      if (
+        requestId === membersRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setMembers(nextMembers);
+      }
     } catch (error) {
-      setMembersError(
-        error instanceof Error
-          ? error.message
-          : 'Не вдалося завантажити учасників.',
-      );
+      if (
+        requestId === membersRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setMembersError(
+          error instanceof Error
+            ? error.message
+            : 'Не вдалося завантажити учасників.',
+        );
+      }
     } finally {
-      setMembersLoading(false);
+      if (
+        requestId === membersRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setMembersLoading(false);
+      }
     }
   }, [activeTeam]);
 
   const loadInviteStatus = useCallback(async () => {
     if (!activeTeam || !isOwner) return;
 
+    const teamId = activeTeam.id;
+    const requestId = ++inviteStatusRequestId.current;
     try {
-      const invite = await fetchCurrentTeamInvite(activeTeam.id);
-      setInviteExpiry(invite?.expires_at ?? null);
+      const invite = await fetchCurrentTeamInvite(teamId);
+      if (
+        requestId === inviteStatusRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setInviteExpiry(invite?.expires_at ?? null);
+      }
     } catch (error) {
-      setInviteMessage(
-        error instanceof Error
-          ? error.message
-          : 'Не вдалося перевірити запрошення.',
-      );
+      if (
+        requestId === inviteStatusRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setInviteMessage(
+          error instanceof Error
+            ? error.message
+            : 'Не вдалося перевірити запрошення.',
+        );
+      }
     }
   }, [activeTeam, isOwner]);
 
@@ -118,7 +159,7 @@ export function TeamRoute() {
       setDeleteName('');
       setInviteLink(null);
       setInviteDialogOpen(false);
-      setInviteDialogMessage(null);
+      setInviteFeedback(null);
       setInviteMessage(null);
       void loadMembers();
       void loadInviteStatus();
@@ -161,16 +202,21 @@ export function TeamRoute() {
   const saveTeam = async () => {
     if (!activeTeam) return;
 
+    const teamId = activeTeam.id;
     setSavingTeam(true);
     setTeamMessage(null);
     try {
-      await updateTeam(activeTeam.id, { name, timezone });
+      await updateTeam(teamId, { name, timezone });
+      if (activeTeamIdRef.current !== teamId) return;
       await refreshTeams();
+      if (activeTeamIdRef.current !== teamId) return;
       toast('Зміни збережено');
     } catch (error) {
-      setTeamMessage(
-        error instanceof Error ? error.message : 'Не вдалося зберегти зміни.',
-      );
+      if (activeTeamIdRef.current === teamId) {
+        setTeamMessage(
+          error instanceof Error ? error.message : 'Не вдалося зберегти зміни.',
+        );
+      }
     } finally {
       setSavingTeam(false);
     }
@@ -179,99 +225,145 @@ export function TeamRoute() {
   const createInvite = async () => {
     if (!activeTeam) return;
 
+    const teamId = activeTeam.id;
+    const requestId = ++inviteCreateRequestId.current;
     setInviteLoading(true);
     setInviteMessage(null);
     try {
-      const invite = await createTeamInvite(activeTeam.id);
+      const invite = await createTeamInvite(teamId);
+      if (
+        requestId !== inviteCreateRequestId.current ||
+        activeTeamIdRef.current !== teamId
+      ) {
+        return;
+      }
       setInviteLink(buildAppUrl(joinPath(invite.token)));
       setInviteExpiry(invite.expires_at);
-      setInviteDialogMessage(null);
+      setInviteFeedback(null);
       setInviteDialogOpen(true);
     } catch (error) {
-      setInviteMessage(
-        error instanceof Error
-          ? error.message
-          : 'Не вдалося створити посилання-запрошення.',
-      );
+      if (
+        requestId === inviteCreateRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setInviteMessage(
+          error instanceof Error
+            ? error.message
+            : 'Не вдалося створити посилання-запрошення.',
+        );
+      }
     } finally {
-      setInviteLoading(false);
-    }
-  };
-
-  const copyInvite = async () => {
-    if (!inviteLink) return;
-
-    try {
-      await navigator.clipboard.writeText(inviteLink);
-      toast('Посилання скопійовано');
-    } catch {
-      setInviteDialogMessage('Скопіюйте посилання вручну з поля вище.');
+      if (
+        requestId === inviteCreateRequestId.current &&
+        activeTeamIdRef.current === teamId
+      ) {
+        setInviteLoading(false);
+      }
     }
   };
 
   const shareInvite = async () => {
     if (!inviteLink) return;
 
-    setInviteDialogMessage(null);
+    const teamId = activeTeamIdRef.current;
+    const createRequestId = inviteCreateRequestId.current;
+
+    setInviteFeedback(null);
     try {
-      await shareLink({
+      const result = await shareLink({
         text: 'Приєднуйтесь до моєї команди у Bar Checklist.',
         title: 'Запрошення до команди',
         url: inviteLink,
       });
+      if (
+        activeTeamIdRef.current !== teamId ||
+        inviteCreateRequestId.current !== createRequestId
+      ) {
+        return;
+      }
+      setInviteFeedback({
+        color: 'success',
+        text:
+          result === 'copied'
+            ? 'Посилання скопійовано.'
+            : 'Запрошення передано для поширення.',
+      });
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return;
-      setInviteDialogMessage('Не вдалося відкрити меню поширення.');
+      if (
+        activeTeamIdRef.current !== teamId ||
+        inviteCreateRequestId.current !== createRequestId
+      ) {
+        return;
+      }
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        error.name === 'AbortError'
+      ) {
+        return;
+      }
+      setInviteFeedback({
+        color: 'error',
+        text: 'Не вдалося поділитися запрошенням.',
+      });
     }
   };
 
   const closeInviteDialog = () => {
+    inviteCreateRequestId.current += 1;
     setInviteDialogOpen(false);
-    setInviteDialogMessage(null);
+    setInviteFeedback(null);
     setInviteLink(null);
   };
 
-  const openInviteSheet = () => {
-    setInviteDialogOpen(true);
-  };
+  const switchTeam = (teamId: string) => {
+    if (teamId === activeTeam?.id) return;
+    const nextTeam = teams.find((team) => team.id === teamId);
+    if (!nextTeam) return;
 
-  const revokeInvite = async () => {
-    if (!activeTeam) return;
-
-    setInviteLoading(true);
+    activeTeamIdRef.current = teamId;
+    membersRequestId.current += 1;
+    inviteStatusRequestId.current += 1;
+    inviteCreateRequestId.current += 1;
+    setMembers([]);
+    setMembersError(null);
+    setMembersLoading(true);
+    setName(nextTeam.name);
+    setTimezone(nextTeam.timezone);
+    setTeamMessage(null);
+    setInviteLink(null);
+    setInviteExpiry(null);
+    setInviteDialogOpen(false);
+    setInviteFeedback(null);
     setInviteMessage(null);
-    try {
-      await revokeTeamInvite(activeTeam.id);
-      closeInviteDialog();
-      setInviteExpiry(null);
-      toast('Запрошення відкликано.');
-    } catch (error) {
-      setInviteMessage(
-        error instanceof Error
-          ? error.message
-          : 'Не вдалося відкликати запрошення.',
-      );
-    } finally {
-      setInviteLoading(false);
-    }
+    setInviteLoading(false);
+    setMemberActionId(null);
+    setDeleteName('');
+    setDeleteSheetOpen(false);
+    selectTeam(teamId);
   };
 
   const removeMember = async (userId: string) => {
     if (!activeTeam) return;
 
+    const teamId = activeTeam.id;
     setMemberActionId(userId);
     setMembersError(null);
     try {
-      await removeTeamMember(activeTeam.id, userId);
+      await removeTeamMember(teamId, userId);
+      if (activeTeamIdRef.current !== teamId) return;
       await loadMembers();
     } catch (error) {
-      setMembersError(
-        error instanceof Error
-          ? error.message
-          : 'Не вдалося видалити учасника.',
-      );
+      if (activeTeamIdRef.current === teamId) {
+        setMembersError(
+          error instanceof Error
+            ? error.message
+            : 'Не вдалося видалити учасника.',
+        );
+      }
     } finally {
-      setMemberActionId(null);
+      if (activeTeamIdRef.current === teamId) setMemberActionId(null);
     }
   };
 
@@ -318,37 +410,6 @@ export function TeamRoute() {
 
   const toolbarActions = (
     <>
-      {teams.length > 1 ? (
-        <details className="dropdown dropdown-end dropdown-bottom">
-          <summary
-            aria-label="Змінити команду"
-            className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
-          >
-            <Icon name="arrow-left-right" />
-          </summary>
-          <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
-            {teams.map((team) => (
-              <li key={team.id}>
-                <button
-                  className={team.id === activeTeam?.id ? 'menu-active' : ''}
-                  onClick={(event) => {
-                    event.currentTarget
-                      .closest('details')
-                      ?.removeAttribute('open');
-                    selectTeam(team.id);
-                  }}
-                  type="button"
-                >
-                  {team.name}
-                  {team.id === activeTeam?.id ? (
-                    <Icon className="size-4" name="check" />
-                  ) : null}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
       <IconButton
         icon="log-out"
         label="Вийти з акаунта"
@@ -399,10 +460,58 @@ export function TeamRoute() {
     </>
   );
 
-  if (status === 'loading' || !activeTeam) {
+  if (status === 'idle' || status === 'loading') {
     return (
       <Page title="Команда">
         <Skeleton />
+      </Page>
+    );
+  }
+
+  if (!activeTeam) {
+    return (
+      <Page
+        actions={
+          <IconButton
+            icon="log-out"
+            label="Вийти з акаунта"
+            onClick={() => void signOut()}
+          />
+        }
+        title="Команда"
+      >
+        <AppText className="block max-w-full truncate" variant="caption">
+          {session?.user.email}
+        </AppText>
+        {teamsError ? (
+          <Alert color="error">
+            <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+              <span>{teamsError}</span>
+              <Button
+                onClick={() => void refreshTeams()}
+                size="sm"
+                variant="ghost"
+              >
+                Повторити
+              </Button>
+            </div>
+          </Alert>
+        ) : (
+          <section
+            aria-labelledby="create-team-title"
+            className="flex flex-col gap-4"
+          >
+            <div>
+              <AppText as="h2" id="create-team-title" variant="heading">
+                Створіть команду
+              </AppText>
+              <AppText variant="caption">
+                Після цього можна додати чеклісти та запросити учасників.
+              </AppText>
+            </div>
+            <OnboardingForm />
+          </section>
+        )}
       </Page>
     );
   }
@@ -447,6 +556,44 @@ export function TeamRoute() {
         <Alert color="error">{teamMessage}</Alert>
       ) : null}
 
+      <section
+        className="flex flex-col gap-2"
+        aria-labelledby="team-switcher-title"
+      >
+        <label className="fieldset p-0">
+          <span className="fieldset-legend" id="team-switcher-title">
+            Поточна команда
+          </span>
+          <select
+            aria-label="Поточна команда"
+            className="select w-full"
+            disabled={
+              savingTeam ||
+              leaveLoading ||
+              deleteLoading ||
+              memberActionId !== null ||
+              inviteLoading
+            }
+            onChange={(event) => switchTeam(event.currentTarget.value)}
+            value={activeTeam.id}
+          >
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {team.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button
+          className="btn-block"
+          onClick={() => setCreateTeamOpen(true)}
+          variant="outline"
+        >
+          <Icon name="plus" />
+          Створити іншу команду
+        </Button>
+      </section>
+
       <section className="flex flex-col gap-1">
         <AppText as="h2" variant="overline">
           Команда
@@ -479,9 +626,31 @@ export function TeamRoute() {
       </section>
 
       <section className="flex flex-col gap-1">
-        <AppText as="h2" variant="overline">
-          Учасники
-        </AppText>
+        <div className="flex items-center gap-2">
+          <AppText as="h2" variant="overline">
+            Учасники
+          </AppText>
+          {isOwner ? (
+            <button
+              aria-label={
+                inviteExpiry
+                  ? 'Створити нове запрошення'
+                  : 'Створити запрошення'
+              }
+              className="btn btn-circle btn-sm"
+              disabled={inviteLoading}
+              onClick={() => void createInvite()}
+              type="button"
+            >
+              {inviteLoading ? (
+                <span className="loading loading-sm loading-spinner" />
+              ) : (
+                <Icon name="user-plus" />
+              )}
+            </button>
+          ) : null}
+        </div>
+        {inviteMessage ? <Alert color="error">{inviteMessage}</Alert> : null}
         {membersLoading ? <Skeleton rows={2} /> : null}
         {membersError ? (
           <Alert color="error">
@@ -544,44 +713,25 @@ export function TeamRoute() {
         ) : null}
       </section>
 
-      {isOwner ? (
-        <section className="flex flex-col gap-1">
-          <AppText as="h2" variant="overline">
-            Запрошення
-          </AppText>
-          {inviteMessage ? <Alert color="error">{inviteMessage}</Alert> : null}
-          <ul className="list">
-            <ListRow
-              meta={
-                inviteExpiry
-                  ? `До ${formatExpiry(inviteExpiry)}`
-                  : 'Створіть посилання для нових учасників'
-              }
-              onClick={openInviteSheet}
-              title={
-                inviteExpiry ? 'Активне запрошення' : 'Запрошення неактивне'
-              }
-              trailing={
-                <Icon className="text-base-content/40" name="chevron-right" />
-              }
-            />
-          </ul>
-        </section>
-      ) : null}
-
       <InviteSheet
         formatExpiry={formatExpiry}
-        inviteDialogMessage={inviteDialogMessage}
+        inviteFeedback={inviteFeedback}
         inviteExpiry={inviteExpiry}
         inviteLink={inviteLink}
-        inviteLoading={inviteLoading}
         onClose={closeInviteDialog}
-        onCopyInvite={() => void copyInvite()}
-        onCreateInvite={() => void createInvite()}
-        onRevokeInvite={() => void revokeInvite()}
         onShareInvite={() => void shareInvite()}
         open={inviteDialogOpen}
       />
+
+      <Sheet
+        onClose={() => setCreateTeamOpen(false)}
+        open={createTeamOpen}
+        title="Нова команда"
+      >
+        {createTeamOpen ? (
+          <OnboardingForm compact onCreated={() => setCreateTeamOpen(false)} />
+        ) : null}
+      </Sheet>
 
       {isOwner ? (
         <DeleteTeamSheet

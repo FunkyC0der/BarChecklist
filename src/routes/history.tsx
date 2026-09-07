@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
 
 import {
   Alert,
@@ -59,7 +60,7 @@ function timeLabel(value: string, timeZone: string) {
 }
 
 export function HistoryRoute() {
-  const { activeTeam, status } = useTeams();
+  const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const teamId = activeTeam?.id ?? null;
   const [filters, setFilters] = useState<HistoryFilters>(emptyFilters);
   const [draft, setDraft] = useState<HistoryFilters>(emptyFilters);
@@ -190,7 +191,41 @@ export function HistoryRoute() {
   };
   const retry = () => void load(filters);
 
-  if (status === 'loading' || !activeTeam || (loading && !history))
+  if (status === 'idle' || status === 'loading')
+    return (
+      <Page title="Історія">
+        <Skeleton rows={5} />
+      </Page>
+    );
+  if (status === 'error')
+    return (
+      <Page title="Історія">
+        <Alert color="error">
+          <span className="flex-1">
+            {teamsError ?? 'Не вдалося завантажити команди.'}
+          </span>
+          <Button onClick={() => void refreshTeams()} size="sm">
+            Повторити
+          </Button>
+        </Alert>
+      </Page>
+    );
+  if (!activeTeam)
+    return (
+      <Page title="Історія">
+        <EmptyState
+          action={
+            <Link className="btn btn-primary" to="/team">
+              Створити команду
+            </Link>
+          }
+          description="Історія з’явиться після створення команди та виконання задач."
+          icon="clock"
+          title="Команди ще немає"
+        />
+      </Page>
+    );
+  if (loading && !history)
     return (
       <Page title="Історія">
         <Skeleton rows={5} />
@@ -300,9 +335,10 @@ export function HistoryRoute() {
         open={filterOpen}
         title="Фільтри історії"
       >
-        <div className="flex flex-col gap-4 pt-4">
+        <div className="flex flex-col gap-4">
           <Input
             aria-label="Від дати"
+            className="input-sm"
             label="Від дати"
             max={history?.logicalToday}
             onChangeText={(fromDate) =>
@@ -313,6 +349,7 @@ export function HistoryRoute() {
           />
           <Input
             aria-label="До дати"
+            className="input-sm"
             label="До дати"
             max={history?.logicalToday}
             min={draft.fromDate ?? undefined}
@@ -326,7 +363,7 @@ export function HistoryRoute() {
             <span className="fieldset-legend">Чекліст</span>
             <select
               aria-label="Чекліст"
-              className="select w-full"
+              className="select w-full select-sm"
               onChange={(event) =>
                 setDraft((current) => ({
                   ...current,
@@ -348,7 +385,7 @@ export function HistoryRoute() {
             <span className="fieldset-legend">Учасник</span>
             <select
               aria-label="Учасник"
-              className="select w-full"
+              className="select w-full select-sm"
               onChange={(event) =>
                 setDraft((current) => ({
                   ...current,

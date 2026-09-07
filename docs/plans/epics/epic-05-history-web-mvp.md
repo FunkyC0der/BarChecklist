@@ -1,6 +1,6 @@
 # Епік 5. History та Web MVP stabilization
 
-Статус: `NEXT` — реалізацію розпочато 6 вересня 2026 року.
+Статус: `BLOCKED` — machine-run gate завершено 6 вересня 2026 року; потрібна ручна acceptance на реальних Safari/iPhone/Android.
 
 ## Мета
 
@@ -22,7 +22,7 @@
 
 ## Реалізаційний workflow
 
-Реалізація виконується через `sol-orchestrator`: Sol координує агентів із непересічним ownership, приймає cross-task рішення, інтегрує зміни та веде фінальний quality review. Тестування й запуск команд делегуються субагентам; Sol перевіряє evidence і відповідність Definition of Done.
+Реалізація виконується через `model-orchestrator`: оркестратор координує агентів із непересічним ownership, приймає cross-task рішення, інтегрує зміни та веде фінальний quality review. Тестування й запуск команд делегуються субагентам; оркестратор перевіряє evidence і відповідність Definition of Done.
 
 ## Поточний результат
 
@@ -30,9 +30,15 @@
 - Додано partial active-completions index, generated Supabase types та typed History API/Zod parsing.
 - Реалізовано History UI: filter Sheet, date/checklist/user filters, active chips, day groups, loading/empty/error/permission states і load-more.
 - Стабілізовано auth return paths/session retry, Realtime degraded/reconnect refresh, route retry states, labels/landmarks/focus behavior і mobile overflow/safe-area layout.
-- Local gates зелені: lint, format check, typecheck, Vite build; Vitest — 21 files / 81 tests.
+- Post-fix local frontend gate зелений: lint, format check, typecheck, Vitest — 25 files / 90 tests, Vite build і `git diff --check`; build зберігає advisory про 756.98 kB JS chunk.
+- Local pgTAP gate зелений: 5 files / 167 assertions, включно з History 31/31, після відтворюваного reset лише disposable local Docker DB з актуальних migrations.
 - Remote Supabase project `ujpbumiognmqmgvomvtm`: migration `20260905223827` applied; RPC, index і grants verified.
 - Local Chromium public/unauthenticated QA пройдена на 1280×900, 768×900 і 390×844: direct `/history` redirect/reload, no overflow, no runtime errors. Accessibility label/contrast/landmark defects знайдені, виправлені й повторно перевірені.
+- Vercel preview `dpl_GPKUqZF5uv6eGVt4tUByNsP8Pajn` має стан `READY`: <https://bar-checklist-kf2b1qxvo-krasochenkodev-2202s-projects.vercel.app>. SSO protection збережено, automation bypass після QA відсутній.
+- Hosted Chromium QA пройдена в ізольованих owner/member/outsider сесіях: default 14 days, date/checklist/user filters, whole-day load-more, soft-deleted names, member read-only UI, outsider redirect/isolation, reload і responsive widths. Console/page-error scans чисті; disposable team/auth fixtures повністю очищені.
+- Повний machine evidence: [epic-05-hosted-browser-evidence.md](../../qa/epic-05-hosted-browser-evidence.md).
+- UX stabilization follow-up після візуального review: реєстрація більше не вимагає membership, no-team акаунт лишається на `/today` і створює команду у вкладці `Команда`; Sheet не мають handle/`X`, отримали сильніші headings і компактні поля; новий checklist одразу відкривається у detail. Додані focused route/component tests. Надані screenshots є лише візуальною діагностикою, не real-device `PASS`.
+- Локальний multi-team/invite follow-up: Team має завжди видимий selector membership і дію створення ще однієї команди; перемикання інвалідує старі member/invite requests. Owner генерує invite круглою кнопкою біля `Учасники`; popup не рендерить URL і має одну дію `Поділитися` через Web Share або clipboard fallback. Повний локальний frontend gate після цього incremental change зелений: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check`; build має advisory про 757.74 kB JS chunk. Hosted/browser/device rerun лишається pending.
 
 ## Scope
 
@@ -66,18 +72,20 @@
 
 ## Definition of Done
 
-- [ ] Web MVP feature-complete: team → checklist setup → Today → history.
+- [x] Web MVP feature-complete: team → checklist setup → Today → history.
 - [ ] Повний quality gate зелений локально та на development preview.
 - [x] Відомі некритичні обмеження задокументовані для beta.
 
 ## Залишкові blockers та evidence gaps
 
-- Docker недоступний, тому history pgTAP suite із 31 assertion ще не виконано.
-- Vercel preview upload очікує explicit authorization на source/build-output.
-- Authenticated owner/member/outsider hosted QA ще не виконано.
-- Реальні desktop Safari, iPhone Safari та Android Chrome недоступні для перевірки.
-- Vite bundle advisory: 753.60 kB; не блокує локальний build, але потребує beta follow-up.
+- Post-fix local frontend gate пройдений 6 вересня 2026 року: lint, format check, typecheck, Vitest (25 files / 90 tests), Vite build і `git diff --check` зелені; build зберігає advisory про 756.98 kB JS chunk.
+- Незалежний verifier виявив team-create regression: `insert(...).select('*').single()` застосовував teams SELECT RLS до доступності membership і міг завершуватися `42501`/rollback. Повернуто безпечний non-RETURNING insert; наступний `refreshTeams()` активує першу membership. Regression test фіксує відсутність `.select()`/`.single()` у `createTeam()`. Schema і hosted state не змінювалися.
+- Повторний deployment і hosted browser QA для UX follow-up не виконані; попередній hosted evidence не приписується новому коду.
+- Multi-team/invite incremental follow-up повторно охоплено повним local frontend gate: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check` зелені. Hosted/browser/real-device статус не змінювався.
+- Local database і hosted preview/browser gates пройдені; деталі та cleanup зафіксовані в [hosted browser evidence](../../qa/epic-05-hosted-browser-evidence.md).
+- Блокер acceptance: реальні desktop Safari, iPhone Safari та Android Chrome не перевірені. Усі результати лишаються `PENDING` у [ручному QA-чеклісті](../../qa/epic-05-manual-device-checklist.md).
+- Preview захищений Vercel SSO: кожен реальний пристрій спочатку потребує авторизованої Vercel team session; самих BarChecklist credentials недостатньо. Protection не послаблено.
 
 ## Наступний gate
 
-До beta переходити лише після окремого go/no-go review.
+Користувач виконує real-device checklist і додає фактичні `PASS`/`FAIL`/`BLOCKED` результати. Після цього потрібен окремий go/no-go review; Епік 6 не починати раніше.

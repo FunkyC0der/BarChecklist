@@ -10,8 +10,13 @@ export async function shareLink(options: {
 }) {
   if (typeof navigator.share === 'function') {
     await navigator.share(options);
-    return;
+    return 'shared' as const;
   }
 
-  throw new Error('Share is not available.');
+  if (typeof navigator.clipboard?.writeText === 'function') {
+    await navigator.clipboard.writeText(options.url);
+    return 'copied' as const;
+  }
+
+  throw new Error('Share and clipboard are not available.');
 }

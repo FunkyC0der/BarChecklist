@@ -55,7 +55,7 @@ export function ChecklistForm({
             <input
               aria-label="Назва чекліста"
               autoFocus
-              className="input w-full input-ghost px-0 text-xl font-semibold input-lg"
+              className="input w-full input-ghost px-0 text-base font-semibold input-sm"
               onBlur={field.onBlur}
               onChange={field.onChange}
               placeholder="Назва чекліста"

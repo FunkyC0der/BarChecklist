@@ -18,6 +18,24 @@ const api = vi.hoisted(() => ({
 const authState = vi.hoisted(() => ({
   userId: 'member-2',
 }));
+const teamState = vi.hoisted(() => ({
+  activeTeam: {
+    created_at: '2026-09-01T00:00:00Z',
+    id: 'team-1',
+    name: 'Бар',
+    owner_id: 'owner-1',
+    timezone: 'Europe/Kyiv',
+    updated_at: '2026-09-01T00:00:00Z',
+  } as {
+    created_at: string;
+    id: string;
+    name: string;
+    owner_id: string;
+    timezone: string;
+    updated_at: string;
+  } | null,
+  status: 'ready' as 'error' | 'idle' | 'loading' | 'ready',
+}));
 const realtimeState = vi.hoisted(() => ({
   retry: vi.fn(),
   status: 'connected' as 'connecting' | 'connected' | 'degraded',
@@ -39,15 +57,8 @@ vi.mock('@/features/auth/auth-context', () => ({
 
 vi.mock('@/features/teams/team-context', () => ({
   useTeams: () => ({
-    activeTeam: {
-      created_at: '2026-09-01T00:00:00Z',
-      id: 'team-1',
-      name: 'Бар',
-      owner_id: 'owner-1',
-      timezone: 'Europe/Kyiv',
-      updated_at: '2026-09-01T00:00:00Z',
-    },
-    status: 'ready',
+    activeTeam: teamState.activeTeam,
+    status: teamState.status,
   }),
 }));
 
@@ -144,6 +155,29 @@ describe('TodayRoute', () => {
     realtimeState.retry.mockReset();
     realtimeState.status = 'connected';
     showToast.mockReset();
+    teamState.activeTeam = {
+      created_at: '2026-09-01T00:00:00Z',
+      id: 'team-1',
+      name: 'Бар',
+      owner_id: 'owner-1',
+      timezone: 'Europe/Kyiv',
+      updated_at: '2026-09-01T00:00:00Z',
+    };
+    teamState.status = 'ready';
+  });
+
+  it('keeps an authenticated user without a team on Today with a creation path', () => {
+    teamState.activeTeam = null;
+
+    renderToday();
+
+    expect(
+      screen.getByRole('heading', { name: 'Почніть із команди' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Створити команду' }),
+    ).toHaveAttribute('href', '/team');
+    expect(api.fetchTodaySnapshot).not.toHaveBeenCalled();
   });
 
   it('groups tasks in position order and protects another member completion', async () => {

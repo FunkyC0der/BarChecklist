@@ -17,6 +17,18 @@ beforeAll(() => {
 });
 
 describe('TaskForm', () => {
+  it('uses a compact title input in the sheet form', () => {
+    render(
+      <TaskForm
+        checklistName="Чекап"
+        onSubmit={vi.fn()}
+        submitLabel="Додати"
+      />,
+    );
+
+    expect(screen.getByLabelText('Назва задачі')).toHaveClass('input-sm');
+  });
+
   it('reveals weekday circles when «Щотижня» is selected', () => {
     render(
       <TaskForm

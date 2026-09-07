@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { Navigate, useNavigate, useParams } from 'react-router';
 
 import {
   Alert,
@@ -179,13 +179,15 @@ export function ChecklistDetailRoute() {
     }
   };
 
-  if (status === 'loading' || !activeTeam) {
+  if (status === 'idle' || status === 'loading') {
     return (
       <Page back="/checklists" hideTitle title=" ">
         <Skeleton />
       </Page>
     );
   }
+
+  if (!activeTeam) return <Navigate replace to="/today" />;
 
   if (loading) {
     return (
@@ -392,6 +394,7 @@ export function ChecklistDetailRoute() {
         }
         onClose={closeDialog}
         open={dialog?.type === 'edit-task'}
+        title="Редагувати задачу"
       >
         {dialog?.type === 'edit-task' ? (
           <TaskForm

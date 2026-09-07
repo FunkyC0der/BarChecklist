@@ -23,7 +23,7 @@ export function IndexRoute() {
 
   const target = activeTeam
     ? resolveActiveTeamTab(readStoredActiveTeamTab(session.user.id), '/')
-    : '/onboarding';
+    : '/today';
 
   return <Navigate replace to={target} />;
 }

@@ -1,0 +1,309 @@
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ToastProvider } from '@/components/ui';
+
+const teamOne = {
+  created_at: '2026-09-01T00:00:00Z',
+  id: 'team-1',
+  name: 'Бар Один',
+  owner_id: 'user-1',
+  timezone: 'Europe/Kyiv',
+  updated_at: '2026-09-01T00:00:00Z',
+};
+const teamTwo = {
+  created_at: '2026-09-02T00:00:00Z',
+  id: 'team-2',
+  name: 'Бар Два',
+  owner_id: 'user-1',
+  timezone: 'UTC',
+  updated_at: '2026-09-02T00:00:00Z',
+};
+const member = (teamId: string, userId: string, displayName: string) => ({
+  displayName,
+  joined_at: '2026-09-01T00:00:00Z',
+  team_id: teamId,
+  user_id: userId,
+});
+
+const api = vi.hoisted(() => ({
+  createTeam: vi.fn(),
+  createTeamInvite: vi.fn(),
+  fetchCurrentTeamInvite: vi.fn(),
+  fetchTeamMembers: vi.fn(),
+}));
+const refreshTeams = vi.hoisted(() => vi.fn());
+const shareLink = vi.hoisted(() => vi.fn());
+const signOut = vi.hoisted(() => vi.fn());
+const teamState = vi.hoisted(() => ({
+  activeTeam: null as typeof teamOne | null,
+  error: null as string | null,
+  selectTeam: vi.fn(),
+  status: 'ready' as 'error' | 'idle' | 'loading' | 'ready',
+  teams: [] as (typeof teamOne)[],
+}));
+
+vi.mock('@/features/auth/auth-context', () => ({
+  useAuth: () => ({
+    session: { user: { email: 'new@example.com', id: 'user-1' } },
+    signOut,
+  }),
+}));
+vi.mock('@/features/teams/team-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/teams/team-api')>()),
+  createTeam: api.createTeam,
+  createTeamInvite: api.createTeamInvite,
+  fetchCurrentTeamInvite: api.fetchCurrentTeamInvite,
+  fetchTeamMembers: api.fetchTeamMembers,
+}));
+vi.mock('@/features/teams/team-context', () => ({
+  useTeams: () => ({ ...teamState, refreshTeams }),
+}));
+vi.mock('@/features/teams/use-team-realtime', () => ({
+  useTeamRealtime: () => ({ retry: vi.fn(), status: 'connected' }),
+}));
+vi.mock('@/lib/platform', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/platform')>()),
+  shareLink,
+}));
+
+import { TeamRoute } from './team';
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = vi.fn(function showModal(
+    this: HTMLDialogElement,
+  ) {
+    this.open = true;
+  });
+  HTMLDialogElement.prototype.close = vi.fn(function close(
+    this: HTMLDialogElement,
+  ) {
+    this.open = false;
+  });
+});
+
+function renderTeam() {
+  return render(
+    <ToastProvider>
+      <MemoryRouter>
+        <TeamRoute />
+      </MemoryRouter>
+    </ToastProvider>,
+  );
+}
+
+describe('TeamRoute', () => {
+  beforeEach(() => {
+    Object.values(api).forEach((mock) => mock.mockReset());
+    refreshTeams.mockReset();
+    shareLink.mockReset();
+    signOut.mockReset();
+    teamState.selectTeam.mockReset();
+    teamState.activeTeam = null;
+    teamState.error = null;
+    teamState.status = 'ready';
+    teamState.teams = [];
+    api.createTeam.mockResolvedValue(undefined);
+    api.fetchCurrentTeamInvite.mockResolvedValue(null);
+    api.fetchTeamMembers.mockResolvedValue([]);
+    refreshTeams.mockImplementation(async (preferredTeamId?: string) => {
+      if (preferredTeamId) {
+        teamState.activeTeam =
+          teamState.teams.find((team) => team.id === preferredTeamId) ?? null;
+      }
+      return teamState.teams;
+    });
+  });
+
+  it('offers first-team creation and refreshes the post-insert membership', async () => {
+    refreshTeams.mockResolvedValue([
+      {
+        ...teamOne,
+        name: 'Нова команда',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      },
+    ]);
+    renderTeam();
+
+    expect(
+      screen.getByRole('heading', { name: 'Створіть команду' }),
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Назва команди'), {
+      target: { value: 'Нова команда' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Створити команду' }));
+
+    await waitFor(() => {
+      expect(api.createTeam).toHaveBeenCalledWith({
+        name: 'Нова команда',
+        ownerId: 'user-1',
+        timezone: expect.any(String),
+      });
+      expect(refreshTeams).toHaveBeenNthCalledWith(1);
+      expect(refreshTeams).toHaveBeenNthCalledWith(2, 'team-1');
+    });
+  });
+
+  it('always shows team selection and a working create-another action', async () => {
+    teamState.activeTeam = teamOne;
+    teamState.teams = [teamOne, teamTwo];
+    renderTeam();
+
+    await waitFor(() =>
+      expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
+    );
+
+    const select = screen.getByRole('combobox', { name: 'Поточна команда' });
+    expect(select).toHaveValue('team-1');
+    expect(
+      screen.getAllByRole('option').map((option) => option.textContent),
+    ).toEqual(['Бар Один', 'Бар Два']);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Створити іншу команду' }),
+    );
+    const createTeamDialog = await screen.findByRole('dialog', {
+      name: 'Нова команда',
+    });
+    expect(
+      within(createTeamDialog).getByLabelText('Назва команди'),
+    ).toHaveClass('input-sm');
+    fireEvent.change(screen.getByLabelText('Назва команди'), {
+      target: { value: 'Третя команда' },
+    });
+    const teamThree = {
+      ...teamTwo,
+      id: 'team-3',
+      name: 'Третя команда',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+    };
+    teamState.teams = [teamOne, teamTwo, teamThree];
+    fireEvent.click(screen.getByRole('button', { name: 'Створити команду' }));
+
+    await waitFor(() => {
+      expect(refreshTeams).toHaveBeenNthCalledWith(1);
+      expect(refreshTeams).toHaveBeenNthCalledWith(2, 'team-3');
+    });
+    await waitFor(() => expect(createTeamDialog).not.toHaveAttribute('open'));
+  });
+
+  it('invalidates an old member request while switching teams', async () => {
+    let resolveOldMembers:
+      ((members: ReturnType<typeof member>[]) => void) | undefined;
+    api.fetchTeamMembers.mockImplementation((teamId: string) => {
+      if (teamId === 'team-1') {
+        return new Promise((resolve) => {
+          resolveOldMembers = resolve;
+        });
+      }
+      return Promise.resolve([member('team-2', 'user-2', 'Учасник Два')]);
+    });
+    teamState.activeTeam = teamOne;
+    teamState.teams = [teamOne, teamTwo];
+    teamState.selectTeam.mockImplementation((teamId: string) => {
+      teamState.activeTeam = teamId === 'team-2' ? teamTwo : teamOne;
+    });
+    const view = renderTeam();
+    await waitFor(() =>
+      expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
+    );
+
+    fireEvent.change(
+      screen.getByRole('combobox', { name: 'Поточна команда' }),
+      {
+        target: { value: 'team-2' },
+      },
+    );
+    expect(teamState.selectTeam).toHaveBeenCalledWith('team-2');
+    view.rerender(
+      <ToastProvider>
+        <MemoryRouter>
+          <TeamRoute />
+        </MemoryRouter>
+      </ToastProvider>,
+    );
+    expect(await screen.findByText('Учасник Два')).toBeInTheDocument();
+
+    await act(async () => {
+      resolveOldMembers?.([member('team-1', 'user-1', 'Старий учасник')]);
+    });
+    expect(screen.queryByText('Старий учасник')).not.toBeInTheDocument();
+  });
+
+  it('places the circular invite generator beside Members and announces clipboard fallback', async () => {
+    const token = 'a'.repeat(64);
+    teamState.activeTeam = teamOne;
+    teamState.teams = [teamOne];
+    api.createTeamInvite.mockResolvedValue({
+      expires_at: '2026-09-07T15:00:00.000Z',
+      token,
+    });
+    shareLink.mockResolvedValue('copied');
+    renderTeam();
+
+    await waitFor(() =>
+      expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
+    );
+
+    const heading = screen.getByRole('heading', { name: 'Учасники' });
+    const inviteButton = screen.getByRole('button', {
+      name: 'Створити запрошення',
+    });
+    expect(inviteButton).toHaveClass('btn', 'btn-circle', 'btn-sm');
+    expect(heading.parentElement?.children[1]).toBe(inviteButton);
+    fireEvent.click(inviteButton);
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Запрошення до команди',
+    });
+    expect(dialog).not.toHaveTextContent(token);
+    fireEvent.click(screen.getByRole('button', { name: 'Поділитися' }));
+
+    expect(await screen.findByText('Посилання скопійовано.')).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
+    expect(shareLink).toHaveBeenCalledWith(
+      expect.objectContaining({ url: expect.stringContaining(token) }),
+    );
+  });
+
+  it('keeps cancellation quiet and announces genuine share errors', async () => {
+    teamState.activeTeam = teamOne;
+    teamState.teams = [teamOne];
+    api.createTeamInvite.mockResolvedValue({
+      expires_at: '2026-09-07T15:00:00.000Z',
+      token: 'b'.repeat(64),
+    });
+    shareLink.mockRejectedValueOnce(
+      new DOMException('Cancelled', 'AbortError'),
+    );
+    renderTeam();
+    await waitFor(() =>
+      expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
+    );
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Створити запрошення' }),
+    );
+    await screen.findByRole('dialog', { name: 'Запрошення до команди' });
+    fireEvent.click(screen.getByRole('button', { name: 'Поділитися' }));
+    await waitFor(() => expect(shareLink).toHaveBeenCalledOnce());
+    expect(
+      screen.queryByText('Не вдалося поділитися запрошенням.'),
+    ).not.toBeInTheDocument();
+
+    shareLink.mockRejectedValueOnce(new Error('Share failed'));
+    fireEvent.click(screen.getByRole('button', { name: 'Поділитися' }));
+    expect(
+      await screen.findByText('Не вдалося поділитися запрошенням.'),
+    ).toHaveAttribute('aria-live', 'polite');
+  });
+});

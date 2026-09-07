@@ -29,9 +29,15 @@ function detectedTimezone() {
   }
 }
 
-export function OnboardingForm() {
+export function OnboardingForm({
+  compact = false,
+  onCreated,
+}: {
+  compact?: boolean | undefined;
+  onCreated?: (() => void) | undefined;
+} = {}) {
   const { session } = useAuth();
-  const { refreshTeams, selectTeam } = useTeams();
+  const { refreshTeams, teams } = useTeams();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     control,
@@ -47,13 +53,27 @@ export function OnboardingForm() {
 
     setSubmitError(null);
     try {
+      const existingTeamIds = new Set(teams.map((team) => team.id));
       await createTeam({
         name: values.name,
         ownerId: session.user.id,
         timezone: values.timezone,
       });
-      const teams = await refreshTeams();
-      selectTeam(teams.at(-1)?.id ?? null);
+      const nextTeams = await refreshTeams();
+      const addedTeams = nextTeams.filter(
+        (team) => !existingTeamIds.has(team.id),
+      );
+      const createdTeam =
+        [...addedTeams]
+          .reverse()
+          .find(
+            (team) =>
+              team.owner_id === session.user.id &&
+              team.name === values.name.trim() &&
+              team.timezone === values.timezone.trim(),
+          ) ?? addedTeams.at(-1);
+      if (createdTeam) await refreshTeams(createdTeam.id);
+      onCreated?.();
     } catch (error) {
       setSubmitError(getErrorMessage(error, 'Не вдалося створити команду.'));
     }
@@ -69,6 +89,7 @@ export function OnboardingForm() {
         name="name"
         render={({ field, fieldState }) => (
           <Input
+            className={compact ? 'input-sm' : undefined}
             error={fieldState.error?.message}
             label="Назва команди"
             onBlur={field.onBlur}
@@ -83,6 +104,7 @@ export function OnboardingForm() {
         name="timezone"
         render={({ field, fieldState }) => (
           <Input
+            className={compact ? 'input-sm' : undefined}
             error={fieldState.error?.message}
             helperText="Використовуйте IANA назву, наприклад Europe/Kyiv."
             label="Timezone команди"

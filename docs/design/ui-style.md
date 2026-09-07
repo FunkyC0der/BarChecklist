@@ -1,6 +1,6 @@
 # Єдиний стиль UI
 
-Оновлено: 5 вересня 2026 року.
+Оновлено: 6 вересня 2026 року.
 
 Цей документ фіксує принципи, токени, типографіку, ритм, мапу компонентів і шаблони екранів для мобільного інтерфейсу Bar Checklist на daisyUI 5 (тема `cupcake`).
 
@@ -12,7 +12,7 @@
 - Full-bleed `bg-base-100`; ніяких карток усередині AppLayout. Ієрархія — типографікою і тонкими розділювачами (`border-base-300/60`). `base-200` — лише для toolbar-пілюлі, dock-пілюлі, chips, плиток іконок і sheet-backdrop-контрасту.
 - Заголовок екрана — великий (`text-3xl font-bold`) і живе у скрол-контенті; над ним плаваючий sticky toolbar: кругла back-кнопка ліворуч, пілюля з 1–3 icon-кнопками праворуч.
 - Головна дія екрана — FAB `+` (primary-коло над dock). Другорядні дії об'єкта — у `⋯`. Деструктивні — лише в `⋯` та в confirm-sheet.
-- Редагування будь-якого об'єкта — bottom sheet (`X` ліворуч зверху, `⋯` праворуч, великий title-input, параметри — chips).
+- Редагування будь-якого об'єкта — bottom sheet (без декоративного handle і без явної `X`; закриття через backdrop або Escape, `⋯` праворуч, компактний title-input, параметри — chips).
 - `primary` = FAB + активний пункт dock + submit у sheet. `error` = лише деструктивні дії й помилки. Статуси — `badge-soft`.
 - Touch ≥ 44px: `--size-field 0.28125rem` (45px), рядки `min-h-14`, dock-пілюля 56px, FAB 56px.
 - Кожна іконка має `aria-label` або підпис.
@@ -25,7 +25,7 @@
 ### Типографіка (`AppText`)
 
 - `display` → `text-3xl font-bold tracking-tight` — заголовок екрана в контенті; бренд на Auth.
-- `heading` → `text-lg font-semibold` — заголовок sheet / EmptyState.
+- `heading` → `text-lg font-semibold` — заголовок EmptyState; заголовок sheet окремо використовує `text-2xl font-bold tracking-tight`.
 - `label` → `text-base` — назва рядка (як у Todoist, звичайна вага; жирність не потрібна).
 - `caption` → `text-sm text-base-content/60` — meta-рядок, описи.
 - `overline` → `text-xs font-medium uppercase tracking-wide text-base-content/60` — заголовок секції.
@@ -35,7 +35,7 @@
 - Контент: `px-4`; title `pt-2 pb-3`; між секціями `gap-6`, overline → рядки `gap-1`.
 - Рядок: `min-h-14 py-3 gap-3 items-start`, розділювач знизу `border-b border-base-300/60` крім останнього.
 - Toolbar: `h-14 px-4`, sticky, `bg-base-100/90 backdrop-blur`.
-- Sheet: `px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]`, grab-handle `mx-auto h-1 w-10 rounded-full bg-base-300`.
+- Sheet: `px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))]`; без grab-handle і явної close-кнопки, між heading/description та контентом `mt-4`.
 - Нижній відступ контенту `pb-32` (dock + FAB).
 
 ## 3. Мапа «елемент → daisyUI компонент»
@@ -49,8 +49,8 @@
 - Meta-рядок задачі → `Icon calendar` + текст розкладу («Щодня» / «Пн, Ср, Пт») + `Icon repeat`; для чекліста → «5 задач».
 - Статус/лічильник → `badge badge-soft badge-sm` («12 / 20» у toolbar-пілюлі або біля title; `badge-primary` для Owner).
 - FAB → `div.fab` + `button.btn.btn-lg.btn-circle.btn-primary` (`Icon plus`, `aria-label`), override `bottom-[calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))] right-4`; `disabled` на ліміті з `tooltip`-підписом «Ліміт 100 задач».
-- Sheet → `dialog.modal modal-bottom sm:modal-middle > modal-box p-0 rounded-t-box max-h-[90dvh] overflow-y-auto`: grab-handle, ряд `IconButton x` (ліворуч) / `IconButton more-horizontal` (праворуч, опційно), контент. Використовується для create/edit/confirm/invite.
-- Title-input у sheet → `input input-ghost input-lg w-full px-0 text-xl font-semibold` (без legend; `aria-label`), помилка → `p.label text-error`.
+- Sheet → `dialog.modal modal-bottom sm:modal-middle > modal-box rounded-t-box max-h-[90dvh] overflow-y-auto`: heading `text-2xl font-bold tracking-tight`, опційний `IconButton more-horizontal` праворуч і контент. `form.modal-backdrop[method=dialog]` та native Escape закривають dialog; focus trap/restore забезпечує native `dialog`. Використовується для create/edit/confirm/invite.
+- Title-input у sheet → `input input-ghost input-sm w-full px-0 text-base font-semibold` (без legend; `aria-label`), помилка → `p.label text-error`. Інші поля/селекти в sheet також використовують `input-sm` / `select-sm`.
 - Chips (одиничний вибір: Щодня / Щотижня) → `input.btn.btn-sm.rounded-full[type=radio][aria-label]` у `flex gap-2 flex-wrap`; активний — стандартний checked-стан `btn`.
 - Weekday-кола → `input.btn.btn-sm.btn-circle[type=checkbox][aria-label="Пн"]` ×7 у `flex justify-between`; показуються під chips лише для «Щотижня».
 - Поля форми на Auth/Team → `Input` без змін.
@@ -125,27 +125,33 @@ Join: той самий шаблон, heading = стан, 1 primary + 1 ghost `b
 ### Team на шаблоні B
 
 ```text
-│                 (⇄)(⎋)(⋯)    │  ⇄ — перемикач команди (якщо >1), ⎋ — вийти з акаунта, ⋯ → Видалити команду (owner) / Вийти з команди (member)
+│                     (⎋)(⋯)    │  ⎋ — вийти з акаунта, ⋯ → Видалити команду (owner) / Вийти з команди (member)
 │ Бар на Подолі                │  display
 │ olena@bar.ua                 │  caption
 │                              │
+│ ПОТОЧНА КОМАНДА              │  fieldset legend
+│ [ Бар на Подолі           ▾] │  select; завжди видимий, список усіх memberships
+│ ( + Створити іншу команду )  │  btn-outline btn-block; завжди видима дія
 │ КОМАНДА                      │  overline
 │ ┌ Назва ──────────────────┐  │  owner: Input ×2 + btn «Зберегти» (default)
 │ ┌ Timezone ───────────────┐  │  member: ListRow «Назва» / «Бар на Подолі»
-│ УЧАСНИКИ                     │
+│ УЧАСНИКИ (+)                 │  owner: btn btn-circle btn-sm, user-plus, accessible label
 │ (ОК) Олена         [Owner]   │  avatar-placeholder, badge-soft badge-primary
 │ (ІП) Іван              (🗑)  │  IconButton trash text-error (owner)
-│ ЗАПРОШЕННЯ (owner)           │
-│ Активне до 12 вер, 18:00  ›  │  ListRow → InviteSheet (Створити / Копіювати / Поділитися / Відкликати)
 ```
+
+`InviteSheet` не показує raw URL: зверху `alert alert-success alert-outline` зі
+статусом і строком дії, нижче рівно одна видима дія `Поділитися`. На платформах
+із Web Share відкривається native share; clipboard використовується лише коли
+Web Share недоступний. Скасування native share не оголошується як помилка, а
+успіх/помилка мають текстовий `aria-live` feedback без токена.
 
 ### Sheet — спільний вигляд (TaskSheet)
 
 ```text
 ┌──────────────────────────────┐
-│           ━━━━               │  grab-handle
-│ (⨯)                    (⋯)   │  X закрити | ⋯ → Видалити задачу (edit-режим)
-│ ○ Помити посуд               │  маркер + input-ghost input-lg text-xl
+│ Редагувати задачу       (⋯)   │  heading; ⋯ → Видалити задачу (edit-режим)
+│ ○ Помити посуд               │  маркер + input-ghost input-sm text-base
 │ # Відкриття зміни            │  caption-рядок з іконкою (read-only)
 │ ─────────────────────────────│
 │ ▦ Розклад                    │  overline
@@ -158,3 +164,5 @@ Join: той самий шаблон, heading = стан, 1 primary + 1 ghost `b
 ```
 
 ChecklistSheet — той самий каркас з одним title-input. ConfirmSheet — heading «Видалити задачу?», caption з наслідками, `btn btn-error btn-block` + ghost «Скасувати».
+
+Усі Sheet закриваються тапом/кліком по backdrop або клавішею Escape; окрема `X` не показується.

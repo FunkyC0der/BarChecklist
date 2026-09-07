@@ -60,12 +60,12 @@ export function TaskForm({
         name="title"
         render={({ field, fieldState }) => (
           <div className="flex items-start gap-3">
-            <TaskMarker className="mt-3" />
+            <TaskMarker className="mt-1" />
             <div className="min-w-0 flex-1">
               <input
                 aria-label="Назва задачі"
                 autoFocus
-                className="input w-full input-ghost px-0 text-xl font-semibold input-lg"
+                className="input w-full input-ghost px-0 text-base font-semibold input-sm"
                 onBlur={field.onBlur}
                 onChange={field.onChange}
                 placeholder="Назва задачі"

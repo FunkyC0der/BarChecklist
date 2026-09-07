@@ -135,7 +135,7 @@ export function JoinRoute() {
       return;
     }
 
-    navigate('/onboarding', { replace: true });
+    navigate('/team', { replace: true });
   };
 
   if (configIssue) {

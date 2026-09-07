@@ -56,7 +56,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
     try {
       const result = await signUp(
         values,
-        returnTo ? buildAppUrl(returnTo) : buildAppUrl('/'),
+        returnTo ? buildAppUrl(returnTo) : buildAppUrl('/today'),
       );
       if (result.needsEmailConfirmation) {
         setMessage({
@@ -64,7 +64,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
           text: 'Перевірте email і підтвердьте реєстрацію.',
         });
       } else {
-        navigate(returnTo ?? '/', { replace: true });
+        navigate(returnTo ?? '/today', { replace: true });
       }
     } catch (error) {
       setMessage({

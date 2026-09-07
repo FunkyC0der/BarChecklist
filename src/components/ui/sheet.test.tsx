@@ -17,7 +17,7 @@ beforeAll(() => {
 });
 
 describe('Sheet', () => {
-  it('calls onClose when X button is clicked', () => {
+  it('uses native backdrop and close behavior without an explicit X control', () => {
     const onClose = vi.fn();
 
     render(
@@ -26,7 +26,28 @@ describe('Sheet', () => {
       </Sheet>,
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Закрити' }));
+    const dialog = screen.getByRole('dialog', { name: 'Тест' });
+    expect(dialog.querySelector('svg')).not.toBeInTheDocument();
+    expect(dialog.querySelector('form.modal-backdrop')).toHaveAttribute(
+      'method',
+      'dialog',
+    );
+
+    fireEvent(dialog, new Event('close'));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders a stronger visible heading', () => {
+    render(
+      <Sheet onClose={vi.fn()} open title="Нова задача">
+        <input aria-label="Назва задачі" />
+      </Sheet>,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Нова задача' })).toHaveClass(
+      'text-2xl',
+      'font-bold',
+      'tracking-tight',
+    );
   });
 });

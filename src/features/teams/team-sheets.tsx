@@ -1,98 +1,66 @@
-import { Alert, AppText, Button, Input, Sheet } from '@/components/ui';
+import { Alert, Button, Icon, Input, Sheet } from '@/components/ui';
 
 export function InviteSheet({
   formatExpiry,
-  inviteDialogMessage,
+  inviteFeedback,
   inviteExpiry,
   inviteLink,
-  inviteLoading,
   onClose,
-  onCopyInvite,
-  onCreateInvite,
-  onRevokeInvite,
   onShareInvite,
   open,
 }: {
   formatExpiry: (value: string) => string;
-  inviteDialogMessage: string | null;
+  inviteFeedback: {
+    color: 'error' | 'success';
+    text: string;
+  } | null;
   inviteExpiry: string | null;
   inviteLink: string | null;
-  inviteLoading: boolean;
   onClose: () => void;
-  onCopyInvite: () => void;
-  onCreateInvite: () => void;
-  onRevokeInvite: () => void;
   onShareInvite: () => void;
   open: boolean;
 }) {
   return (
     <Sheet
-      description={
-        inviteLink
-          ? 'Скопіюйте або поширте посилання зараз. Після закриття цього вікна його не можна буде відновити.'
-          : undefined
-      }
+      description="Після закриття цього вікна посилання не можна буде відновити. Нова генерація замінить попереднє запрошення."
       onClose={onClose}
       open={open}
       title="Запрошення до команди"
     >
-      <div className="mt-4 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         {inviteLink ? (
           <>
-            <Input readOnly label="Посилання" value={inviteLink} />
-            {inviteExpiry ? (
-              <AppText variant="caption">
-                Дійсне до {formatExpiry(inviteExpiry)}.
-              </AppText>
+            <Alert
+              className="items-start alert-outline"
+              color="success"
+              soft={false}
+            >
+              <Icon className="mt-0.5 shrink-0" name="check" />
+              <div>
+                <div className="font-semibold">Посилання готове</div>
+                <div className="text-sm">
+                  {inviteExpiry
+                    ? `Дійсне до ${formatExpiry(inviteExpiry)}.`
+                    : 'Запрошення створено.'}
+                </div>
+              </div>
+            </Alert>
+            {inviteFeedback ? (
+              <Alert aria-live="polite" color={inviteFeedback.color}>
+                {inviteFeedback.text}
+              </Alert>
             ) : null}
-            {inviteDialogMessage ? (
-              <Alert color="info">{inviteDialogMessage}</Alert>
-            ) : null}
-            <div className="grid grid-cols-2 gap-2">
-              <Button onClick={onShareInvite}>Поділитися</Button>
-              <Button color="primary" onClick={onCopyInvite}>
-                Копіювати
-              </Button>
-            </div>
-            {inviteExpiry ? (
-              <Button
-                className="btn-block text-error"
-                loading={inviteLoading}
-                onClick={onRevokeInvite}
-                variant="ghost"
-              >
-                Відкликати
-              </Button>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <AppText variant="caption">
-              {inviteExpiry
-                ? `Активне запрошення до ${formatExpiry(inviteExpiry)}.`
-                : 'Створіть посилання для нових учасників.'}
-            </AppText>
             <Button
               className="btn-block"
               color="primary"
-              loading={inviteLoading}
-              onClick={onCreateInvite}
+              onClick={onShareInvite}
               size="lg"
             >
-              {inviteExpiry ? 'Створити нове посилання' : 'Створити посилання'}
+              <Icon name="share" />
+              Поділитися
             </Button>
-            {inviteExpiry ? (
-              <Button
-                className="btn-block text-error"
-                loading={inviteLoading}
-                onClick={onRevokeInvite}
-                variant="ghost"
-              >
-                Відкликати
-              </Button>
-            ) : null}
           </>
-        )}
+        ) : null}
       </div>
     </Sheet>
   );
@@ -124,8 +92,9 @@ export function DeleteTeamSheet({
       open={open}
       title="Видалити команду?"
     >
-      <div className="mt-4 flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
         <Input
+          className="input-sm"
           error={
             deleteName.length > 0 && deleteName !== teamName
               ? 'Введіть точну назву команди.'

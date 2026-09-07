@@ -26,7 +26,7 @@
 | 3    | Checklist і task management        | DONE       | Owner CRUD/reorder; mobile browser gate закрито QA Епіка 3b (5 вересня 2026) |
 | 3b   | Mobile UI shell                    | DONE       | Todoist-like shell: dock, FAB, Sheet, DnD reorder, style guide, `/ui-kit`    |
 | 4    | Today workflow та Realtime         | DONE       | Hosted Today/Realtime flow пройшов у трьох ізольованих сесіях                |
-| 5    | History та Web MVP stabilization   | NEXT       | Історія, повні UI states і стабільний наскрізний Web MVP                     |
+| 5    | History та Web MVP stabilization   | BLOCKED    | Local gate зелений; UX follow-up очікує hosted і real-device acceptance      |
 | 6    | Closed Web beta                    | PLANNED    | Реальні команди тестують продукт у контрольованому beta-середовищі           |
 | 7    | Beta fixes та production hardening | PLANNED    | Виправлені реальні проблеми, стабілізовані UX, security і data model         |
 | 8    | iOS та Android foundation          | SUPERSEDED | Expo native / EAS Build скасовано; Capacitor відкладено                      |
@@ -74,11 +74,11 @@
 
 Завершено 6 вересня 2026 року: timezone-aware Today, безпечні complete/uncomplete RPC, optimistic conflict recovery та team-scoped Realtime. Local gates — 52 Vitest і 136 pgTAP; hosted migration та production deployment https://project-ygm8l.vercel.app підтверджені. Owner/member/outsider browser QA пройшов без console errors, disposable team data очищено.
 
-### Епік 5. History та Web MVP stabilization — NEXT
+### Епік 5. History та Web MVP stabilization — BLOCKED
 
 План: [epic-05-history-web-mvp.md](./epics/epic-05-history-web-mvp.md)
 
-Завершення цього епіка означає feature-complete Web MVP.
+Функціональність Web MVP і baseline hosted gate завершені: 167 pgTAP assertions, Vercel preview та isolated hosted Chromium owner/member/outsider QA були зелені до UX follow-up. Після візуального review локально додано stabilization для no-team flow, Sheet і create→detail; team-create SELECT RLS regression знайдено verifier-ом і виправлено без schema changes. Наступний local incremental follow-up додав завжди видимі multi-team selector/create action, race-safe scoped refresh і URL-free invite sharing. Повний local frontend gate після нього зелений: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check`; build має advisory про 757.74 kB JS chunk. Оновлений UX ще не перевірений на hosted preview або реальних пристроях. Перехід до Епіка 6 заблоковано до hosted rerun і фактичного проходження користувачем [real-device checklist](../qa/epic-05-manual-device-checklist.md) у desktop Safari, iPhone Safari та Android Chrome; screenshots не зараховуються як `PASS`.
 
 ### Епік 6. Closed Web beta
 

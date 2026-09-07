@@ -34,7 +34,7 @@ export function Modal({
       ref={dialogRef}
     >
       <div className="modal-box">
-        <h3 className="text-lg font-bold" id={titleId}>
+        <h3 className="text-2xl font-bold tracking-tight" id={titleId}>
           {title}
         </h3>
         {description ? (
@@ -45,7 +45,7 @@ export function Modal({
         {children}
       </div>
       <form className="modal-backdrop" method="dialog">
-        <button type="submit">close</button>
+        <button type="submit">Закрити</button>
       </form>
     </dialog>
   );

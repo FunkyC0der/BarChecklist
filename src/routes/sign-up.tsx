@@ -17,7 +17,7 @@ export function SignUpRoute() {
 
   return (
     <AuthShell
-      description="Створіть профіль. Команду можна буде додати на наступному етапі MVP."
+      description="Створіть профіль. Команду можна додати після реєстрації або пізніше."
       footer={
         <AppText>
           Уже маєте акаунт?{' '}

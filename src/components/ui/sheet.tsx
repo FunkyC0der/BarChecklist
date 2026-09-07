@@ -1,7 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
-import { IconButton } from './icon-button';
-
 export function Sheet({
   ariaLabel,
   children,
@@ -40,31 +38,30 @@ export function Sheet({
       onClose={onClose}
       ref={dialogRef}
     >
-      <div className="modal-box max-h-[90dvh] overflow-y-auto rounded-t-box p-0 sm:rounded-box">
-        <div
-          aria-hidden="true"
-          className="mx-auto mt-2 h-1 w-10 rounded-full bg-base-300"
-        />
-        <div className="flex items-center justify-between px-2 pt-1">
-          <IconButton icon="x" label="Закрити" onClick={onClose} />
-          <div>{more}</div>
-        </div>
-        <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          {title ? (
-            <h2 className="text-lg font-semibold" id={titleId}>
-              {title}
-            </h2>
-          ) : null}
-          {description ? (
-            <p className="text-sm text-base-content/60" id={descriptionId}>
-              {description}
-            </p>
-          ) : null}
+      <div className="modal-box max-h-[90dvh] overflow-y-auto rounded-t-box px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-box">
+        {title || more ? (
+          <div className="flex items-start justify-between gap-3">
+            {title ? (
+              <h2 className="text-2xl font-bold tracking-tight" id={titleId}>
+                {title}
+              </h2>
+            ) : (
+              <span />
+            )}
+            {more ? <div className="shrink-0">{more}</div> : null}
+          </div>
+        ) : null}
+        {description ? (
+          <p className="mt-1 text-sm text-base-content/60" id={descriptionId}>
+            {description}
+          </p>
+        ) : null}
+        <div className={title || description || more ? 'mt-4' : undefined}>
           {children}
         </div>
       </div>
       <form className="modal-backdrop" method="dialog">
-        <button type="submit">close</button>
+        <button type="submit">Закрити</button>
       </form>
     </dialog>
   );

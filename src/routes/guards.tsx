@@ -28,7 +28,7 @@ export function RequireGuest() {
 
   if (session) {
     const returnTo = safeJoinReturnPath(params.get('returnTo'));
-    return <Navigate replace to={returnTo ?? '/'} />;
+    return <Navigate replace to={returnTo ?? '/today'} />;
   }
 
   return <Outlet />;

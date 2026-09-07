@@ -60,10 +60,10 @@ describe('RequireGuest', () => {
     expect(screen.getByText('join')).toBeInTheDocument();
   });
 
-  it('sends an authenticated user home when there is no invite returnTo', () => {
+  it('sends an authenticated user to Today when there is no invite returnTo', () => {
     authState.session = { user: { id: 'user-1' } };
     renderGuestRoute('/sign-up');
-    expect(screen.getByText('home')).toBeInTheDocument();
+    expect(screen.getByText('today')).toBeInTheDocument();
   });
 
   it('returns an authenticated user to a known product route with its query', () => {
