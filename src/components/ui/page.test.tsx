@@ -36,7 +36,7 @@ describe('Page', () => {
     );
   });
 
-  it('renders toolbar actions', () => {
+  it('renders root actions on the title row without an empty toolbar', () => {
     render(
       <MemoryRouter>
         <Page
@@ -51,5 +51,23 @@ describe('Page', () => {
     expect(
       screen.getByRole('button', { name: 'Редагувати' }),
     ).toBeInTheDocument();
+    expect(document.querySelector('.sticky')).not.toBeInTheDocument();
+  });
+
+  it('keeps the toolbar for detail pages with back navigation', () => {
+    render(
+      <MemoryRouter>
+        <Page
+          actions={<IconButton icon="pencil" label="Редагувати" />}
+          back="/checklists"
+          title="Деталі"
+        >
+          <p>content</p>
+        </Page>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Назад' })).toBeInTheDocument();
+    expect(document.querySelector('.sticky')).toBeInTheDocument();
   });
 });

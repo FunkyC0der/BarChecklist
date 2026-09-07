@@ -10,7 +10,7 @@
 
 - Один екран = один із трьох шаблонів (Auth / Tab-root / Detail).
 - Full-bleed `bg-base-100`; ніяких карток усередині AppLayout. Ієрархія — типографікою і тонкими розділювачами (`border-base-300/60`). `base-200` — лише для toolbar-пілюлі, dock-пілюлі, chips, плиток іконок і sheet-backdrop-контрасту. Authenticated shell має один непрозорий header: поточна команда (або `Checklister` без команди) і глобальне меню `⋯`.
-- Заголовок екрана — великий (`text-3xl font-bold`) і живе у скрол-контенті; над ним плаваючий sticky toolbar: кругла back-кнопка ліворуч, пілюля з 1–3 icon-кнопками праворуч.
+- Заголовок екрана — великий (`text-3xl font-bold`) і живе у скрол-контенті. На tab-root actions живуть у тому самому рядку, що й title; на detail-екранах над title залишається sticky toolbar з back-кнопкою та actions.
 - Головна дія екрана — FAB `+` (primary-коло над dock). Другорядні дії об'єкта — у `⋯`. Деструктивні — лише в `⋯` та в confirm-sheet.
 - Редагування будь-якого об'єкта — bottom sheet (без декоративного handle і без явної `X`; закриття через backdrop або Escape, `⋯` праворуч, компактний title-input, параметри — chips).
 - `primary` = FAB + активний пункт dock + submit у sheet. `error` = лише деструктивні дії й помилки. Статуси — `badge-soft`.
