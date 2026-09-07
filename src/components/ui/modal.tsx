@@ -1,5 +1,11 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
+import {
+  floatingPopupBoxClass,
+  floatingPopupDialogClass,
+} from './bottom-surface';
+import { useSheetViewport } from './sheet-viewport';
+
 export function Modal({
   children,
   description,
@@ -14,6 +20,7 @@ export function Modal({
   title: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -25,15 +32,17 @@ export function Modal({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  useSheetViewport(dialogRef, boxRef, open);
+
   return (
     <dialog
       aria-describedby={description ? descriptionId : undefined}
       aria-labelledby={titleId}
-      className="modal modal-bottom sm:modal-middle"
+      className={floatingPopupDialogClass}
       onClose={onClose}
       ref={dialogRef}
     >
-      <div className="modal-box">
+      <div className={floatingPopupBoxClass} ref={boxRef}>
         <h3 className="text-2xl font-bold tracking-tight" id={titleId}>
           {title}
         </h3>

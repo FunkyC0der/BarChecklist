@@ -46,6 +46,10 @@ afterEach(() => {
 });
 
 function installViewport() {
+  Object.defineProperty(document.documentElement, 'clientHeight', {
+    configurable: true,
+    value: 700,
+  });
   const viewport = Object.assign(new EventTarget(), {
     height: 700,
     offsetTop: 0,
@@ -114,6 +118,37 @@ describe('Sheet', () => {
     );
   });
 
+  it('uses one floating, scrollable card contract above the dock', () => {
+    render(
+      <Sheet onClose={vi.fn()} open title="Нова задача">
+        <div className="h-[1200px]">Довгий вміст</div>
+      </Sheet>,
+    );
+
+    const dialog = screen.getByRole('dialog');
+    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
+    expect(dialog).toHaveClass(
+      'modal',
+      'place-items-end',
+      'px-3',
+      'pb-[var(--sheet-bottom-clearance)]',
+      '[--bottom-dock-height:3.5rem]',
+      '[--bottom-popup-gap:0.75rem]',
+      '[--sheet-bottom-clearance:calc(max(var(--bottom-popup-gap),env(safe-area-inset-bottom))+var(--bottom-dock-height)+var(--bottom-popup-gap))]',
+    );
+    expect(box).toHaveClass(
+      'w-full',
+      'max-w-xl',
+      'rounded-box',
+      'border',
+      'border-base-300/60',
+      'bg-base-100',
+      'shadow-xl',
+      'overflow-y-auto',
+      'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
+    );
+  });
+
   it('moves the dialog bottom anchor with viewport resize and scroll', () => {
     const viewport = installViewport();
     render(
@@ -123,10 +158,10 @@ describe('Sheet', () => {
     );
 
     const dialog = screen.getByRole('dialog');
-    const sheet = dialog.querySelector('.modal-box');
+    const sheet = dialog.querySelector<HTMLElement>('.modal-box')!;
     nextFrame();
     expect(dialog).toHaveStyle({ top: '0px', height: '700px', bottom: 'auto' });
-    expect(sheet).toHaveStyle({ maxHeight: 'min(90dvh, 700px)' });
+    expect(sheet.style.maxHeight).toBe('');
 
     viewport.height = 320;
     viewport.offsetTop = 60;
@@ -137,12 +172,22 @@ describe('Sheet', () => {
       height: '320px',
       bottom: 'auto',
     });
-    expect(sheet).toHaveStyle({ maxHeight: 'min(90dvh, 320px)' });
+    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
+      '12px',
+    );
+    expect(sheet).toHaveStyle({ maxHeight: '308px' });
 
     viewport.offsetTop = 90;
     viewport.dispatchEvent(new Event('scroll'));
     nextFrame();
     expect(dialog).toHaveStyle({ top: '90px', height: '320px' });
+
+    viewport.height = 700;
+    viewport.offsetTop = 0;
+    viewport.dispatchEvent(new Event('resize'));
+    nextFrame();
+    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
+    expect(sheet.style.maxHeight).toBe('');
   });
 
   it.each(['checklist', 'task'] as const)(
@@ -301,6 +346,7 @@ describe('Sheet', () => {
     nextFrame();
     expect(dialog.style.height).toBe('');
     expect(dialog.style.top).toBe('');
+    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
     expect(box).not.toHaveAttribute(
       'style',
       expect.stringContaining('max-height'),
@@ -326,6 +372,9 @@ describe('Sheet', () => {
     expect(dialog).not.toHaveAttribute('style');
     expect(box).not.toHaveAttribute('style');
     expect(box.scrollTop).toBe(0);
-    expect(box).toHaveClass('max-h-[90dvh]', 'overflow-y-auto');
+    expect(box).toHaveClass(
+      'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
+      'overflow-y-auto',
+    );
   });
 });

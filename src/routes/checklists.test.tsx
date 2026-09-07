@@ -151,7 +151,7 @@ describe('ChecklistsRoute', () => {
     expect(box).toContainElement(editor);
     expect(editor).toHaveFocus();
 
-    // jsdom has no layout. Model the actual modal-bottom grid: a short box ends
+    // jsdom has no layout. Model the floating bottom-aligned dialog grid: a short box ends
     // at the dialog's bottom, and has no scroll range. A box-height cap alone
     // therefore cannot reveal this field; the dialog anchor must move too.
     const dialogTop = () => Number.parseFloat(dialog.style.top) || 0;

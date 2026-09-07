@@ -35,7 +35,7 @@
 - Контент: `px-4`; title `pt-2 pb-3`; між секціями `gap-6`, overline → рядки `gap-1`.
 - Рядок: `min-h-14 py-3 gap-3 items-start`, розділювач знизу `border-b border-base-300/60` крім останнього.
 - Toolbar: `h-14 px-4`, sticky, непрозорий `bg-base-100`.
-- Sheet: `px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))]`; без grab-handle і явної close-кнопки, між heading/description та контентом `mt-4`.
+- Sheet: floating `modal-box` з `px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))]`, видимим горизонтальним gutter, повним `rounded-box`, `border-base-300/60` і `shadow-xl`; нижній край має 12px gap над dock (або над відкритою клавіатурою). Без grab-handle і явної close-кнопки, між heading/description та контентом `mt-4`.
 - Нижній відступ контенту `pb-32` (dock + FAB).
 
 ## 3. Мапа «елемент → daisyUI компонент»
@@ -49,7 +49,7 @@
 - Meta-рядок задачі → `Icon calendar` + текст розкладу («Щодня» / «Пн, Ср, Пт») + `Icon repeat`; для чекліста → «5 задач».
 - Статус/лічильник → `badge badge-soft badge-sm` («12 / 20» у toolbar-пілюлі або біля title; `badge-primary` для Owner).
 - FAB → `div.fab` + `button.btn.btn-lg.btn-circle.btn-primary` (`Icon plus`, `aria-label`), override `bottom-[calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))] right-4`; `disabled` на ліміті з `tooltip`-підписом «Ліміт 100 задач».
-- Sheet → `dialog.modal modal-bottom sm:modal-middle > modal-box rounded-t-box max-h-[90dvh] overflow-y-auto`: heading `text-2xl font-bold tracking-tight`, опційний `IconButton more-horizontal` праворуч і контент. `form.modal-backdrop[method=dialog]` та native Escape закривають dialog; focus trap/restore забезпечує native `dialog`. Використовується для create/edit/confirm/invite.
+- Sheet → `dialog.modal.place-items-end` з shared dock-clearance та `px-3` > `modal-box w-full max-w-xl rounded-box border border-base-300/60 bg-base-100 shadow-xl overflow-y-auto`: floating card завжди має видимі краї; без клавіатури стоїть одразу над dock, з клавіатурою frame слідує `visualViewport` і лишає 12px gap. Heading `text-2xl font-bold tracking-tight`, опційний `IconButton more-horizontal` праворуч і контент. `form.modal-backdrop[method=dialog]` та native Escape закривають dialog; focus trap/restore забезпечує native `dialog`. Використовується для create/edit/confirm/invite.
 - Title-input у sheet → `input input-ghost input-sm w-full px-0 text-base font-semibold` (без legend; `aria-label`), помилка → `p.label text-error`. Інші поля/селекти в sheet також використовують `input-sm` / `select-sm`.
 - Chips (одиничний вибір: Щодня / Щотижня) → `input.btn.btn-sm.rounded-full[type=radio][aria-label]` у `flex gap-2 flex-wrap`; активний — стандартний checked-стан `btn`.
 - Weekday-кола → `input.btn.btn-sm.btn-circle[type=checkbox][aria-label="Пн"]` ×7 у `flex justify-between`; показуються під chips лише для «Щотижня».

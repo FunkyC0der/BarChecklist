@@ -1,6 +1,8 @@
 import { useEffect, type RefObject } from 'react';
 
 const focusGap = 12;
+const keyboardGap = 12;
+const keyboardThreshold = 80;
 const textInputTypes = new Set([
   'text',
   'search',
@@ -76,6 +78,16 @@ function revealFocusedEditor(box: HTMLElement, viewport: VisualViewport) {
   }
 }
 
+function isKeyboardOpen(viewport: VisualViewport) {
+  // Browser chrome can alter the visual viewport slightly. A substantial
+  // reduction is the cross-browser signal that the keyboard owns the bottom.
+  const layoutHeight = Math.max(
+    document.documentElement.clientHeight,
+    window.innerHeight,
+  );
+  return viewport.height < layoutHeight - keyboardThreshold;
+}
+
 export function useSheetViewport(
   dialogRef: RefObject<HTMLDialogElement | null>,
   boxRef: RefObject<HTMLDivElement | null>,
@@ -93,11 +105,21 @@ export function useSheetViewport(
       if (!dialog.open) return;
 
       // iOS shrinks/pans the visual viewport while a fixed dialog still occupies
-      // the layout viewport. Move its bottom anchor as well as limiting the box.
+      // the layout viewport. Move its frame with the viewport. When the keyboard
+      // owns the bottom edge, replace the dock clearance with a deliberate gap.
       dialog.style.top = `${viewport.offsetTop}px`;
       dialog.style.height = `${viewport.height}px`;
       dialog.style.bottom = 'auto';
-      box.style.maxHeight = `min(90dvh, ${viewport.height}px)`;
+      if (isKeyboardOpen(viewport)) {
+        dialog.style.setProperty(
+          '--sheet-bottom-clearance',
+          `${keyboardGap}px`,
+        );
+        box.style.maxHeight = `${viewport.height - keyboardGap}px`;
+      } else {
+        dialog.style.removeProperty('--sheet-bottom-clearance');
+        box.style.removeProperty('max-height');
+      }
       revealFocusedEditor(box, viewport);
     };
     const scheduleUpdate = () => {
@@ -123,6 +145,7 @@ export function useSheetViewport(
       dialog.style.removeProperty('top');
       dialog.style.removeProperty('height');
       dialog.style.removeProperty('bottom');
+      dialog.style.removeProperty('--sheet-bottom-clearance');
       box.style.removeProperty('max-height');
     };
   }, [boxRef, dialogRef, open]);

@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 
 import { Icon, Sheet, ToastViewport, type IconName } from '@/components/ui';
+import {
+  bottomDockHeightClass,
+  bottomDockInsetClass,
+  bottomSurfaceTokensClass,
+} from '@/components/ui/bottom-surface';
 import { useAuth } from '@/features/auth/auth-context';
 import { OnboardingForm } from '@/features/teams/onboarding-form';
 import { useTeams } from '@/features/teams/team-context';
@@ -169,8 +174,9 @@ export function AppLayout() {
           className={cn(
             'dock fixed dock-sm sm:absolute',
             'inset-x-3 z-20 w-auto',
-            'bottom-[max(0.75rem,env(safe-area-inset-bottom))]',
-            'h-14 rounded-full border border-base-300/60 bg-base-200 p-1 pb-1 shadow-sm',
+            bottomDockInsetClass,
+            bottomSurfaceTokensClass,
+            `${bottomDockHeightClass} rounded-full border border-base-300/60 bg-base-200 p-1 pb-1 shadow-sm`,
             '[&>*]:mb-0 [&>*]:rounded-full [&>*]:after:hidden',
           )}
         >

@@ -1,5 +1,9 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
+import {
+  floatingPopupBoxClass,
+  floatingPopupDialogClass,
+} from './bottom-surface';
 import { useSheetViewport } from './sheet-viewport';
 
 export function Sheet({
@@ -39,14 +43,11 @@ export function Sheet({
       aria-describedby={description ? descriptionId : undefined}
       aria-label={!title ? ariaLabel : undefined}
       aria-labelledby={title ? titleId : undefined}
-      className="modal modal-bottom sm:modal-middle"
+      className={floatingPopupDialogClass}
       onClose={onClose}
       ref={dialogRef}
     >
-      <div
-        className="modal-box max-h-[90dvh] overflow-y-auto rounded-t-box px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-box"
-        ref={boxRef}
-      >
+      <div className={floatingPopupBoxClass} ref={boxRef}>
         {title || more ? (
           <div className="flex items-start justify-between gap-3">
             {title ? (
