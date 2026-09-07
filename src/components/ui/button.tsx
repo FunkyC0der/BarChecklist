@@ -51,7 +51,7 @@ export function Button({
   return (
     <button
       className={cn(
-        'btn',
+        'btn transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100',
         colorClass[color],
         sizeClass[size],
         variantClass[variant],

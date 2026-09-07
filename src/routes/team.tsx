@@ -417,15 +417,15 @@ export function TeamRoute() {
           onClick={() => void signOut()}
         />
       </div>
-      <details className="dropdown dropdown-end dropdown-bottom">
-        <summary
-          aria-label="Ще"
-          className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
-        >
-          <Icon name="more-horizontal" />
-        </summary>
-        <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
-          {!isOwner && (
+      {!isOwner ? (
+        <details className="dropdown dropdown-end dropdown-bottom">
+          <summary
+            aria-label="Ще"
+            className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
+          >
+            <Icon name="more-horizontal" />
+          </summary>
+          <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
             <li>
               <button
                 className="text-error"
@@ -441,9 +441,9 @@ export function TeamRoute() {
                 Вийти з команди
               </button>
             </li>
-          )}
-        </ul>
-      </details>
+          </ul>
+        </details>
+      ) : null}
     </>
   );
 

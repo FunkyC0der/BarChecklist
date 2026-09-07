@@ -16,7 +16,7 @@ export function Fab({
   const button = (
     <button
       aria-label={label}
-      className="btn btn-circle btn-lg btn-primary"
+      className="btn btn-circle transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] btn-lg btn-primary active:scale-95 motion-reduce:transition-none motion-reduce:active:scale-100"
       disabled={disabled}
       onClick={onClick}
       type="button"
