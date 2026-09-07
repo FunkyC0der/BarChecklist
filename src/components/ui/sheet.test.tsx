@@ -129,13 +129,15 @@ describe('Sheet', () => {
     const box = dialog.querySelector<HTMLElement>('.modal-box')!;
     expect(dialog).toHaveClass(
       'modal',
-      'place-items-end',
+      'items-end',
+      'justify-items-center',
       'px-3',
       'pb-[var(--sheet-bottom-clearance)]',
       '[--bottom-dock-height:3.5rem]',
       '[--bottom-popup-gap:0.75rem]',
       '[--sheet-bottom-clearance:calc(max(var(--bottom-popup-gap),env(safe-area-inset-bottom))+var(--bottom-dock-height)+var(--bottom-popup-gap))]',
     );
+    expect(dialog).not.toHaveClass('place-items-end');
     expect(box).toHaveClass(
       'w-full',
       'max-w-xl',
