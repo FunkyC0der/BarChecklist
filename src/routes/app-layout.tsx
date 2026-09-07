@@ -70,7 +70,7 @@ export function AppLayout() {
   }, [activeTeam, location.pathname, session]);
 
   return (
-    <div className="flex h-dvh flex-col bg-base-100 pt-[env(safe-area-inset-top)]">
+    <div className="flex h-dvh flex-col overflow-x-clip bg-base-100 pt-[env(safe-area-inset-top)]">
       <div className="relative mx-auto flex min-h-0 w-full flex-1 flex-col sm:max-w-md">
         {activeTeam ? (
           <div className="flex justify-center px-4 pt-2" role="status">
@@ -86,7 +86,7 @@ export function AppLayout() {
             'dock fixed dock-sm sm:absolute',
             'inset-x-3 z-20 w-auto',
             'bottom-[max(0.75rem,env(safe-area-inset-bottom))]',
-            'h-14 rounded-full border-0 bg-base-200 p-1 pb-1 shadow-sm',
+            'h-14 rounded-full border border-base-300/60 bg-base-200/80 p-1 pb-1 shadow-sm backdrop-blur',
             '[&>*]:mb-0 [&>*]:rounded-full [&>*]:after:hidden',
           )}
         >

@@ -18,7 +18,7 @@ export function Page({
   titleBadge?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+    <div className="flex min-h-0 flex-1 flex-col overflow-x-clip overflow-y-auto overscroll-contain">
       <Toolbar actions={actions} back={back} />
       <div className="flex items-baseline gap-2 px-4 pt-2 pb-3">
         <h1

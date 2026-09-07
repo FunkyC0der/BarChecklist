@@ -10,6 +10,7 @@ import {
   IconButton,
   Input,
   ListRow,
+  Modal,
   Page,
   Sheet,
   Skeleton,
@@ -61,6 +62,10 @@ export function TeamRoute() {
   const [timezone, setTimezone] = useState('');
   const [teamMessage, setTeamMessage] = useState<string | null>(null);
   const [savingTeam, setSavingTeam] = useState(false);
+  const [editingField, setEditingField] = useState<'name' | 'timezone' | null>(
+    null,
+  );
+  const [editingValue, setEditingValue] = useState('');
   const [inviteLink, setInviteLink] = useState<string | null>(null);
   const [inviteExpiry, setInviteExpiry] = useState<string | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -199,6 +204,19 @@ export function TeamRoute() {
     teamId: activeTeam?.id ?? null,
   });
 
+  const openTeamEditor = (field: 'name' | 'timezone') => {
+    setTeamMessage(null);
+    setEditingField(field);
+    setEditingValue(field === 'name' ? name : timezone);
+  };
+
+  const closeTeamEditor = () => {
+    if (savingTeam) return;
+    setEditingField(null);
+    setEditingValue('');
+    setTeamMessage(null);
+  };
+
   const saveTeam = async () => {
     if (!activeTeam) return;
 
@@ -206,10 +224,17 @@ export function TeamRoute() {
     setSavingTeam(true);
     setTeamMessage(null);
     try {
-      await updateTeam(teamId, { name, timezone });
+      const nextName = editingField === 'name' ? editingValue : name;
+      const nextTimezone =
+        editingField === 'timezone' ? editingValue : timezone;
+      await updateTeam(teamId, { name: nextName, timezone: nextTimezone });
       if (activeTeamIdRef.current !== teamId) return;
+      setName(nextName);
+      setTimezone(nextTimezone);
       await refreshTeams();
       if (activeTeamIdRef.current !== teamId) return;
+      setEditingField(null);
+      setEditingValue('');
       toast('Зміни збережено');
     } catch (error) {
       if (activeTeamIdRef.current === teamId) {
@@ -331,6 +356,8 @@ export function TeamRoute() {
     setMembersLoading(true);
     setName(nextTeam.name);
     setTimezone(nextTeam.timezone);
+    setEditingField(null);
+    setEditingValue('');
     setTeamMessage(null);
     setInviteLink(null);
     setInviteExpiry(null);
@@ -583,38 +610,46 @@ export function TeamRoute() {
         </Button>
       </section>
 
-      <section className="flex flex-col gap-1">
+      <section className="flex flex-col gap-1 border-t border-base-300 pt-5">
         <AppText as="h2" variant="overline">
           Команда
         </AppText>
-        {isOwner ? (
-          <div className="flex flex-col gap-4">
-            <Input label="Назва" onChangeText={setName} value={name} />
-            <Input
-              helperText="IANA timezone, наприклад Europe/Kyiv."
-              label="Timezone"
-              onChangeText={setTimezone}
-              spellCheck={false}
-              value={timezone}
-            />
-            {teamMessage ? <Alert color="error">{teamMessage}</Alert> : null}
-            <Button
-              className="btn-block"
-              loading={savingTeam}
-              onClick={() => void saveTeam()}
-            >
-              Зберегти зміни
-            </Button>
-          </div>
-        ) : (
-          <ul className="list">
-            <ListRow meta={activeTeam.name} title="Назва" />
-            <ListRow meta={activeTeam.timezone} title="Timezone" />
-          </ul>
-        )}
+        <ul className="list">
+          <ListRow
+            meta={name}
+            title="Назва"
+            trailing={
+              isOwner ? (
+                <IconButton
+                  icon="pencil"
+                  label="Редагувати назву команди"
+                  onClick={() => openTeamEditor('name')}
+                  size="sm"
+                />
+              ) : undefined
+            }
+          />
+          <ListRow
+            meta={timezone}
+            title="Timezone"
+            trailing={
+              isOwner ? (
+                <IconButton
+                  icon="pencil"
+                  label="Редагувати часовий пояс"
+                  onClick={() => openTeamEditor('timezone')}
+                  size="sm"
+                />
+              ) : undefined
+            }
+          />
+        </ul>
+        {teamMessage && !editingField ? (
+          <Alert color="error">{teamMessage}</Alert>
+        ) : null}
       </section>
 
-      <section className="flex flex-col gap-1">
+      <section className="flex flex-col gap-1 border-t border-base-300 pt-5">
         <div className="flex items-center gap-2">
           <AppText as="h2" variant="overline">
             Учасники
@@ -743,6 +778,46 @@ export function TeamRoute() {
           open={deleteSheetOpen}
           teamName={activeTeam.name}
         />
+      ) : null}
+
+      {isOwner ? (
+        <Modal
+          description={
+            editingField === 'name'
+              ? 'Змініть назву, яку бачать учасники команди.'
+              : 'Вкажіть IANA timezone, наприклад Europe/Kyiv.'
+          }
+          onClose={closeTeamEditor}
+          open={editingField !== null}
+          title={
+            editingField === 'name'
+              ? 'Редагувати назву команди'
+              : 'Редагувати часовий пояс'
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <Input
+              autoFocus
+              label={editingField === 'name' ? 'Назва' : 'Timezone'}
+              onChangeText={setEditingValue}
+              spellCheck={editingField !== 'timezone'}
+              value={editingValue}
+            />
+            {teamMessage ? <Alert color="error">{teamMessage}</Alert> : null}
+            <div className="modal-action">
+              <Button
+                disabled={savingTeam}
+                onClick={closeTeamEditor}
+                variant="ghost"
+              >
+                Скасувати
+              </Button>
+              <Button loading={savingTeam} onClick={() => void saveTeam()}>
+                Зберегти
+              </Button>
+            </div>
+          </div>
+        </Modal>
       ) : null}
     </Page>
   );

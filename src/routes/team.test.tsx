@@ -39,6 +39,7 @@ const api = vi.hoisted(() => ({
   createTeamInvite: vi.fn(),
   fetchCurrentTeamInvite: vi.fn(),
   fetchTeamMembers: vi.fn(),
+  updateTeam: vi.fn(),
 }));
 const refreshTeams = vi.hoisted(() => vi.fn());
 const shareLink = vi.hoisted(() => vi.fn());
@@ -63,6 +64,7 @@ vi.mock('@/features/teams/team-api', async (importOriginal) => ({
   createTeamInvite: api.createTeamInvite,
   fetchCurrentTeamInvite: api.fetchCurrentTeamInvite,
   fetchTeamMembers: api.fetchTeamMembers,
+  updateTeam: api.updateTeam,
 }));
 vi.mock('@/features/teams/team-context', () => ({
   useTeams: () => ({ ...teamState, refreshTeams }),
@@ -114,6 +116,7 @@ describe('TeamRoute', () => {
     api.createTeam.mockResolvedValue(undefined);
     api.fetchCurrentTeamInvite.mockResolvedValue(null);
     api.fetchTeamMembers.mockResolvedValue([]);
+    api.updateTeam.mockResolvedValue(undefined);
     refreshTeams.mockImplementation(async (preferredTeamId?: string) => {
       if (preferredTeamId) {
         teamState.activeTeam =
@@ -274,6 +277,56 @@ describe('TeamRoute', () => {
     expect(shareLink).toHaveBeenCalledWith(
       expect.objectContaining({ url: expect.stringContaining(token) }),
     );
+  });
+
+  it('edits team name and timezone through independent dialogs', async () => {
+    teamState.activeTeam = teamOne;
+    teamState.teams = [teamOne];
+    renderTeam();
+
+    await waitFor(() =>
+      expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1'),
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Редагувати назву команди' }),
+    );
+    const nameDialog = await screen.findByRole('dialog', {
+      name: 'Редагувати назву команди',
+    });
+    expect(
+      within(nameDialog).getByDisplayValue('Бар Один'),
+    ).toBeInTheDocument();
+    fireEvent.change(within(nameDialog).getByLabelText('Назва'), {
+      target: { value: 'Бар Новий' },
+    });
+    fireEvent.click(
+      within(nameDialog).getByRole('button', { name: 'Зберегти' }),
+    );
+
+    await waitFor(() =>
+      expect(api.updateTeam).toHaveBeenCalledWith('team-1', {
+        name: 'Бар Новий',
+        timezone: 'Europe/Kyiv',
+      }),
+    );
+    expect(
+      screen.queryByRole('dialog', { name: 'Редагувати назву команди' }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Редагувати часовий пояс' }),
+    );
+    const timezoneDialog = await screen.findByRole('dialog', {
+      name: 'Редагувати часовий пояс',
+    });
+    fireEvent.change(within(timezoneDialog).getByLabelText('Timezone'), {
+      target: { value: 'UTC' },
+    });
+    fireEvent.click(
+      within(timezoneDialog).getByRole('button', { name: 'Скасувати' }),
+    );
+    expect(api.updateTeam).toHaveBeenCalledOnce();
   });
 
   it('keeps cancellation quiet and announces genuine share errors', async () => {

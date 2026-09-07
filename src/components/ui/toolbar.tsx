@@ -15,7 +15,7 @@ export function Toolbar({
   children?: ReactNode;
 }) {
   return (
-    <div className="sticky top-0 z-20 flex h-14 items-center justify-between bg-base-100/90 px-4 backdrop-blur">
+    <div className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-base-300/60 bg-base-100/80 px-4 backdrop-blur">
       <div className="flex items-center gap-2">
         {back ? (
           <Link
@@ -29,7 +29,11 @@ export function Toolbar({
         {children}
       </div>
       {actions ? (
-        <div className={cn('flex items-center rounded-full bg-base-200')}>
+        <div
+          className={cn(
+            'flex items-center rounded-full border border-base-300/60 bg-base-200/80 backdrop-blur',
+          )}
+        >
           {actions}
         </div>
       ) : (
