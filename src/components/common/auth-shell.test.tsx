@@ -16,7 +16,7 @@ describe('AuthShell', () => {
     );
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Bar Checklist' }),
+      screen.getByRole('heading', { level: 1, name: 'Checklister' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { level: 2, name: 'Test title' }),
@@ -43,7 +43,7 @@ describe('AuthShell', () => {
     );
 
     expect(
-      screen.queryByRole('heading', { level: 1, name: 'Bar Checklist' }),
+      screen.queryByRole('heading', { level: 1, name: 'Checklister' }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole('heading', { level: 2, name: 'Title' }),

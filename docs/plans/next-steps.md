@@ -1,4 +1,4 @@
-# Bar Checklist: покрокова roadmap
+# Checklister: покрокова roadmap
 
 Оновлено: 7 вересня 2026 року.
 
@@ -42,7 +42,7 @@
 
 План: [epic-01-cloud-preview.md](./epics/epic-01-cloud-preview.md)
 
-Завершено: hosted Supabase `bar-checklist` (`eu-west-1`, ref `ujpbumiognmqmgvomvtm`), EAS environment `development`, міграції, Auth URL configuration і preview https://bar-checklist--development.expo.app. Локальні та hosted RLS/trigger перевірки, auth flow, protected routes і browser reload пройдені.
+Завершено: legacy hosted Supabase project `bar-checklist` (`eu-west-1`, ref `ujpbumiognmqmgvomvtm`), EAS environment `development`, міграції, Auth URL configuration і preview https://bar-checklist--development.expo.app. Локальні та hosted RLS/trigger перевірки, auth flow, protected routes і browser reload пройдені.
 
 ### Епік 2. Team lifecycle та membership — DONE
 
@@ -54,7 +54,7 @@
 
 План: [epic-02b-stack-migration.md](./epics/epic-02b-stack-migration.md)
 
-Завершено: React + Vite + Tailwind 4 + daisyUI 5 + Supabase (web-only). Hosted Auth Site URL / Redirect URLs оновлені під Vite `5173` і `*.vercel.app`. Vercel project `bar-checklist` має `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY`; production deployment підтверджено в Епіку 4.
+Завершено: React + Vite + Tailwind 4 + daisyUI 5 + Supabase (web-only). Hosted Auth Site URL / Redirect URLs оновлені під Vite `5173` і `*.vercel.app`. Legacy Vercel project `bar-checklist` має `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY`; production deployment підтверджено в Епіку 4.
 
 ### Епік 3. Checklist і task management — DONE
 
@@ -86,7 +86,7 @@ Product owner 7 вересня 2026 року дав явний `GO` на зак�
 
 План: [epic-06-closed-web-beta.md](./epics/epic-06-closed-web-beta.md)
 
-Стартовано 7 вересня 2026 року. Публічний entrypoint для зовнішніх тестувальників: <https://project-ygm8l.vercel.app>; Vercel SSO на ньому не має бути зовнішнім бар'єром, але BarChecklist auth лишається нормальною межею застосунку. Перші відкриті рішення: окреме beta Supabase environment, support/feedback owner і канал, beta cohort/термін, retention та backup/recovery policy. До рішення про ізоляцію production deployment тимчасово використовує наявний hosted Supabase project, уже налаштований у Vercel; це не зараховується як виконання isolation criterion.
+Стартовано 7 вересня 2026 року. Публічний entrypoint для зовнішніх тестувальників: <https://project-ygm8l.vercel.app>; Vercel SSO на ньому не має бути зовнішнім бар'єром, але Checklister auth лишається нормальною межею застосунку. Перші відкриті рішення: окреме beta Supabase environment, support/feedback owner і канал, beta cohort/термін, retention та backup/recovery policy. До рішення про ізоляцію production deployment тимчасово використовує наявний hosted Supabase project, уже налаштований у Vercel; це не зараховується як виконання isolation criterion.
 
 ### Епік 7. Beta fixes та production hardening
 

@@ -8,8 +8,8 @@
 
 ## Результат
 
-- Hosted Supabase: `bar-checklist`, ref `ujpbumiognmqmgvomvtm`, organization `cgdwshlajtsyovzqwiyu`, region `eu-west-1`.
-- EAS project: `@krasdevs-team/bar-checklist`, ID `27f73b5c-895a-49af-b950-22d30ea1f2fd`.
+- Legacy hosted Supabase project: `bar-checklist`, ref `ujpbumiognmqmgvomvtm`, organization `cgdwshlajtsyovzqwiyu`, region `eu-west-1`.
+- Legacy EAS project: `@krasdevs-team/bar-checklist`, ID `27f73b5c-895a-49af-b950-22d30ea1f2fd`.
 - Stable development preview: https://bar-checklist--development.expo.app
 - Auth confirmation увімкнено. Site URL — stable preview; allow-list містить stable URL, immutable EAS preview URLs і локальні `localhost`/`127.0.0.1` на порту `8081`.
 - EAS `development` містить тільки hosted Supabase URL і publishable key; client secret/service-role key не додано.

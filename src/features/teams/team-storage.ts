@@ -3,7 +3,7 @@ import type { Database } from '@/types/database.generated';
 type Team = Database['public']['Tables']['teams']['Row'];
 
 function storageKey(userId: string) {
-  return `bar-checklist.active-team.${userId}`;
+  return `checklister.active-team.${userId}`;
 }
 
 export function resolveActiveTeamId(

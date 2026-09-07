@@ -22,7 +22,7 @@
 
 ## Hosted Chromium QA
 
-Browser automation used the installed Google Chrome `152.0.7977.82` in isolated owner, member, outsider, and public sessions. Vercel access used short-lived OIDC headers; no token or BarChecklist password was persisted in the repository or evidence.
+Browser automation used the installed Google Chrome `152.0.7977.82` in isolated owner, member, outsider, and public sessions. Vercel access used short-lived OIDC headers; no token or Checklister password was persisted in the repository or evidence.
 
 | Role/session | Viewport                               | Actual result                                                                                                                                                                                                                                                     |
 | ------------ | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -76,6 +76,6 @@ This is incremental local evidence, not a new full gate. Build, all-test, deploy
 
 ## Still pending
 
-Real desktop Safari, iPhone Safari, and Android Chrome were not run by the agent and are not marked passed. The user must execute [epic-05-manual-device-checklist.md](./epic-05-manual-device-checklist.md). Each real device also needs an authorized Vercel team SSO session before BarChecklist sign-in; deployment protection was not weakened for QA.
+Real desktop Safari, iPhone Safari, and Android Chrome were not run by the agent and are not marked passed. The user must execute [epic-05-manual-device-checklist.md](./epic-05-manual-device-checklist.md). Each real device also needs an authorized Vercel team SSO session before Checklister sign-in; deployment protection was not weakened for QA.
 
 The local stabilization follow-up changed the expected outsider/no-team destination from `/onboarding` to `/today`, moved first-team creation onto `/team`, removed Sheet handles/X controls, strengthened Sheet headings, compacted Sheet fields, and made checklist creation open its detail route. The historical hosted outsider result above remains accurate for that deployment but is superseded as the current product expectation.

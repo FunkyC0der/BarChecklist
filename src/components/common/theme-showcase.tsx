@@ -62,7 +62,7 @@ export function ThemeShowcase() {
     <div className="flex max-w-full flex-col gap-8 overflow-x-hidden pb-32">
       <AppText variant="display">UI Style Guide</AppText>
       <AppText variant="caption">
-        daisyUI 5 cupcake — мобільна design-система Bar Checklist
+        daisyUI 5 cupcake — мобільна design-система Checklister
       </AppText>
 
       <Section title="Dock">

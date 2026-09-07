@@ -24,7 +24,7 @@ export function AuthShell({
           {brand ? (
             <div className="mb-8 text-center">
               <AppText as="h1" variant="display">
-                Bar Checklist
+                Checklister
               </AppText>
               <AppText className="text-sm" variant="body">
                 Щоденні чеклісти команди без зайвого шуму.

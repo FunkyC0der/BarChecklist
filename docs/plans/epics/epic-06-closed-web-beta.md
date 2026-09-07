@@ -14,7 +14,7 @@
 ## Стартовий запис — 7 вересня 2026 року
 
 - Публічний beta entrypoint: <https://project-ygm8l.vercel.app>.
-- Production alias має бути доступний анонімно через Vercel edge без Vercel SSO; `/today`, `/checklists`, `/history` і `/team` для гостя мають переводити на BarChecklist `/sign-in`.
+- Production alias має бути доступний анонімно через Vercel edge без Vercel SSO; `/today`, `/checklists`, `/history` і `/team` для гостя мають переводити на Checklister `/sign-in`.
 - Vercel preview protection лишається ввімкненим і не використовується як зовнішній entrypoint.
 - Production deployment використовує вже налаштовані `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY` для наявного hosted Supabase project `ujpbumiognmqmgvomvtm`. Це той самий environment, що використовувався development/hosted gates; він не є окремим beta environment.
 - Окремий hosted Supabase beta environment не створювався без додаткової авторизації. Isolation requirement лишається відкритим і не позначається виконаним; до його рішення зовнішній cohort має бути малим і контрольованим.

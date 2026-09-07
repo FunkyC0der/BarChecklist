@@ -86,7 +86,7 @@
 - Multi-team/invite incremental follow-up повторно охоплено повним local frontend gate: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check` зелені. Hosted/browser/real-device статус не змінювався.
 - Local database і hosted preview/browser gates пройдені; деталі та cleanup зафіксовані в [hosted browser evidence](../../qa/epic-05-hosted-browser-evidence.md).
 - Evidence gap: реальні desktop Safari, iPhone Safari та Android Chrome не перевірені. Усі результати лишаються `PENDING` у [ручному QA-чеклісті](../../qa/epic-05-manual-device-checklist.md); product-owner waiver знімає їх як blocker Епіка 5, але не перетворює на `PASS`.
-- Preview лишається захищеним Vercel SSO. Для перенесеного real-device gate використовується публічний production entrypoint без Vercel SSO; BarChecklist auth лишається ввімкненим.
+- Preview лишається захищеним Vercel SSO. Для перенесеного real-device gate використовується публічний production entrypoint без Vercel SSO; Checklister auth лишається ввімкненим.
 
 ## Переданий gate
 

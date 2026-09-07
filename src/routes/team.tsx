@@ -271,7 +271,7 @@ export function TeamRoute() {
     setInviteFeedback(null);
     try {
       const result = await shareLink({
-        text: 'Приєднуйтесь до моєї команди у Bar Checklist.',
+        text: 'Приєднуйтесь до моєї команди у Checklister.',
         title: 'Запрошення до команди',
         url: inviteLink,
       });

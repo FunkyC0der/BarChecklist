@@ -29,7 +29,7 @@
 
 Для всіх трьох середовищ відкрийте beta URL у приватному вікні лише якщо це не заважає перевірці повторного входу. Не використовуйте DevTools device emulation як заміну реальному телефону.
 
-Production alias не повинен вимагати Vercel SSO. Якщо до BarChecklist `/sign-in` з'являється Vercel login/protection page, позначте середовище як `BLOCKED (Vercel protection on public URL)` і не передавайте та не записуйте токени в цьому документі. Власна BarChecklist authentication очікувана для protected routes.
+Production alias не повинен вимагати Vercel SSO. Якщо до Checklister `/sign-in` з'являється Vercel login/protection page, позначте середовище як `BLOCKED (Vercel protection on public URL)` і не передавайте та не записуйте токени в цьому документі. Власна Checklister authentication очікувана для protected routes.
 
 ## Безпечна підготовка даних
 

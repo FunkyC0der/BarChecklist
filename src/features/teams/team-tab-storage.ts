@@ -3,7 +3,7 @@ const teamTabPaths = ['/today', '/checklists', '/history', '/team'] as const;
 export type TeamTabPath = (typeof teamTabPaths)[number];
 
 function storageKey(userId: string) {
-  return `bar-checklist.active-tab.${userId}`;
+  return `checklister.active-tab.${userId}`;
 }
 
 export function isTeamTabPath(pathname: string): pathname is TeamTabPath {

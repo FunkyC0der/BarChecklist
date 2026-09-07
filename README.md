@@ -1,4 +1,4 @@
-# Bar Checklist
+# Checklister
 
 Web SPA for a team checklist product. The UI uses React, Vite, Tailwind CSS 4, and daisyUI 5 (Cupcake). Supabase provides Auth, Postgres, RLS, and Realtime.
 
@@ -48,7 +48,7 @@ The production bundle is written to `dist/`.
 
 Web hosting is Vercel (`vercel.json` SPA rewrite to `index.html`).
 
-- Hosted Supabase: `bar-checklist` in `eu-west-1` (`ujpbumiognmqmgvomvtm`)
+- Legacy hosted Supabase project identifier: `bar-checklist` in `eu-west-1` (`ujpbumiognmqmgvomvtm`)
 - Auth Site URL and Redirect URLs must include the Vercel domain and `http://localhost:5173`
 - Vercel env: `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` only. No secret or service-role key belongs in a client environment.
 

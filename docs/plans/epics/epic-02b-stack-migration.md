@@ -9,7 +9,7 @@
 ## Залежності
 
 - Епік 2 реалізований (membership, invites, RLS).
-- Hosted Supabase `bar-checklist` доступний.
+- Legacy hosted Supabase project `bar-checklist` доступний.
 - Ручна QA епіка 2 виконується вже на новому стеку після цього епіка.
 
 ## Зафіксовані рішення
@@ -62,7 +62,7 @@ Hosted Auth URL configuration (`ujpbumiognmqmgvomvtm`):
 - Redirect URLs додано: `http://127.0.0.1:5173/**`, `http://localhost:5173/**`, `https://*.vercel.app/**`
 - Старі Expo URL (`expo.app`, `:8081`) лишені — вони не заважають Vite-потоку
 
-Vercel project `bar-checklist` (`prj_XCIx1mf3i46eDHGt3tHg9dqQuyyz`):
+Legacy Vercel project `bar-checklist` (`prj_XCIx1mf3i46eDHGt3tHg9dqQuyyz`):
 
 - Dashboard: https://vercel.com/krasochenkodev-2202s-projects/bar-checklist
 - Env (Config, Production + Preview + Development): `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` → hosted `https://ujpbumiognmqmgvomvtm.supabase.co`

@@ -11,8 +11,8 @@ export function safeJoinReturnPath(
   if (!value.startsWith('/')) return null;
 
   try {
-    const url = new URL(value, 'https://bar-checklist.invalid');
-    if (url.origin !== 'https://bar-checklist.invalid') return null;
+    const url = new URL(value, 'https://checklister.invalid');
+    if (url.origin !== 'https://checklister.invalid') return null;
 
     const inviteMatch = /^\/join\/([a-f0-9]{64})$/.exec(url.pathname);
     const isKnownProductPath =
