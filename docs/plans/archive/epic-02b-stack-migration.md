@@ -1,4 +1,6 @@
-# Епік 2b. Міграція на React + Vite + daisyUI (web-only)
+# Історичний запис — Епік 2b. Міграція на React + Vite + daisyUI (web-only)
+
+> Historical record only; this file is not current instruction.
 
 Статус: `DONE`
 

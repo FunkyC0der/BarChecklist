@@ -18,7 +18,7 @@
 - Vercel preview protection лишається ввімкненим і не використовується як зовнішній entrypoint.
 - Production deployment використовує вже налаштовані `VITE_SUPABASE_URL` і `VITE_SUPABASE_PUBLISHABLE_KEY` для наявного hosted Supabase project `ujpbumiognmqmgvomvtm`. Це той самий environment, що використовувався development/hosted gates; він не є окремим beta environment.
 - Окремий hosted Supabase beta environment не створювався без додаткової авторизації. Isolation requirement лишається відкритим і не позначається виконаним; до його рішення зовнішній cohort має бути малим і контрольованим.
-- Перенесений з Епіка 5 real-device gate лишається `PENDING`: desktop Safari, iPhone Safari та Android Chrome мають пройти [manual checklist](../../qa/epic-05-manual-device-checklist.md) у першій beta smoke wave. Жоден unrun check не вважається `PASS`.
+- Перенесений з Епіка 5 real-device gate лишається `PENDING`: desktop Safari, iPhone Safari та Android Chrome мають пройти [manual checklist](../../qa/beta-smoke-real-devices.md) у першій beta smoke wave. Жоден unrun check не вважається `PASS`.
 
 ## Рішення перед стартом
 

@@ -1,4 +1,6 @@
-# Епік 1. Cloud development preview
+# Історичний запис — Епік 1. Cloud development preview
+
+> Historical record only; this file is not current instruction.
 
 Статус: `DONE` — завершено 4 вересня 2026 року.
 

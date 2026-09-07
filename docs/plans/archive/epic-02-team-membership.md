@@ -1,4 +1,6 @@
-# Епік 2. Team lifecycle та membership
+# Історичний запис — Епік 2. Team lifecycle та membership
+
+> Historical record only; this file is not current instruction.
 
 Статус: `DONE` — ручну QA підтвердив користувач 5 вересня 2026 року.
 

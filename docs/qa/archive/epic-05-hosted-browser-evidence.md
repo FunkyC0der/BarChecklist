@@ -1,4 +1,6 @@
-# Епік 5 — evidence локальних gate і hosted browser QA
+# Історичний запис — Епік 5 — evidence локальних gate і hosted browser QA
+
+> Historical record only; this file is not current instruction.
 
 Дата: 6 вересня 2026 року.
 
@@ -76,6 +78,6 @@ This is incremental local evidence, not a new full gate. Build, all-test, deploy
 
 ## Still pending
 
-Real desktop Safari, iPhone Safari, and Android Chrome were not run by the agent and are not marked passed. The user must execute [epic-05-manual-device-checklist.md](./epic-05-manual-device-checklist.md). Each real device also needs an authorized Vercel team SSO session before Checklister sign-in; deployment protection was not weakened for QA.
+Real desktop Safari, iPhone Safari, and Android Chrome were not run by the agent and are not marked passed. The user must execute [beta-smoke-real-devices.md](../beta-smoke-real-devices.md). Each real device also needs an authorized Vercel team SSO session before Checklister sign-in; deployment protection was not weakened for QA.
 
 The local stabilization follow-up changed the expected outsider/no-team destination from `/onboarding` to `/today`, moved first-team creation onto `/team`, removed Sheet handles/X controls, strengthened Sheet headings, compacted Sheet fields, and made checklist creation open its detail route. The historical hosted outsider result above remains accurate for that deployment but is superseded as the current product expectation.

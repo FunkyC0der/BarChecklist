@@ -1,4 +1,6 @@
-# Епік 3b. Mobile UI shell
+# Історичний запис — Епік 3b. Mobile UI shell
+
+> Historical record only; this file is not current instruction.
 
 Статус: `DONE` — реалізацію, quality gates і browser QA завершено 5 вересня 2026 року.
 
@@ -18,7 +20,7 @@
 3. Головна дія екрана — FAB `+` над dock; редагування об'єктів — bottom `Sheet` (X ліворуч, ⋯ праворуч, grab-handle).
 4. Drag-and-drop reorder задач через `@dnd-kit/react` + `@dnd-kit/helpers`: touch DnD без бібліотеки ненадійний (HTML5 DnD не працює на Android Chrome); пакет включає keyboard sensor і announcements. **Рішення 4 Епіка 3 («reorder кнопками, без DnD і нових залежностей») замінено цим епіком.**
 5. Touch targets ≥ 44px: `--size-field: 0.28125rem` у темі `cupcake`.
-6. Style guide у [docs/design/ui-style.md](../design/ui-style.md) — джерело правди для наступних епіків.
+6. Style guide у [docs/design/ui-style.md](../../design/ui-style.md) — джерело правди для наступних епіків.
 
 ## Scope
 
@@ -29,7 +31,7 @@
 - `AppLayout`: full-bleed shell + floating dock-пілюля, `ToastViewport`.
 - `ThemeShowcase` як живий style guide.
 - Залежності: `@dnd-kit/react`, `@dnd-kit/helpers`.
-- Документація: цей файл, рядок 3b у [next-steps.md](../next-steps.md), [ui-style.md](../design/ui-style.md).
+- Документація: цей файл, рядок 3b у [next-steps.md](../next-steps.md), [ui-style.md](../../design/ui-style.md).
 
 ### 2. Міграція екранів (Phase 2)
 
@@ -69,6 +71,6 @@
 
 ## Результат
 
-Todoist-like оболонка: floating toolbar у `bg-base-200` pill, великі заголовки, full-bleed `list`/`list-row`, pill dock, FAB над dock, bottom `Sheet` (centered modal на `sm+`), DnD reorder через `@dnd-kit`, style guide [ui-style.md](../design/ui-style.md) і `/ui-kit` showcase. Browser QA пройдена в Chromium (desktop і 390×844): sign-in, checklists, detail (3 tasks), create/edit sheets, keyboard DnD, team, invite sheet — без horizontal overflow; dock і FAB поважають safe-area. Під час QA виправлено: `ListRow` a11y (`display: contents`), toolbar join border, FAB позиціонування на wide screens, touch targets, tab-root navigation (`resolveActiveTeamTab`).
+Todoist-like оболонка: floating toolbar у `bg-base-200` pill, великі заголовки, full-bleed `list`/`list-row`, pill dock, FAB над dock, bottom `Sheet` (centered modal на `sm+`), DnD reorder через `@dnd-kit`, style guide [ui-style.md](../../design/ui-style.md) і `/ui-kit` showcase. Browser QA пройдена в Chromium (desktop і 390×844): sign-in, checklists, detail (3 tasks), create/edit sheets, keyboard DnD, team, invite sheet — без horizontal overflow; dock і FAB поважають safe-area. Під час QA виправлено: `ListRow` a11y (`display: contents`), toolbar join border, FAB позиціонування на wide screens, touch targets, tab-root navigation (`resolveActiveTeamTab`).
 
 **Залишковий ризик:** реальні iOS Safari / Android Chrome не перевірялись (лише Chromium emulation). Follow-up для Епіка 5 (Web MVP stabilization), не blocker.

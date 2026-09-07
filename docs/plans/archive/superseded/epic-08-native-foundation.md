@@ -1,4 +1,6 @@
-# Епік 8. iOS та Android foundation
+# Історичний запис — Епік 8. iOS та Android foundation
+
+> Historical record only; this file is not current instruction.
 
 Статус: `SUPERSEDED` — Expo native не виконується. Capacitor/iOS свідомо відкладено; native — окремий епік після Web MVP.
 

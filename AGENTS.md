@@ -1,13 +1,24 @@
-# Docs before code
+This file is already in context. Do not read it again.
 
-Read daisyUI 5 skills in `.agents/skills/daisyui/` before writing HTML or JSX. For Vite, Tailwind 4 and Capacitor 8, use current official docs for those tools — Expo SDK docs do not apply.
+## Workspace rules
 
-# Roadmap workflow
+- Stack: React + Vite + Tailwind CSS 4 + daisyUI 5 (Cupcake); Supabase provides Auth, Postgres, RLS and Realtime.
+- Before writing HTML/JSX, start at `.agents/skills/daisyui/SKILL.md`, then load only task-relevant references/components. For Vite, Tailwind 4 and Capacitor 8, use their current official docs; Expo SDK docs do not apply.
+- Database changes are migrations only. Every schema, RLS or RPC change must have a matching pgTAP test; RLS is the access boundary, not UI guards.
 
-Use `docs/plans/next-steps.md` as the source of truth for product implementation order.
+## Roadmap gate
 
-- Before planning or implementing product work, read the master roadmap and the plan for the current epic in `docs/plans/epics/`.
-- Work on the first incomplete, unblocked epic only. Each epic must be treated as a separate planning and implementation cycle.
-- Do not begin the next epic until the current epic's scope, verification steps, and definition of done are complete and its status is updated in the master roadmap.
-- If the current epic is blocked, record the blocker and resolve it or ask the user for direction. Do not skip to a later epic unless the user explicitly changes the order.
-- Keep work outside the current epic out of scope unless it is required to complete that epic safely.
+Use `docs/plans/next-steps.md` and the current epic plan as the source of truth. Work only on the first incomplete, unblocked epic. Epic 6 (Closed Web beta) is the current gate; Epic 7 remains planned. Finish its scope, verification and definition of done before changing roadmap status or starting another epic.
+
+## Start here
+
+| Task | One starting point |
+| --- | --- |
+| Small known code change | The relevant source module; no overview required |
+| New product behavior or scope | `docs/plans/next-steps.md` |
+| Beta operations | `docs/plans/epics/epic-06-closed-web-beta.md` |
+| HTML/JSX/Tailwind/daisyUI | `.agents/skills/daisyui/SKILL.md`, then task-relevant references/components |
+| Visual policy | `docs/design/ui-style.md` |
+| Schema, RLS or RPC | `supabase/migrations/` and its matching pgTAP test |
+| Real-device smoke | `docs/qa/beta-smoke-real-devices.md` |
+| Historical lookup | `docs/README.md`, then `docs/plans/archive/` or `docs/qa/archive/` |

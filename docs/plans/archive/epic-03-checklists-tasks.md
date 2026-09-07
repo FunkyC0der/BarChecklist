@@ -1,4 +1,6 @@
-# Епік 3. Checklist і task management
+# Історичний запис — Епік 3. Checklist і task management
+
+> Historical record only; this file is not current instruction.
 
 Статус: `DONE` — реалізацію, локальні/hosted gates і браузерну QA завершено 5 вересня 2026 року.
 

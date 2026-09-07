@@ -1,4 +1,6 @@
-# Епік 9. Mobile beta та release readiness
+# Історичний запис — Епік 9. Mobile beta та release readiness
+
+> Historical record only; this file is not current instruction.
 
 Статус: `SUPERSEDED` — Expo mobile beta не виконується; store-реліз — окреме рішення після майбутнього native-епіка.
 

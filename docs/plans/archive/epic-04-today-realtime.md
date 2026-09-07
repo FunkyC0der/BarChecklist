@@ -1,4 +1,6 @@
-# Епік 4. Today workflow та Realtime
+# Історичний запис — Епік 4. Today workflow та Realtime
+
+> Historical record only; this file is not current instruction.
 
 Статус: `DONE` — завершено 6 вересня 2026 року.
 
