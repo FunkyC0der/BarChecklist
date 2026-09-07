@@ -11,8 +11,11 @@ type Args = {
 };
 
 export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
-  const [realtimeStatus, setRealtimeStatus] =
-    useState<RealtimeStatus>('connecting');
+  const [connection, setConnection] = useState<{
+    retryKey: number;
+    status: RealtimeStatus;
+    teamId: string;
+  } | null>(null);
   const refreshRef = useRef(onRefresh);
   const idsRef = useRef(checklistIds);
   useEffect(() => {
@@ -82,14 +85,15 @@ export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          setRealtimeStatus('connected');
+          setConnection({ retryKey: retryToken, status: 'connected', teamId });
           refresh();
         } else if (
           status === 'CHANNEL_ERROR' ||
           status === 'TIMED_OUT' ||
           status === 'CLOSED'
-        )
-          setRealtimeStatus('degraded');
+        ) {
+          setConnection({ retryKey: retryToken, status: 'degraded', teamId });
+        }
       });
     return () => {
       if (timer) clearTimeout(timer);
@@ -98,8 +102,11 @@ export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
   }, [teamId, retryToken, checklistKey]);
 
   return {
-    realtimeStatus:
-      !teamId || getPublicEnvIssue() ? 'degraded' : realtimeStatus,
+    realtimeStatus: getPublicEnvIssue()
+      ? 'degraded'
+      : connection?.teamId === teamId && connection.retryKey === retryToken
+        ? connection.status
+        : 'connecting',
     retryRealtime,
   };
 }

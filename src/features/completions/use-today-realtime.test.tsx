@@ -49,6 +49,7 @@ describe('useTodayRealtime', () => {
         onRefresh: refresh,
       }),
     );
+    expect(result.current.realtimeStatus).toBe('connecting');
     const current = supabase.channels[0]!;
     expect(current.on).toHaveBeenCalledWith(
       'postgres_changes',
@@ -69,6 +70,19 @@ describe('useTodayRealtime', () => {
     expect(refresh).not.toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(1));
     expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report a warning while the team subscription is initializing', () => {
+    const { result } = renderHook(() =>
+      useTodayRealtime({
+        teamId: null,
+        checklistIds: [],
+        onRefresh: vi.fn(),
+      }),
+    );
+
+    expect(result.current.realtimeStatus).toBe('connecting');
+    expect(supabase.channel).not.toHaveBeenCalled();
   });
 
   it.each(['CHANNEL_ERROR', 'TIMED_OUT'] as const)(
@@ -110,6 +124,7 @@ describe('useTodayRealtime', () => {
     const first = supabase.channels[0]!;
     act(() => first.callbacks[0]!('SUBSCRIBED'));
     hook.rerender({ teamId: 'other' });
+    expect(hook.result.current.realtimeStatus).toBe('connecting');
     expect(supabase.removeChannel).toHaveBeenCalledWith(first);
     act(() => vi.runAllTimers());
     expect(refresh).not.toHaveBeenCalled();
