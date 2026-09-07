@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
+
+import { useSheetViewport } from './sheet-viewport';
 
 export function Sheet({
   ariaLabel,
@@ -18,19 +20,9 @@ export function Sheet({
   title?: string | undefined;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
-  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
-
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    const updateViewportHeight = () => setViewportHeight(viewport.height);
-    updateViewportHeight();
-    viewport.addEventListener('resize', updateViewportHeight);
-    return () => viewport.removeEventListener('resize', updateViewportHeight);
-  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -39,6 +31,8 @@ export function Sheet({
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
   }, [open]);
+
+  useSheetViewport(dialogRef, boxRef, open);
 
   return (
     <dialog
@@ -51,11 +45,7 @@ export function Sheet({
     >
       <div
         className="modal-box max-h-[90dvh] overflow-y-auto rounded-t-box px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-box"
-        style={
-          viewportHeight === null
-            ? undefined
-            : { maxHeight: `min(90dvh, ${viewportHeight}px)` }
-        }
+        ref={boxRef}
       >
         {title || more ? (
           <div className="flex items-start justify-between gap-3">
