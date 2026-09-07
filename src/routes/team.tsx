@@ -477,10 +477,10 @@ export function TeamRoute() {
         <Alert color="error">{teamMessage}</Alert>
       ) : null}
 
-      <section className="flex flex-col gap-1 border-t border-base-300 pt-5">
-        <AppText as="h2" variant="overline">
-          Команда
-        </AppText>
+      <section
+        aria-label="Налаштування команди"
+        className="flex flex-col gap-1 border-t border-base-300 pt-5"
+      >
         <ul className="list">
           {(
             [
@@ -513,7 +513,7 @@ export function TeamRoute() {
       </section>
 
       <section className="flex flex-col gap-1 border-t border-base-300 pt-5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
           <AppText as="h2" variant="overline">
             Учасники
           </AppText>

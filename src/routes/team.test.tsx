@@ -167,6 +167,12 @@ describe('TeamRoute', () => {
     expect(
       screen.queryByRole('combobox', { name: 'Поточна команда' }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { level: 2, name: 'Команда' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('region', { name: 'Налаштування команди' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Бар Один')).toBeInTheDocument();
     expect(screen.getByText('Europe/Kyiv')).toBeInTheDocument();
     expect(
