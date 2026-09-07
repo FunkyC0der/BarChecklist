@@ -1,6 +1,6 @@
 # Епік 5. History та Web MVP stabilization
 
-Статус: `BLOCKED` — machine-run gate завершено 6 вересня 2026 року; потрібна ручна acceptance на реальних Safari/iPhone/Android.
+Статус: `DONE` — закрито 7 вересня 2026 року явним product-owner `GO`; unrun real-device gate перенесено в Епік 6.
 
 ## Мета
 
@@ -38,7 +38,9 @@
 - Hosted Chromium QA пройдена в ізольованих owner/member/outsider сесіях: default 14 days, date/checklist/user filters, whole-day load-more, soft-deleted names, member read-only UI, outsider redirect/isolation, reload і responsive widths. Console/page-error scans чисті; disposable team/auth fixtures повністю очищені.
 - Повний machine evidence: [epic-05-hosted-browser-evidence.md](../../qa/epic-05-hosted-browser-evidence.md).
 - UX stabilization follow-up після візуального review: реєстрація більше не вимагає membership, no-team акаунт лишається на `/today` і створює команду у вкладці `Команда`; Sheet не мають handle/`X`, отримали сильніші headings і компактні поля; новий checklist одразу відкривається у detail. Додані focused route/component tests. Надані screenshots є лише візуальною діагностикою, не real-device `PASS`.
-- Локальний multi-team/invite follow-up: Team має завжди видимий selector membership і дію створення ще однієї команди; перемикання інвалідує старі member/invite requests. Owner генерує invite круглою кнопкою біля `Учасники`; popup не рендерить URL і має одну дію `Поділитися` через Web Share або clipboard fallback. Повний локальний frontend gate після цього incremental change зелений: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check`; build має advisory про 757.74 kB JS chunk. Hosted/browser/device rerun лишається pending.
+- Локальний multi-team/invite follow-up: Team має завжди видимий selector membership і дію створення ще однієї команди; перемикання інвалідує старі member/invite requests. Owner генерує invite круглою кнопкою біля `Учасники`; popup не рендерить URL і має одну дію `Поділитися` через Web Share або clipboard fallback. Повний локальний frontend gate після цього incremental change зелений: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check`; build має advisory про 757.74 kB JS chunk. Оновлений preview/browser/device rerun до product-owner waiver не виконувався.
+- Підсумковий release gate 7 вересня 2026 року: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite production build, pgTAP (5 files / 167 assertions) і `git diff --check` — `PASS`. Є лише non-blocking advisory про 758.07 kB JavaScript chunk.
+- Product owner дав явний `GO` закрити Епік 5 і почати Епік 6 без фактичного real-device acceptance. Результати desktop Safari, iPhone Safari та Android Chrome не створювалися й не позначалися `PASS`; вони лишаються `PENDING` і переходять у першу beta smoke wave.
 
 ## Scope
 
@@ -73,19 +75,19 @@
 ## Definition of Done
 
 - [x] Web MVP feature-complete: team → checklist setup → Today → history.
-- [ ] Повний quality gate зелений локально та на development preview.
+- [x] Machine-run release gate зелений локально; актуальний build призначений для публічного production hosted smoke на старті Епіка 6.
 - [x] Відомі некритичні обмеження задокументовані для beta.
 
-## Залишкові blockers та evidence gaps
+## Закриття з waiver та evidence gaps
 
 - Post-fix local frontend gate пройдений 6 вересня 2026 року: lint, format check, typecheck, Vitest (25 files / 90 tests), Vite build і `git diff --check` зелені; build зберігає advisory про 756.98 kB JS chunk.
 - Незалежний verifier виявив team-create regression: `insert(...).select('*').single()` застосовував teams SELECT RLS до доступності membership і міг завершуватися `42501`/rollback. Повернуто безпечний non-RETURNING insert; наступний `refreshTeams()` активує першу membership. Regression test фіксує відсутність `.select()`/`.single()` у `createTeam()`. Schema і hosted state не змінювалися.
-- Повторний deployment і hosted browser QA для UX follow-up не виконані; попередній hosted evidence не приписується новому коду.
+- Старий preview/browser evidence не приписується новому коду; актуальний hosted smoke виконується на production entrypoint під час старту Епіка 6.
 - Multi-team/invite incremental follow-up повторно охоплено повним local frontend gate: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check` зелені. Hosted/browser/real-device статус не змінювався.
 - Local database і hosted preview/browser gates пройдені; деталі та cleanup зафіксовані в [hosted browser evidence](../../qa/epic-05-hosted-browser-evidence.md).
-- Блокер acceptance: реальні desktop Safari, iPhone Safari та Android Chrome не перевірені. Усі результати лишаються `PENDING` у [ручному QA-чеклісті](../../qa/epic-05-manual-device-checklist.md).
-- Preview захищений Vercel SSO: кожен реальний пристрій спочатку потребує авторизованої Vercel team session; самих BarChecklist credentials недостатньо. Protection не послаблено.
+- Evidence gap: реальні desktop Safari, iPhone Safari та Android Chrome не перевірені. Усі результати лишаються `PENDING` у [ручному QA-чеклісті](../../qa/epic-05-manual-device-checklist.md); product-owner waiver знімає їх як blocker Епіка 5, але не перетворює на `PASS`.
+- Preview лишається захищеним Vercel SSO. Для перенесеного real-device gate використовується публічний production entrypoint без Vercel SSO; BarChecklist auth лишається ввімкненим.
 
-## Наступний gate
+## Переданий gate
 
-Користувач виконує real-device checklist і додає фактичні `PASS`/`FAIL`/`BLOCKED` результати. Після цього потрібен окремий go/no-go review; Епік 6 не починати раніше.
+У першій контрольованій beta smoke wave користувач виконує real-device checklist і додає фактичні `PASS`/`FAIL`/`BLOCKED` результати. Будь-який критичний `FAIL` зупиняє розширення beta cohort і переходить у issue log Епіка 6; screenshots або device emulation не замінюють результат реального пристрою.

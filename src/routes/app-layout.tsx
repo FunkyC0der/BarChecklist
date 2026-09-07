@@ -72,6 +72,13 @@ export function AppLayout() {
   return (
     <div className="flex h-dvh flex-col bg-base-100 pt-[env(safe-area-inset-top)]">
       <div className="relative mx-auto flex min-h-0 w-full flex-1 flex-col sm:max-w-md">
+        {activeTeam ? (
+          <div className="flex justify-center px-4 pt-2" role="status">
+            <span className="badge max-w-full truncate badge-soft badge-primary">
+              {activeTeam.name}
+            </span>
+          </div>
+        ) : null}
         <Outlet />
         <nav
           aria-label="Розділи"

@@ -1,6 +1,6 @@
 # Bar Checklist: покрокова roadmap
 
-Оновлено: 6 вересня 2026 року.
+Оновлено: 7 вересня 2026 року.
 
 Цей документ є master roadmap. Кожен епік має окремий файл-план і реалізується окремим циклом: уточнення рішень → погодження плану → реалізація → перевірка → закриття епіка.
 
@@ -26,8 +26,8 @@
 | 3    | Checklist і task management        | DONE       | Owner CRUD/reorder; mobile browser gate закрито QA Епіка 3b (5 вересня 2026) |
 | 3b   | Mobile UI shell                    | DONE       | Todoist-like shell: dock, FAB, Sheet, DnD reorder, style guide, `/ui-kit`    |
 | 4    | Today workflow та Realtime         | DONE       | Hosted Today/Realtime flow пройшов у трьох ізольованих сесіях                |
-| 5    | History та Web MVP stabilization   | BLOCKED    | Local gate зелений; UX follow-up очікує hosted і real-device acceptance      |
-| 6    | Closed Web beta                    | PLANNED    | Реальні команди тестують продукт у контрольованому beta-середовищі           |
+| 5    | History та Web MVP stabilization   | DONE       | Web MVP закрито рішенням product owner; device gate перенесено в beta smoke  |
+| 6    | Closed Web beta                    | NEXT       | Стартовано: публічний entrypoint готовий; isolation/support рішення відкриті |
 | 7    | Beta fixes та production hardening | PLANNED    | Виправлені реальні проблеми, стабілізовані UX, security і data model         |
 | 8    | iOS та Android foundation          | SUPERSEDED | Expo native / EAS Build скасовано; Capacitor відкладено                      |
 | 9    | Mobile beta та release readiness   | SUPERSEDED | Store-релізи залишаються окремим рішенням після майбутнього native           |
@@ -74,17 +74,19 @@
 
 Завершено 6 вересня 2026 року: timezone-aware Today, безпечні complete/uncomplete RPC, optimistic conflict recovery та team-scoped Realtime. Local gates — 52 Vitest і 136 pgTAP; hosted migration та production deployment https://project-ygm8l.vercel.app підтверджені. Owner/member/outsider browser QA пройшов без console errors, disposable team data очищено.
 
-### Епік 5. History та Web MVP stabilization — BLOCKED
+### Епік 5. History та Web MVP stabilization — DONE
 
 План: [epic-05-history-web-mvp.md](./epics/epic-05-history-web-mvp.md)
 
-Функціональність Web MVP і baseline hosted gate завершені: 167 pgTAP assertions, Vercel preview та isolated hosted Chromium owner/member/outsider QA були зелені до UX follow-up. Після візуального review локально додано stabilization для no-team flow, Sheet і create→detail; team-create SELECT RLS regression знайдено verifier-ом і виправлено без schema changes. Наступний local incremental follow-up додав завжди видимі multi-team selector/create action, race-safe scoped refresh і URL-free invite sharing. Повний local frontend gate після нього зелений: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build і `git diff --check`; build має advisory про 757.74 kB JS chunk. Оновлений UX ще не перевірений на hosted preview або реальних пристроях. Перехід до Епіка 6 заблоковано до hosted rerun і фактичного проходження користувачем [real-device checklist](../qa/epic-05-manual-device-checklist.md) у desktop Safari, iPhone Safari та Android Chrome; screenshots не зараховуються як `PASS`.
+Функціональність Web MVP завершена: 167 pgTAP assertions, попередній Vercel preview та isolated hosted Chromium owner/member/outsider QA були зелені до UX follow-up. Після візуального review локально додано stabilization для no-team flow, Sheet і create→detail; team-create SELECT RLS regression знайдено verifier-ом і виправлено без schema changes. Наступний incremental follow-up додав завжди видимі multi-team selector/create action, race-safe scoped refresh і URL-free invite sharing. Підсумковий local gate 7 вересня 2026 року зелений: lint, format check, typecheck, Vitest (27 files / 102 tests), Vite build, 5 pgTAP files / 167 assertions і `git diff --check`; build має advisory про 758.07 kB JS chunk.
 
-### Епік 6. Closed Web beta
+Product owner 7 вересня 2026 року дав явний `GO` на закриття епіка без очікування real-device acceptance. Це waiver процесного blocker-а, а не вигаданий результат: desktop Safari, iPhone Safari та Android Chrome не запускалися і лишаються `PENDING` у [real-device checklist](../qa/epic-05-manual-device-checklist.md). Точний gate перенесено в першу контрольовану хвилю smoke Епіка 6. Preview protection не послаблюється; зовнішній entrypoint використовує окремий production alias без Vercel SSO.
+
+### Епік 6. Closed Web beta — NEXT
 
 План: [epic-06-closed-web-beta.md](./epics/epic-06-closed-web-beta.md)
 
-Починається лише після повного Web MVP quality gate.
+Стартовано 7 вересня 2026 року. Публічний entrypoint для зовнішніх тестувальників: <https://project-ygm8l.vercel.app>; Vercel SSO на ньому не має бути зовнішнім бар'єром, але BarChecklist auth лишається нормальною межею застосунку. Перші відкриті рішення: окреме beta Supabase environment, support/feedback owner і канал, beta cohort/термін, retention та backup/recovery policy. До рішення про ізоляцію production deployment тимчасово використовує наявний hosted Supabase project, уже налаштований у Vercel; це не зараховується як виконання isolation criterion.
 
 ### Епік 7. Beta fixes та production hardening
 

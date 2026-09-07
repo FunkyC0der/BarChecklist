@@ -410,11 +410,13 @@ export function TeamRoute() {
 
   const toolbarActions = (
     <>
-      <IconButton
-        icon="log-out"
-        label="Вийти з акаунта"
-        onClick={() => void signOut()}
-      />
+      <div className="tooltip tooltip-bottom" data-tip="Вийти з акаунта">
+        <IconButton
+          icon="log-out"
+          label="Вийти з акаунта"
+          onClick={() => void signOut()}
+        />
+      </div>
       <details className="dropdown dropdown-end dropdown-bottom">
         <summary
           aria-label="Ще"
@@ -423,22 +425,7 @@ export function TeamRoute() {
           <Icon name="more-horizontal" />
         </summary>
         <ul className="menu dropdown-content z-30 mt-1 w-52 rounded-box bg-base-100 shadow-sm">
-          {isOwner ? (
-            <li>
-              <button
-                className="text-error"
-                onClick={(event) => {
-                  event.currentTarget
-                    .closest('details')
-                    ?.removeAttribute('open');
-                  setDeleteSheetOpen(true);
-                }}
-                type="button"
-              >
-                Видалити команду
-              </button>
-            </li>
-          ) : (
+          {!isOwner && (
             <li>
               <button
                 className="text-error"
@@ -472,11 +459,13 @@ export function TeamRoute() {
     return (
       <Page
         actions={
-          <IconButton
-            icon="log-out"
-            label="Вийти з акаунта"
-            onClick={() => void signOut()}
-          />
+          <div className="tooltip tooltip-bottom" data-tip="Вийти з акаунта">
+            <IconButton
+              icon="log-out"
+              label="Вийти з акаунта"
+              onClick={() => void signOut()}
+            />
+          </div>
         }
         title="Команда"
       >
@@ -708,6 +697,16 @@ export function TeamRoute() {
               <AppText variant="caption">
                 У команді поки немає учасників.
               </AppText>
+            ) : null}
+            {isOwner ? (
+              <Button
+                className="btn-block"
+                color="error"
+                onClick={() => setDeleteSheetOpen(true)}
+                variant="outline"
+              >
+                Видалити команду
+              </Button>
             ) : null}
           </>
         ) : null}
