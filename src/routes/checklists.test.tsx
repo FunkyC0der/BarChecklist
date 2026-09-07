@@ -1,6 +1,21 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import { ToastProvider } from '@/components/ui';
 
@@ -40,6 +55,12 @@ beforeAll(() => {
   ) {
     this.open = false;
   });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 function renderRoute() {
@@ -90,6 +111,98 @@ describe('ChecklistsRoute', () => {
       name: 'Відкриття зміни',
       teamId: 'team-1',
     });
+  });
+
+  it('keeps the actual name input above the keyboard after the + opens a short checklist sheet', async () => {
+    const viewport = Object.assign(new EventTarget(), {
+      height: 700,
+      offsetTop: 0,
+    });
+    vi.stubGlobal('visualViewport', viewport);
+    const frames = new Map<number, FrameRequestCallback>();
+    let frameId = 0;
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+      frames.set(++frameId, callback);
+      return frameId;
+    });
+    vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((id) => {
+      frames.delete(id);
+    });
+    const nextFrame = () => {
+      act(() => {
+        const callbacks = [...frames.values()];
+        frames.clear();
+        callbacks.forEach((callback) => callback(performance.now()));
+      });
+    };
+
+    renderRoute();
+    await screen.findByRole('heading', { name: 'Чеклістів поки немає' });
+    const addButton = screen
+      .getAllByRole('button', { name: 'Створити чекліст' })
+      .find((button) => button.closest('.fab'))!;
+    expect(addButton).toHaveAttribute('type', 'button');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    fireEvent.click(addButton);
+
+    const dialog = screen.getByRole('dialog', { name: 'Новий чекліст' });
+    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
+    const editor = screen.getByRole('textbox', { name: 'Назва чекліста' });
+    expect(box).toContainElement(editor);
+    expect(editor).toHaveFocus();
+
+    // jsdom has no layout. Model the actual modal-bottom grid: a short box ends
+    // at the dialog's bottom, and has no scroll range. A box-height cap alone
+    // therefore cannot reveal this field; the dialog anchor must move too.
+    const dialogTop = () => Number.parseFloat(dialog.style.top) || 0;
+    const dialogHeight = () => Number.parseFloat(dialog.style.height) || 700;
+    const boxTop = () => dialogTop() + dialogHeight() - 220;
+    Object.defineProperties(box, {
+      clientHeight: { configurable: true, value: 220 },
+      scrollHeight: { configurable: true, value: 220 },
+    });
+    vi.spyOn(box, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(0, boxTop(), 390, 220),
+    );
+    vi.spyOn(editor, 'getBoundingClientRect').mockImplementation(
+      () => new DOMRect(16, boxTop() + 84 - box.scrollTop, 358, 44),
+    );
+    const expectVisibleEditor = () => {
+      expect(editor.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        viewport.offsetTop,
+      );
+      expect(editor.getBoundingClientRect().bottom).toBeLessThanOrEqual(
+        viewport.offsetTop + viewport.height,
+      );
+      expect(editor).toHaveFocus();
+    };
+
+    nextFrame();
+    expectVisibleEditor();
+
+    viewport.height = 320;
+    viewport.offsetTop = 60;
+    viewport.dispatchEvent(new Event('resize'));
+    expect(editor.getBoundingClientRect().bottom).toBeGreaterThan(
+      viewport.offsetTop + viewport.height,
+    );
+    nextFrame();
+    expectVisibleEditor();
+
+    // Safari can pan after reporting keyboard height, then resize once more.
+    viewport.offsetTop = 100;
+    viewport.dispatchEvent(new Event('scroll'));
+    nextFrame();
+    expectVisibleEditor();
+    viewport.height = 280;
+    viewport.dispatchEvent(new Event('resize'));
+    nextFrame();
+    expectVisibleEditor();
+    expect(box.scrollTop).toBe(0);
+
+    fireEvent.change(editor, { target: { value: 'Відкриття бару' } });
+    expect(editor).toHaveValue('Відкриття бару');
+    expectVisibleEditor();
   });
 
   it('shows a Team CTA instead of loading forever without membership', async () => {
