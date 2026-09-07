@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { Sheet } from './sheet';
@@ -49,5 +49,39 @@ describe('Sheet', () => {
       'font-bold',
       'tracking-tight',
     );
+  });
+
+  it('updates its max height when the visual viewport is resized', () => {
+    let resizeHandler: (() => void) | undefined;
+    const addEventListener = vi.fn((_: string, handler: () => void) => {
+      resizeHandler = handler;
+    });
+    const removeEventListener = vi.fn();
+    let viewportHeight = 700;
+    const visualViewport = {
+      get height() {
+        return viewportHeight;
+      },
+      addEventListener,
+      removeEventListener,
+    } as unknown as VisualViewport;
+    vi.stubGlobal('visualViewport', visualViewport);
+
+    const { unmount } = render(
+      <Sheet onClose={vi.fn()} open title="Нова задача">
+        <input aria-label="Назва задачі" />
+      </Sheet>,
+    );
+
+    const sheet = screen.getByRole('dialog').querySelector('.modal-box');
+    expect(sheet).toHaveStyle({ maxHeight: 'min(90dvh, 700px)' });
+
+    viewportHeight = 320;
+    act(() => resizeHandler?.());
+    expect(sheet).toHaveStyle({ maxHeight: 'min(90dvh, 320px)' });
+
+    unmount();
+    expect(removeEventListener).toHaveBeenCalledWith('resize', resizeHandler);
+    vi.unstubAllGlobals();
   });
 });

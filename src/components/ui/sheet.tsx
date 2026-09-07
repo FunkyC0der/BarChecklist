@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 export function Sheet({
   ariaLabel,
@@ -20,6 +20,17 @@ export function Sheet({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const updateViewportHeight = () => setViewportHeight(viewport.height);
+    updateViewportHeight();
+    viewport.addEventListener('resize', updateViewportHeight);
+    return () => viewport.removeEventListener('resize', updateViewportHeight);
+  }, []);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -38,7 +49,14 @@ export function Sheet({
       onClose={onClose}
       ref={dialogRef}
     >
-      <div className="modal-box max-h-[90dvh] overflow-y-auto rounded-t-box px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-box">
+      <div
+        className="modal-box max-h-[90dvh] overflow-y-auto rounded-t-box px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-box"
+        style={
+          viewportHeight === null
+            ? undefined
+            : { maxHeight: `min(90dvh, ${viewportHeight}px)` }
+        }
+      >
         {title || more ? (
           <div className="flex items-start justify-between gap-3">
             {title ? (
