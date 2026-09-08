@@ -1,5 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { useMemo, useRef, useState } from 'react';
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query';
+import { Link } from '@/lib/router';
 
 import {
   Alert,
@@ -16,12 +21,12 @@ import {
 import {
   fetchHistory,
   fetchHistoryFilterOptions,
-  type HistoryFilterOptions,
   type HistoryFilters,
   type HistoryResponse,
 } from '@/features/history/history-api';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-client';
 
 const emptyFilters: HistoryFilters = {
   beforeDate: null,
@@ -64,95 +69,62 @@ export function HistoryRoute() {
   const teamId = activeTeam?.id ?? null;
   const [filters, setFilters] = useState<HistoryFilters>(emptyFilters);
   const [draft, setDraft] = useState<HistoryFilters>(emptyFilters);
-  const [history, setHistory] = useState<HistoryResponse | null>(null);
-  const [options, setOptions] = useState<HistoryFilterOptions | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [permissionDenied, setPermissionDenied] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [optionsError, setOptionsError] = useState<string | null>(null);
-  const requestId = useRef(0);
-  const optionsRequestId = useRef(0);
+  const filterTriggerRef = useRef<HTMLButtonElement>(null);
   const loadingMoreRef = useRef(false);
+  const lastTeamIdRef = useRef(teamId);
 
-  const load = useCallback(
-    async (nextFilters: HistoryFilters, append = false) => {
-      if (!teamId) return;
-      if (append) {
-        if (loadingMoreRef.current) return;
-        loadingMoreRef.current = true;
-        setLoadingMore(true);
-      } else {
-        loadingMoreRef.current = false;
-        setLoadingMore(false);
-        setLoading(true);
-      }
-      const currentRequest = ++requestId.current;
-      setError(null);
-      setPermissionDenied(false);
-      try {
-        const result = await fetchHistory(teamId, nextFilters);
-        if (currentRequest !== requestId.current) return;
-        setHistory((current) => {
-          if (!append || !current) return result;
-          const existingDates = new Set(current.days.map((day) => day.date));
-          return {
-            ...result,
-            days: [
-              ...current.days,
-              ...result.days.filter((day) => !existingDates.has(day.date)),
-            ],
-          };
-        });
-      } catch (loadError) {
-        if (currentRequest !== requestId.current) return;
-        if (isPermissionError(loadError)) setPermissionDenied(true);
-        else
-          setError(
-            getErrorMessage(loadError, 'Не вдалося завантажити історію.'),
-          );
-      } finally {
-        if (currentRequest === requestId.current) {
-          if (append) {
-            loadingMoreRef.current = false;
-            setLoadingMore(false);
-          } else setLoading(false);
-        }
-      }
-    },
-    [teamId],
-  );
-
-  useEffect(() => {
-    if (!teamId) return;
-    const timer = setTimeout(() => {
-      requestId.current += 1;
-      const currentOptionsRequest = ++optionsRequestId.current;
-      setHistory(null);
-      setFilters(emptyFilters);
-      setDraft(emptyFilters);
-      setError(null);
-      setPermissionDenied(false);
-      setOptionsError(null);
-      setOptions(null);
-      void load(emptyFilters);
-      void fetchHistoryFilterOptions(teamId)
-        .then((nextOptions) => {
-          if (currentOptionsRequest === optionsRequestId.current) {
-            setOptions(nextOptions);
-          }
-        })
-        .catch((optionError: unknown) => {
-          if (currentOptionsRequest === optionsRequestId.current) {
-            setOptionsError(
-              getErrorMessage(optionError, 'Не вдалося завантажити фільтри.'),
-            );
-          }
-        });
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [load, teamId]);
+  if (lastTeamIdRef.current !== teamId) {
+    lastTeamIdRef.current = teamId;
+    if (filters !== emptyFilters) setFilters(emptyFilters);
+    if (draft !== emptyFilters) setDraft(emptyFilters);
+  }
+  const historyQuery = useInfiniteQuery<
+    HistoryResponse,
+    Error,
+    InfiniteData<HistoryResponse>,
+    readonly unknown[],
+    string | null
+  >({
+    enabled: Boolean(teamId),
+    getNextPageParam: (page) => page?.nextBeforeDate ?? undefined,
+    initialPageParam: null as string | null,
+    placeholderData: (previousData, previousQuery) =>
+      previousQuery?.queryKey[1] === teamId ? previousData : undefined,
+    queryFn: ({ pageParam }) =>
+      fetchHistory(teamId!, { ...filters, beforeDate: pageParam }),
+    queryKey: queryKeys.history(teamId ?? 'none', filters),
+  });
+  const optionsQuery = useQuery({
+    enabled: Boolean(teamId),
+    queryFn: () => fetchHistoryFilterOptions(teamId!),
+    queryKey: queryKeys.historyOptions(teamId ?? 'none'),
+  });
+  const history = useMemo<HistoryResponse | null>(() => {
+    const pages = historyQuery.data?.pages.filter(Boolean);
+    if (!pages?.length) return null;
+    const first = pages[0]!;
+    const dates = new Set<string>();
+    return {
+      ...first,
+      hasMore: Boolean(historyQuery.hasNextPage),
+      nextBeforeDate: pages.at(-1)?.nextBeforeDate ?? null,
+      days: pages
+        .flatMap((page) => page.days)
+        .filter((day) => !dates.has(day.date) && Boolean(dates.add(day.date))),
+    };
+  }, [historyQuery.data, historyQuery.hasNextPage]);
+  const options = optionsQuery.data ?? null;
+  const loading = historyQuery.isLoading;
+  const loadingMore = historyQuery.isFetchingNextPage;
+  const error =
+    historyQuery.error && !isPermissionError(historyQuery.error)
+      ? getErrorMessage(historyQuery.error, 'Не вдалося завантажити історію.')
+      : null;
+  const permissionDenied = isPermissionError(historyQuery.error);
+  const optionsError = optionsQuery.error
+    ? getErrorMessage(optionsQuery.error, 'Не вдалося завантажити фільтри.')
+    : null;
 
   const defaults = useMemo(
     () =>
@@ -177,19 +149,17 @@ export function HistoryRoute() {
     const next = { ...draft, beforeDate: null };
     setFilters(next);
     setFilterOpen(false);
-    void load(next);
   };
   const resetFilters = () => {
     setFilters(defaults);
     setDraft(defaults);
     setFilterOpen(false);
-    void load(defaults);
   };
   const openFilters = () => {
     setDraft(filters.fromDate || filters.toDate ? filters : defaults);
     setFilterOpen(true);
   };
-  const retry = () => void load(filters);
+  const retry = () => void historyQuery.refetch();
 
   if (status === 'idle' || status === 'loading')
     return (
@@ -254,6 +224,7 @@ export function HistoryRoute() {
           icon="calendar"
           label="Фільтри історії"
           onClick={openFilters}
+          ref={filterTriggerRef}
         />
       }
       title="Історія"
@@ -317,13 +288,15 @@ export function HistoryRoute() {
           ))}
           {history.hasMore ? (
             <Button
+              disabled={historyQuery.isFetchingNextPage}
               loading={loadingMore}
-              onClick={() =>
-                void load(
-                  { ...filters, beforeDate: history.nextBeforeDate },
-                  true,
-                )
-              }
+              onClick={() => {
+                if (loadingMoreRef.current) return;
+                loadingMoreRef.current = true;
+                void historyQuery.fetchNextPage().finally(() => {
+                  loadingMoreRef.current = false;
+                });
+              }}
             >
               Завантажити ще
             </Button>
@@ -334,6 +307,7 @@ export function HistoryRoute() {
         onClose={() => setFilterOpen(false)}
         open={filterOpen}
         title="Фільтри історії"
+        triggerRef={filterTriggerRef}
       >
         <div className="flex flex-col gap-4">
           <Input

@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Menu } from '@base-ui/react/menu';
+import { Navigate } from '@/lib/router';
+import { useNavigate, useParams } from '@/lib/router-hooks';
 
 import {
   Alert,
@@ -24,7 +27,6 @@ import {
   reorderTasks,
   updateChecklist,
   updateTask,
-  type Checklist,
   type Task,
 } from '@/features/checklists/checklist-api';
 import { ChecklistForm } from '@/features/checklists/checklist-form';
@@ -37,6 +39,7 @@ import { SortableTaskList } from '@/features/checklists/sortable-task-list';
 import { TaskForm } from '@/features/checklists/task-form';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-client';
 
 type Dialog =
   | { type: 'create-task' }
@@ -52,51 +55,96 @@ export function ChecklistDetailRoute() {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { activeTeam, status } = useTeams();
-  const [checklist, setChecklist] = useState<Checklist | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [reorderError, setReorderError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Shared across all five Sheets below: only one `dialog` is ever open at
+  // a time, so one ref is enough to send focus back to whichever page
+  // element (or task row) actually opened it. Menu-originated delete requests
+  // carry the stable account-menu trigger in their custom-event detail.
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
+  const fabRef = useRef<HTMLButtonElement>(null);
+  const queryClient = useQueryClient();
+  const detailQuery = useQuery({
+    enabled: Boolean(activeTeam && checklistId),
+    queryFn: async () => {
+      const checklist = await fetchChecklist(checklistId!);
+      if (!checklist || checklist.team_id !== activeTeam!.id) return null;
+      return { checklist, tasks: await fetchTasks(checklist.id) };
+    },
+    queryKey: queryKeys.checklist(
+      activeTeam?.id ?? 'none',
+      checklistId ?? 'none',
+    ),
+  });
+  const checklist = detailQuery.data?.checklist ?? null;
+  const tasks = detailQuery.data?.tasks ?? [];
+  const loading = detailQuery.isLoading;
+  const notFound = detailQuery.isSuccess && !detailQuery.data;
 
   const isOwner = Boolean(
     activeTeam && session?.user.id === activeTeam.owner_id,
   );
   const atTaskLimit = tasks.length >= MAX_ACTIVE_TASKS_PER_CHECKLIST;
 
-  const loadDetail = useCallback(async () => {
-    if (!activeTeam || !checklistId) return;
-
-    setLoading(true);
-    setError(null);
-    setNotFound(false);
-    try {
-      const nextChecklist = await fetchChecklist(checklistId);
-      if (!nextChecklist || nextChecklist.team_id !== activeTeam.id) {
-        setChecklist(null);
-        setTasks([]);
-        setNotFound(true);
-        return;
-      }
-
-      setChecklist(nextChecklist);
-      setTasks(await fetchTasks(nextChecklist.id));
-    } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Не вдалося завантажити чекліст.'));
-    } finally {
-      setLoading(false);
+  const invalidateDetail = async () => {
+    if (activeTeam && checklistId) {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.checklist(activeTeam.id, checklistId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.checklists(activeTeam.id),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.todayForTeam(activeTeam.id),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.historyForTeam(activeTeam.id),
+      });
     }
-  }, [activeTeam, checklistId]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadDetail();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [loadDetail]);
+  };
+  const updateChecklistMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: ChecklistFormValues }) =>
+      updateChecklist(id, values),
+  });
+  const createTaskMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: TaskFormValues }) =>
+      createTask(id, values),
+  });
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: TaskFormValues }) =>
+      updateTask(id, values),
+  });
+  const deleteChecklistMutation = useMutation({
+    mutationFn: deleteChecklist,
+    onSuccess: async () => {
+      if (activeTeam)
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.checklists(activeTeam.id),
+        });
+      if (activeTeam) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.todayForTeam(activeTeam.id),
+        });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.historyForTeam(activeTeam.id),
+        });
+      }
+    },
+  });
+  const deleteTaskMutation = useMutation({
+    mutationFn: deleteTask,
+  });
+  const reorderMutation = useMutation({
+    mutationFn: ({
+      checklistId: id,
+      taskIds,
+    }: {
+      checklistId: string;
+      taskIds: string[];
+    }) => reorderTasks(id, taskIds),
+  });
 
   const closeDialog = () => {
     setDialog(null);
@@ -109,7 +157,10 @@ export function ChecklistDetailRoute() {
   };
 
   useEffect(() => {
-    const onDeleteRequest = () => {
+    const onDeleteRequest = (event: Event) => {
+      const trigger = (event as CustomEvent<{ trigger?: HTMLElement | null }>)
+        .detail?.trigger;
+      if (trigger) dialogTriggerRef.current = trigger;
       if (isOwner) openDialog({ type: 'delete-checklist' });
     };
     window.addEventListener('checklister:delete-checklist', onDeleteRequest);
@@ -122,26 +173,26 @@ export function ChecklistDetailRoute() {
 
   const submitChecklistEdit = async (values: ChecklistFormValues) => {
     if (!checklist) return;
-    await updateChecklist(checklist.id, values);
+    await updateChecklistMutation.mutateAsync({ id: checklist.id, values });
     closeDialog();
     toast('Чекліст збережено');
-    await loadDetail();
+    await invalidateDetail();
   };
 
   const submitTaskCreate = async (values: TaskFormValues) => {
     if (!checklist) return;
-    await createTask(checklist.id, values);
+    await createTaskMutation.mutateAsync({ id: checklist.id, values });
     closeDialog();
     toast('Задачу додано');
-    await loadDetail();
+    await invalidateDetail();
   };
 
   const submitTaskEdit = async (values: TaskFormValues) => {
     if (dialog?.type !== 'edit-task') return;
-    await updateTask(dialog.task.id, values);
+    await updateTaskMutation.mutateAsync({ id: dialog.task.id, values });
     closeDialog();
     toast('Задачу збережено');
-    await loadDetail();
+    await invalidateDetail();
   };
 
   const confirmDeleteChecklist = async () => {
@@ -149,7 +200,7 @@ export function ChecklistDetailRoute() {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await deleteChecklist(checklist.id);
+      await deleteChecklistMutation.mutateAsync(checklist.id);
       navigate('/checklists', { replace: true });
     } catch (deleteFailure) {
       setDeleteError(
@@ -164,10 +215,10 @@ export function ChecklistDetailRoute() {
     setDeleting(true);
     setDeleteError(null);
     try {
-      await deleteTask(dialog.task.id);
+      await deleteTaskMutation.mutateAsync(dialog.task.id);
       closeDialog();
       toast('Задачу видалено');
-      await loadDetail();
+      await invalidateDetail();
     } catch (deleteFailure) {
       setDeleteError(
         getErrorMessage(deleteFailure, 'Не вдалося видалити задачу.'),
@@ -180,14 +231,20 @@ export function ChecklistDetailRoute() {
   const handleReorder = async (ids: string[]) => {
     if (!checklist) return;
 
-    setError(null);
+    setReorderError(null);
     try {
-      await reorderTasks(checklist.id, ids);
-      setTasks(await fetchTasks(checklist.id));
+      await reorderMutation.mutateAsync({
+        checklistId: checklist.id,
+        taskIds: ids,
+      });
       toast('Порядок збережено');
-    } catch (reorderError) {
-      setError(getErrorMessage(reorderError, 'Не вдалося змінити порядок.'));
-      throw reorderError;
+    } catch (reorderFailure) {
+      setReorderError(
+        getErrorMessage(reorderFailure, 'Не вдалося змінити порядок.'),
+      );
+      throw reorderFailure;
+    } finally {
+      await invalidateDetail();
     }
   };
 
@@ -209,17 +266,35 @@ export function ChecklistDetailRoute() {
     );
   }
 
-  if (error) {
+  // A failed *refetch* (offline drag, background/focus refetch) flips the
+  // query to `status: "error"` while it keeps serving the previous data.
+  // Only a failure with nothing to show may replace the page; otherwise the
+  // load error is rendered inline below, next to `reorderError`, so the task
+  // list, the FAB and the sheets stay mounted.
+  const loadErrorAlert = detailQuery.isError ? (
+    <Alert color="error">
+      <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
+        <span>
+          {getErrorMessage(
+            detailQuery.error,
+            'Не вдалося завантажити чекліст.',
+          )}
+        </span>
+        <Button
+          color="primary"
+          size="sm"
+          onClick={() => void detailQuery.refetch()}
+        >
+          Повторити
+        </Button>
+      </div>
+    </Alert>
+  ) : null;
+
+  if (detailQuery.isError && !detailQuery.data) {
     return (
       <Page back="/checklists" title="Чекліст">
-        <Alert color="error">
-          <div className="flex flex-1 flex-wrap items-center justify-between gap-3">
-            <span>{error}</span>
-            <Button color="primary" size="sm" onClick={() => void loadDetail()}>
-              Повторити
-            </Button>
-          </div>
-        </Alert>
+        {loadErrorAlert}
       </Page>
     );
   }
@@ -244,7 +319,10 @@ export function ChecklistDetailRoute() {
             <IconButton
               icon="pencil"
               label="Редагувати назву"
-              onClick={() => openDialog({ type: 'edit-checklist' })}
+              onClick={(event) => {
+                dialogTriggerRef.current = event.currentTarget;
+                openDialog({ type: 'edit-checklist' });
+              }}
             />
           </>
         ) : undefined
@@ -259,7 +337,8 @@ export function ChecklistDetailRoute() {
         ) : undefined
       }
     >
-      {error ? <Alert color="error">{error}</Alert> : null}
+      {reorderError ? <Alert color="error">{reorderError}</Alert> : null}
+      {loadErrorAlert}
 
       {tasks.length === 0 ? (
         <EmptyState
@@ -277,7 +356,10 @@ export function ChecklistDetailRoute() {
           onReorder={handleReorder}
           onSelect={
             isOwner
-              ? (task) => openDialog({ task, type: 'edit-task' })
+              ? (task, element) => {
+                  dialogTriggerRef.current = element;
+                  openDialog({ task, type: 'edit-task' });
+                }
               : undefined
           }
           tasks={tasks}
@@ -289,12 +371,17 @@ export function ChecklistDetailRoute() {
           disabled={atTaskLimit}
           disabledHint="Ліміт 100 задач"
           label="Додати задачу"
-          onClick={() => openDialog({ type: 'create-task' })}
+          onClick={() => {
+            dialogTriggerRef.current = fabRef.current;
+            openDialog({ type: 'create-task' });
+          }}
+          ref={fabRef}
         />
       ) : null}
 
       <Sheet
         onClose={closeDialog}
+        triggerRef={dialogTriggerRef}
         open={dialog?.type === 'edit-checklist'}
         title="Редагувати чекліст"
       >
@@ -310,6 +397,7 @@ export function ChecklistDetailRoute() {
       <Sheet
         description="Чекліст зникне з розділу «Сьогодні». Історія виконань збережеться, але відновити його в цьому інтерфейсі не можна."
         onClose={closeDialog}
+        triggerRef={dialogTriggerRef}
         open={dialog?.type === 'delete-checklist'}
         title="Видалити чекліст?"
       >
@@ -325,7 +413,7 @@ export function ChecklistDetailRoute() {
           <Button
             className="btn-block"
             color="error"
-            loading={deleting}
+            loading={deleting || deleteChecklistMutation.isPending}
             onClick={() => void confirmDeleteChecklist()}
           >
             Видалити
@@ -335,6 +423,7 @@ export function ChecklistDetailRoute() {
 
       <Sheet
         onClose={closeDialog}
+        triggerRef={dialogTriggerRef}
         open={dialog?.type === 'create-task'}
         title="Нова задача"
       >
@@ -351,36 +440,49 @@ export function ChecklistDetailRoute() {
         ariaLabel="Редагування задачі"
         more={
           dialog?.type === 'edit-task' ? (
-            <details className="dropdown dropdown-end">
-              <summary
+            <Menu.Root modal={false}>
+              <Menu.Trigger
                 aria-label="Ще"
-                className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
+                className="btn btn-circle btn-ghost"
               >
                 <Icon name="more-horizontal" />
-              </summary>
-              <ul className="menu dropdown-content z-30 w-52 rounded-box bg-base-100 shadow-sm">
-                <li>
-                  <button
-                    className="text-error"
-                    onClick={() => {
-                      if (dialog?.type !== 'edit-task') return;
-                      const task = dialog.task;
-                      document.activeElement
-                        ?.closest('details')
-                        ?.removeAttribute('open');
-                      closeDialog();
-                      openDialog({ task, type: 'delete-task' });
-                    }}
-                    type="button"
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Positioner
+                  align="end"
+                  className="dropdown dropdown-end z-30"
+                  side="bottom"
+                >
+                  <Menu.Popup
+                    render={
+                      <ul className="app-menu-popup menu dropdown-content w-52 rounded-box bg-base-100 shadow-sm" />
+                    }
                   >
-                    Видалити задачу
-                  </button>
-                </li>
-              </ul>
-            </details>
+                    <li>
+                      <Menu.Item
+                        className="text-error"
+                        nativeButton
+                        onClick={() => {
+                          if (dialog?.type !== 'edit-task') return;
+                          const task = dialog.task;
+                          closeDialog();
+                          queueMicrotask(() =>
+                            openDialog({ task, type: 'delete-task' }),
+                          );
+                        }}
+                        render={<button type="button" />}
+                      >
+                        Видалити задачу
+                      </Menu.Item>
+                    </li>
+                  </Menu.Popup>
+                </Menu.Positioner>
+              </Menu.Portal>
+            </Menu.Root>
           ) : undefined
         }
         onClose={closeDialog}
+        triggerRef={dialogTriggerRef}
         open={dialog?.type === 'edit-task'}
         title="Редагувати задачу"
       >
@@ -401,6 +503,7 @@ export function ChecklistDetailRoute() {
       <Sheet
         description="Задача зникне з розділу «Сьогодні». Історія виконань збережеться, але відновити її в цьому інтерфейсі не можна."
         onClose={closeDialog}
+        triggerRef={dialogTriggerRef}
         open={dialog?.type === 'delete-task'}
         title="Видалити задачу?"
       >
@@ -416,7 +519,7 @@ export function ChecklistDetailRoute() {
           <Button
             className="btn-block"
             color="error"
-            loading={deleting}
+            loading={deleting || deleteTaskMutation.isPending}
             onClick={() => void confirmDeleteTask()}
           >
             Видалити

@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@/lib/router';
+import { useNavigate } from '@/lib/router-hooks';
 
 import {
   Alert,
@@ -20,7 +22,6 @@ import {
   createChecklist,
   fetchActiveTaskCounts,
   fetchChecklists,
-  type Checklist,
 } from '@/features/checklists/checklist-api';
 import { ChecklistForm } from '@/features/checklists/checklist-form';
 import { taskCountLabel } from '@/features/checklists/checklist-schedule';
@@ -30,62 +31,66 @@ import {
 } from '@/features/checklists/checklist-schema';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-client';
 
 export function ChecklistsRoute() {
   const toast = useToast();
   const navigate = useNavigate();
   const { session } = useAuth();
   const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
-  const [checklists, setChecklists] = useState<Checklist[]>([]);
-  const [taskCounts, setTaskCounts] = useState<Map<string, number>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const createTriggerRef = useRef<HTMLButtonElement>(null);
+  const queryClient = useQueryClient();
+  const checklistQuery = useQuery({
+    enabled: Boolean(activeTeam),
+    queryFn: async () => {
+      const nextChecklists = await fetchChecklists(activeTeam!.id);
+      return {
+        checklists: nextChecklists,
+        taskCounts: await fetchActiveTaskCounts(
+          nextChecklists.map(({ id }) => id),
+        ),
+      };
+    },
+    queryKey: queryKeys.checklistList(activeTeam?.id ?? 'none'),
+  });
+  const createMutation = useMutation({
+    mutationFn: (values: ChecklistFormValues) =>
+      createChecklist({
+        createdBy: session!.user.id,
+        name: values.name,
+        teamId: activeTeam!.id,
+      }),
+    onSuccess: async (checklist) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.checklists(activeTeam!.id),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.todayForTeam(activeTeam!.id),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.historyForTeam(activeTeam!.id),
+      });
+      setCreateOpen(false);
+      toast('Чекліст створено');
+      navigate(`/checklists/${checklist.id}`);
+    },
+  });
+  const checklists = checklistQuery.data?.checklists ?? [];
+  const taskCounts =
+    checklistQuery.data?.taskCounts ?? new Map<string, number>();
+  const loading = checklistQuery.isLoading;
+  const error = checklistQuery.error
+    ? getErrorMessage(checklistQuery.error, 'Не вдалося завантажити чеклісти.')
+    : null;
 
   const isOwner = Boolean(
     activeTeam && session?.user.id === activeTeam.owner_id,
   );
   const atChecklistLimit = checklists.length >= MAX_ACTIVE_CHECKLISTS_PER_TEAM;
 
-  const loadChecklists = useCallback(async () => {
-    if (!activeTeam) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const nextChecklists = await fetchChecklists(activeTeam.id);
-      setChecklists(nextChecklists);
-      setTaskCounts(
-        await fetchActiveTaskCounts(
-          nextChecklists.map((checklist) => checklist.id),
-        ),
-      );
-    } catch (loadError) {
-      setError(getErrorMessage(loadError, 'Не вдалося завантажити чеклісти.'));
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTeam]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadChecklists();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [loadChecklists]);
-
   const submitCreate = async (values: ChecklistFormValues) => {
-    if (!activeTeam || !session) return;
-
-    const checklist = await createChecklist({
-      createdBy: session.user.id,
-      name: values.name,
-      teamId: activeTeam.id,
-    });
-    setCreateOpen(false);
-    toast('Чекліст створено');
-    navigate(`/checklists/${checklist.id}`);
+    if (activeTeam && session) await createMutation.mutateAsync(values);
   };
 
   if (status === 'idle' || status === 'loading') {
@@ -146,7 +151,7 @@ export function ChecklistsRoute() {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => void loadChecklists()}
+              onClick={() => void checklistQuery.refetch()}
             >
               Повторити
             </Button>
@@ -160,7 +165,13 @@ export function ChecklistsRoute() {
         <EmptyState
           action={
             isOwner && !atChecklistLimit ? (
-              <Button color="primary" onClick={() => setCreateOpen(true)}>
+              <Button
+                color="primary"
+                onClick={(event) => {
+                  createTriggerRef.current = event.currentTarget;
+                  setCreateOpen(true);
+                }}
+              >
                 Створити чекліст
               </Button>
             ) : undefined
@@ -198,6 +209,7 @@ export function ChecklistsRoute() {
           disabledHint="Ліміт 20 чеклістів"
           label="Створити чекліст"
           onClick={() => setCreateOpen(true)}
+          ref={createTriggerRef}
         />
       ) : null}
 
@@ -205,6 +217,7 @@ export function ChecklistsRoute() {
         onClose={() => setCreateOpen(false)}
         open={createOpen}
         title="Новий чекліст"
+        triggerRef={createTriggerRef}
       >
         {createOpen ? (
           <ChecklistForm onSubmit={submitCreate} submitLabel="Створити" />

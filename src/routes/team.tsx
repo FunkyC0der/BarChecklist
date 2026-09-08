@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation, useNavigate } from '@/lib/router-hooks';
 
 import {
   Alert,
@@ -23,7 +24,6 @@ import {
   fetchTeamMembers,
   leaveTeam,
   removeTeamMember,
-  type TeamMember,
   updateTeam,
 } from '@/features/teams/team-api';
 import { initials } from '@/features/teams/team-display';
@@ -33,6 +33,7 @@ import { joinPath } from '@/features/teams/team-routes';
 import { useTeams } from '@/features/teams/team-context';
 import { useTeamRealtime } from '@/features/teams/use-team-realtime';
 import { buildAppUrl, shareLink } from '@/lib/platform';
+import { queryKeys } from '@/lib/query-client';
 
 function formatExpiry(value: string) {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -47,9 +48,6 @@ export function TeamRoute() {
   const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [membersError, setMembersError] = useState<string | null>(null);
-  const [membersLoading, setMembersLoading] = useState(true);
   const [name, setName] = useState('');
   const [timezone, setTimezone] = useState('');
   const [teamMessage, setTeamMessage] = useState<string | null>(null);
@@ -59,7 +57,6 @@ export function TeamRoute() {
   );
   const [editingValue, setEditingValue] = useState('');
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const [inviteExpiry, setInviteExpiry] = useState<string | null>(null);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteFeedback, setInviteFeedback] = useState<{
     color: 'error' | 'success';
@@ -73,9 +70,57 @@ export function TeamRoute() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
   const activeTeamIdRef = useRef(activeTeam?.id ?? null);
-  const inviteStatusRequestId = useRef(0);
+  const inviteTriggerRef = useRef<HTMLButtonElement>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement>(null);
+  const editTriggerRef = useRef<HTMLElement | null>(null);
+  const queryClient = useQueryClient();
+  const invalidateTeams = async () => {
+    if (session)
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.teams(session.user.id),
+      });
+  };
+  const updateTeamMutation = useMutation({
+    mutationFn: ({
+      teamId,
+      name,
+      timezone,
+    }: {
+      teamId: string;
+      name: string;
+      timezone: string;
+    }) => updateTeam(teamId, { name, timezone }),
+    onSuccess: invalidateTeams,
+  });
+  const inviteMutation = useMutation({ mutationFn: createTeamInvite });
+  const removeMemberMutation = useMutation({
+    mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
+      removeTeamMember(teamId, userId),
+  });
+  const leaveMutation = useMutation({
+    mutationFn: leaveTeam,
+    onSuccess: invalidateTeams,
+  });
+  const deleteTeamMutation = useMutation({
+    mutationFn: deleteTeam,
+    onSuccess: invalidateTeams,
+  });
   const inviteCreateRequestId = useRef(0);
-  const membersRequestId = useRef(0);
+  const membersQuery = useQuery({
+    enabled: Boolean(activeTeam),
+    queryFn: () => fetchTeamMembers(activeTeam!.id),
+    queryKey: queryKeys.teamMembers(activeTeam?.id ?? 'none'),
+  });
+  const inviteQuery = useQuery({
+    enabled: Boolean(activeTeam && session?.user.id === activeTeam?.owner_id),
+    queryFn: () => fetchCurrentTeamInvite(activeTeam!.id),
+    queryKey: queryKeys.teamInvite(activeTeam?.id ?? 'none'),
+  });
+  const members = membersQuery.data ?? [];
+  const membersError =
+    membersQuery.error instanceof Error ? membersQuery.error.message : null;
+  const membersLoading = membersQuery.isLoading;
+  const inviteExpiry = inviteQuery.data?.expires_at ?? null;
 
   useEffect(() => {
     activeTeamIdRef.current = activeTeam?.id ?? null;
@@ -84,69 +129,6 @@ export function TeamRoute() {
   const isOwner = Boolean(
     activeTeam && session?.user.id === activeTeam.owner_id,
   );
-
-  const loadMembers = useCallback(async () => {
-    if (!activeTeam) return;
-
-    const teamId = activeTeam.id;
-    const requestId = ++membersRequestId.current;
-    setMembersLoading(true);
-    setMembersError(null);
-    try {
-      const nextMembers = await fetchTeamMembers(teamId);
-      if (
-        requestId === membersRequestId.current &&
-        activeTeamIdRef.current === teamId
-      ) {
-        setMembers(nextMembers);
-      }
-    } catch (error) {
-      if (
-        requestId === membersRequestId.current &&
-        activeTeamIdRef.current === teamId
-      ) {
-        setMembersError(
-          error instanceof Error
-            ? error.message
-            : 'Не вдалося завантажити учасників.',
-        );
-      }
-    } finally {
-      if (
-        requestId === membersRequestId.current &&
-        activeTeamIdRef.current === teamId
-      ) {
-        setMembersLoading(false);
-      }
-    }
-  }, [activeTeam]);
-
-  const loadInviteStatus = useCallback(async () => {
-    if (!activeTeam || !isOwner) return;
-
-    const teamId = activeTeam.id;
-    const requestId = ++inviteStatusRequestId.current;
-    try {
-      const invite = await fetchCurrentTeamInvite(teamId);
-      if (
-        requestId === inviteStatusRequestId.current &&
-        activeTeamIdRef.current === teamId
-      ) {
-        setInviteExpiry(invite?.expires_at ?? null);
-      }
-    } catch (error) {
-      if (
-        requestId === inviteStatusRequestId.current &&
-        activeTeamIdRef.current === teamId
-      ) {
-        setInviteMessage(
-          error instanceof Error
-            ? error.message
-            : 'Не вдалося перевірити запрошення.',
-        );
-      }
-    }
-  }, [activeTeam, isOwner]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -157,31 +139,22 @@ export function TeamRoute() {
       setInviteDialogOpen(false);
       setInviteFeedback(null);
       setInviteMessage(null);
-      void loadMembers();
-      void loadInviteStatus();
     }, 0);
 
     return () => clearTimeout(timer);
-  }, [
-    activeTeam?.id,
-    activeTeam?.name,
-    activeTeam?.timezone,
-    loadInviteStatus,
-    loadMembers,
-    location.key,
-  ]);
+  }, [activeTeam?.id, activeTeam?.name, activeTeam?.timezone, location.href]);
 
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
-        void loadMembers();
-        void loadInviteStatus();
+        void membersQuery.refetch();
+        void inviteQuery.refetch();
       }
     };
 
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
-  }, [loadInviteStatus, loadMembers]);
+  }, [inviteQuery, membersQuery]);
 
   const refreshActiveTeam = useCallback(() => {
     void refreshTeams();
@@ -189,16 +162,27 @@ export function TeamRoute() {
 
   const { retry: retryRealtime, status: realtimeStatus } = useTeamRealtime({
     isOwner,
-    onInviteChange: loadInviteStatus,
-    onMembersChange: loadMembers,
+    onInviteChange: () =>
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.teamInvite(activeTeam?.id ?? 'none'),
+      }),
+    onMembersChange: () =>
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.teamMembers(activeTeam?.id ?? 'none'),
+      }),
     onTeamChange: refreshActiveTeam,
     teamId: activeTeam?.id ?? null,
   });
 
-  const openTeamEditor = (field: 'name' | 'timezone') => {
+  const openTeamEditor = (field: 'name' | 'timezone', trigger: HTMLElement) => {
+    editTriggerRef.current = trigger;
     setTeamMessage(null);
     setEditingField(field);
-    setEditingValue(field === 'name' ? name : timezone);
+    setEditingValue(
+      field === 'name'
+        ? (activeTeam?.name ?? name)
+        : (activeTeam?.timezone ?? timezone),
+    );
   };
 
   const closeTeamEditor = () => {
@@ -218,7 +202,11 @@ export function TeamRoute() {
       const nextName = editingField === 'name' ? editingValue : name;
       const nextTimezone =
         editingField === 'timezone' ? editingValue : timezone;
-      await updateTeam(teamId, { name: nextName, timezone: nextTimezone });
+      await updateTeamMutation.mutateAsync({
+        teamId,
+        name: nextName,
+        timezone: nextTimezone,
+      });
       if (activeTeamIdRef.current !== teamId) return;
       setName(nextName);
       setTimezone(nextTimezone);
@@ -246,7 +234,7 @@ export function TeamRoute() {
     setInviteLoading(true);
     setInviteMessage(null);
     try {
-      const invite = await createTeamInvite(teamId);
+      const invite = await inviteMutation.mutateAsync(teamId);
       if (
         requestId !== inviteCreateRequestId.current ||
         activeTeamIdRef.current !== teamId
@@ -254,7 +242,6 @@ export function TeamRoute() {
         return;
       }
       setInviteLink(buildAppUrl(joinPath(invite.token)));
-      setInviteExpiry(invite.expires_at);
       setInviteFeedback(null);
       setInviteDialogOpen(true);
     } catch (error) {
@@ -338,14 +325,15 @@ export function TeamRoute() {
 
     const teamId = activeTeam.id;
     setMemberActionId(userId);
-    setMembersError(null);
     try {
-      await removeTeamMember(teamId, userId);
+      await removeMemberMutation.mutateAsync({ teamId, userId });
       if (activeTeamIdRef.current !== teamId) return;
-      await loadMembers();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.teamMembers(teamId),
+      });
     } catch (error) {
       if (activeTeamIdRef.current === teamId) {
-        setMembersError(
+        setTeamMessage(
           error instanceof Error
             ? error.message
             : 'Не вдалося видалити учасника.',
@@ -362,7 +350,7 @@ export function TeamRoute() {
     setLeaveLoading(true);
     setTeamMessage(null);
     try {
-      await leaveTeam(activeTeam.id);
+      await leaveMutation.mutateAsync(activeTeam.id);
       await refreshTeams();
       navigate('/', { replace: true });
     } catch (error) {
@@ -380,7 +368,7 @@ export function TeamRoute() {
     setDeleteLoading(true);
     setTeamMessage(null);
     try {
-      await deleteTeam(activeTeam.id);
+      await deleteTeamMutation.mutateAsync(activeTeam.id);
       await refreshTeams();
       navigate('/', { replace: true });
     } catch (error) {
@@ -484,8 +472,18 @@ export function TeamRoute() {
         <ul className="list">
           {(
             [
-              ['name', 'Назва', name, 'Редагувати назву команди'],
-              ['timezone', 'Timezone', timezone, 'Редагувати часовий пояс'],
+              [
+                'name',
+                'Назва',
+                name || activeTeam.name,
+                'Редагувати назву команди',
+              ],
+              [
+                'timezone',
+                'Timezone',
+                timezone || activeTeam.timezone,
+                'Редагувати часовий пояс',
+              ],
             ] as const
           ).map(([field, label, value, editLabel]) => (
             <li
@@ -500,7 +498,9 @@ export function TeamRoute() {
                 <IconButton
                   icon="pencil"
                   label={editLabel}
-                  onClick={() => openTeamEditor(field)}
+                  onClick={(event) =>
+                    openTeamEditor(field, event.currentTarget)
+                  }
                   size="sm"
                 />
               ) : null}
@@ -527,6 +527,7 @@ export function TeamRoute() {
               className="btn btn-circle btn-sm"
               disabled={inviteLoading}
               onClick={() => void createInvite()}
+              ref={inviteTriggerRef}
               type="button"
             >
               {inviteLoading ? (
@@ -546,7 +547,7 @@ export function TeamRoute() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => void loadMembers()}
+                onClick={() => void membersQuery.refetch()}
               >
                 Повторити
               </Button>
@@ -602,6 +603,7 @@ export function TeamRoute() {
                 className="btn-block"
                 color="error"
                 onClick={() => setDeleteSheetOpen(true)}
+                ref={deleteTriggerRef}
                 variant="outline"
               >
                 Видалити команду
@@ -630,6 +632,7 @@ export function TeamRoute() {
         onClose={closeInviteDialog}
         onShareInvite={() => void shareInvite()}
         open={inviteDialogOpen}
+        triggerRef={inviteTriggerRef}
       />
 
       {isOwner ? (
@@ -642,6 +645,7 @@ export function TeamRoute() {
           onDeleteNameChange={setDeleteName}
           open={deleteSheetOpen}
           teamName={activeTeam.name}
+          triggerRef={deleteTriggerRef}
         />
       ) : null}
 
@@ -659,6 +663,7 @@ export function TeamRoute() {
               ? 'Редагувати назву команди'
               : 'Редагувати часовий пояс'
           }
+          triggerRef={editTriggerRef}
         >
           <div className="flex flex-col gap-4">
             <Input

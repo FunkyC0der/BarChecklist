@@ -1,4 +1,5 @@
-import { Link, useSearchParams } from 'react-router';
+import { Link } from '@/lib/router';
+import { useSearchParams } from '@/lib/router-hooks';
 
 import { AuthShell } from '@/components/common/auth-shell';
 import { ConfigNotice } from '@/components/common/config-notice';

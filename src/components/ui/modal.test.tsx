@@ -53,8 +53,14 @@ function nextFrame() {
   act(() => vi.advanceTimersToNextFrame());
 }
 
+function getSurface(dialog: HTMLElement) {
+  const surface = dialog.closest<HTMLElement>('.modal');
+  if (!surface) throw new Error('Modal surface was not rendered');
+  return surface;
+}
+
 describe('Modal', () => {
-  it('uses the shared floating popup card and native backdrop', () => {
+  it('uses the shared floating popup card and Base UI backdrop', () => {
     render(
       <Modal onClose={vi.fn()} open title="Редагувати команду">
         <div className="h-[1200px]">Довгий вміст</div>
@@ -62,8 +68,10 @@ describe('Modal', () => {
     );
 
     const dialog = screen.getByRole('dialog');
-    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
-    expect(dialog).toHaveClass(
+    const box = dialog;
+    const surface = getSurface(dialog);
+    expect(surface).toHaveClass('modal-open');
+    expect(surface).toHaveClass(
       'modal',
       'items-end',
       'justify-items-center',
@@ -72,7 +80,7 @@ describe('Modal', () => {
       '[--bottom-dock-height:3.5rem]',
       '[--bottom-popup-gap:0.75rem]',
     );
-    expect(dialog).not.toHaveClass('place-items-end');
+    expect(surface).not.toHaveClass('place-items-end');
     expect(box).toHaveClass(
       'w-full',
       'max-w-xl',
@@ -84,10 +92,8 @@ describe('Modal', () => {
       'overflow-y-auto',
       'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
     );
-    expect(dialog.querySelector('form.modal-backdrop')).toHaveAttribute(
-      'method',
-      'dialog',
-    );
+    expect(surface.querySelector('.modal-backdrop')).toBeInTheDocument();
+    expect(dialog.querySelector('button.sr-only')).toHaveTextContent('Закрити');
   });
 
   it('uses a keyboard gap and cleans up viewport overrides', () => {
@@ -98,16 +104,17 @@ describe('Modal', () => {
       </Modal>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
+    const box = dialog;
+    const surface = getSurface(dialog);
     nextFrame();
-    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
 
     viewport.height = 320;
     viewport.offsetTop = 60;
     viewport.dispatchEvent(new Event('resize'));
     nextFrame();
-    expect(dialog).toHaveStyle({ top: '60px', height: '320px' });
-    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
+    expect(surface).toHaveStyle({ top: '60px', height: '320px' });
+    expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
       '12px',
     );
     expect(box).toHaveStyle({ maxHeight: '308px' });
@@ -117,7 +124,7 @@ describe('Modal', () => {
         <input aria-label="Назва" />
       </Modal>,
     );
-    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
     expect(box.style.maxHeight).toBe('');
   });
 
@@ -128,8 +135,10 @@ describe('Modal', () => {
       </Modal>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
-    expect(dialog).not.toHaveAttribute('style');
-    expect(box).not.toHaveAttribute('style');
+    const box = dialog;
+    const surface = getSurface(dialog);
+    expect(surface.style.top).toBe('');
+    expect(surface.style.height).toBe('');
+    expect(box.style.maxHeight).toBe('');
   });
 });

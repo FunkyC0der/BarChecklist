@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { type Task } from './checklist-api';
@@ -12,6 +13,40 @@ vi.hoisted(() => {
   }
 
   vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+});
+
+// Real @dnd-kit pointer drags aren't worth simulating for the in-flight
+// reorder guard test below: capture the DragDropProvider's onDragEnd so the
+// test can invoke it directly, and let `move` just return whatever next
+// order the synthetic event carries.
+const dragCapture = vi.hoisted(
+  () =>
+    ({ onDragEnd: null }) as { onDragEnd: ((event: unknown) => void) | null },
+);
+
+vi.mock('@dnd-kit/helpers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@dnd-kit/helpers')>();
+  return {
+    ...actual,
+    move: (_ids: string[], event: { next: string[] }) => event.next,
+  };
+});
+
+vi.mock('@dnd-kit/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@dnd-kit/react')>();
+  return {
+    ...actual,
+    DragDropProvider: ({
+      children,
+      onDragEnd,
+    }: {
+      children: ReactNode;
+      onDragEnd: (event: unknown) => void;
+    }) => {
+      dragCapture.onDragEnd = onDragEnd;
+      return children;
+    },
+  };
 });
 
 import { SortableTaskList } from './sortable-task-list';
@@ -93,5 +128,48 @@ describe('SortableTaskList', () => {
     expect(
       screen.getByRole('button', { name: 'Перемістити «Друга задача»' }),
     ).toBeInTheDocument();
+  });
+
+  it('ignores a second drag while the first reorder is still in flight (P2-1)', async () => {
+    let resolveFirst: (() => void) | undefined;
+    const onReorder = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFirst = resolve;
+          }),
+      )
+      .mockResolvedValue(undefined);
+
+    render(<SortableTaskList isOwner onReorder={onReorder} tasks={tasks} />);
+
+    // `dragCapture.onDragEnd` is reassigned on every SortableTaskList
+    // render (its closure captures the current orderedTasks/ref state), so
+    // each drag reads it fresh rather than caching a single reference.
+    expect(dragCapture.onDragEnd).not.toBeNull();
+
+    // Drag 1: task-1 <-> task-2.
+    await act(async () => {
+      dragCapture.onDragEnd!({ canceled: false, next: ['task-2', 'task-1'] });
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+    expect(onReorder).toHaveBeenCalledWith(['task-2', 'task-1']);
+
+    // Drag 2 starts before drag 1 has settled: it must be ignored rather
+    // than firing a second, concurrent reorder RPC.
+    await act(async () => {
+      dragCapture.onDragEnd!({ canceled: false, next: ['task-1', 'task-2'] });
+    });
+    expect(onReorder).toHaveBeenCalledTimes(1);
+
+    // Once drag 1 settles, the guard lifts and a new drag is honored.
+    await act(async () => {
+      resolveFirst?.();
+    });
+    await act(async () => {
+      dragCapture.onDragEnd!({ canceled: false, next: ['task-1', 'task-2'] });
+    });
+    expect(onReorder).toHaveBeenCalledTimes(2);
   });
 });

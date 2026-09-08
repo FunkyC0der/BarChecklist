@@ -12,13 +12,13 @@ Use `docs/plans/next-steps.md` and the current epic plan as the source of truth.
 
 ## Start here
 
-| Task | One starting point |
-| --- | --- |
-| Small known code change | The relevant source module; no overview required |
-| New product behavior or scope | `docs/plans/next-steps.md` |
-| Beta operations | `docs/plans/epics/epic-06-closed-web-beta.md` |
-| HTML/JSX/Tailwind/daisyUI | `.agents/skills/daisyui/SKILL.md`, then task-relevant references/components |
-| Visual policy | `docs/design/ui-style.md` |
-| Schema, RLS or RPC | `supabase/migrations/` and its matching pgTAP test |
-| Real-device smoke | `docs/qa/beta-smoke-real-devices.md` |
-| Historical lookup | `docs/README.md`, then `docs/plans/archive/` or `docs/qa/archive/` |
+| Task                          | One starting point                                                          |
+| ----------------------------- | --------------------------------------------------------------------------- |
+| Small known code change       | The relevant source module; no overview required                            |
+| New product behavior or scope | `docs/plans/next-steps.md`                                                  |
+| Beta operations               | `docs/plans/epics/epic-06-closed-web-beta.md`                               |
+| HTML/JSX/Tailwind/daisyUI     | `.agents/skills/daisyui/SKILL.md`, then task-relevant references/components |
+| Visual policy                 | `docs/design/ui-style.md`                                                   |
+| Schema, RLS or RPC            | `supabase/migrations/` and its matching pgTAP test                          |
+| Real-device smoke             | `docs/qa/beta-smoke-real-devices.md`                                        |
+| Historical lookup             | `docs/README.md`, then `docs/plans/archive/` or `docs/qa/archive/`          |

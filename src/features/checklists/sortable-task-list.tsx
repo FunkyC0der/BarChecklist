@@ -1,7 +1,8 @@
 import { move } from '@dnd-kit/helpers';
 import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
 import { useSortable } from '@dnd-kit/react/sortable';
-import { useState } from 'react';
+import { motion } from 'motion/react';
+import { useRef, useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
 import { TaskMarker } from '@/components/ui/list-row';
@@ -18,7 +19,7 @@ function SortableTaskRow({
 }: {
   index: number;
   isOwner: boolean;
-  onSelect?: ((task: Task) => void) | undefined;
+  onSelect?: ((task: Task, element: HTMLElement) => void) | undefined;
   task: Task;
 }) {
   const { handleRef, isDragging, ref } = useSortable({
@@ -48,13 +49,15 @@ function SortableTaskRow({
     >
       <TaskMarker />
       {isOwner && onSelect ? (
-        <button
-          className="text-start list-col-grow"
-          onClick={() => onSelect(task)}
+        <motion.button
+          className="rounded-box text-start list-col-grow active:bg-base-200"
+          onClick={(event) => onSelect(task, event.currentTarget)}
+          transition={{ duration: 0.1, ease: 'easeOut' }}
           type="button"
+          whileTap={{ scale: 0.98 }}
         >
           {titleContent}
-        </button>
+        </motion.button>
       ) : (
         <div className="list-col-grow">{titleContent}</div>
       )}
@@ -80,13 +83,14 @@ export function SortableTaskList({
 }: {
   isOwner: boolean;
   onReorder: (ids: string[]) => Promise<void>;
-  onSelect?: ((task: Task) => void) | undefined;
+  onSelect?: ((task: Task, element: HTMLElement) => void) | undefined;
   tasks: Task[];
 }) {
   const [orderedTasks, setOrderedTasks] = useState(tasks);
   const [announcement, setAnnouncement] = useState('');
   const taskKey = tasks.map((task) => task.id).join(',');
   const [lastTaskKey, setLastTaskKey] = useState(taskKey);
+  const reorderPendingRef = useRef(false);
 
   if (taskKey !== lastTaskKey) {
     setLastTaskKey(taskKey);
@@ -95,6 +99,11 @@ export function SortableTaskList({
 
   const handleDragEnd = async (event: DragEndEvent) => {
     if (event.canceled) return;
+    // Ignore a drag that ends while a previous reorder is still in flight:
+    // resolving both against a snapshot taken before either settled can
+    // roll the list back to a stale order and race two RPCs. The user can
+    // drag again once this one finishes.
+    if (reorderPendingRef.current) return;
 
     const currentIds = orderedTasks.map((task) => task.id);
     const nextIds = move(currentIds, event);
@@ -108,6 +117,7 @@ export function SortableTaskList({
       .filter((task): task is Task => task !== undefined);
 
     setOrderedTasks(nextTasks);
+    reorderPendingRef.current = true;
 
     try {
       await onReorder(nextIds.map(String));
@@ -115,6 +125,8 @@ export function SortableTaskList({
     } catch {
       setOrderedTasks(previousTasks);
       setAnnouncement('Не вдалося змінити порядок');
+    } finally {
+      reorderPendingRef.current = false;
     }
   };
 

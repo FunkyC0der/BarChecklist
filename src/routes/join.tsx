@@ -1,5 +1,7 @@
-import { Link, useNavigate, useParams } from 'react-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Link } from '@/lib/router';
+import { useNavigate, useParams } from '@/lib/router-hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { AuthShell } from '@/components/common/auth-shell';
 import { ConfigNotice } from '@/components/common/config-notice';
@@ -13,6 +15,7 @@ import {
 import { isInviteToken, joinPath } from '@/features/teams/team-routes';
 import { writeStoredActiveTeamTab } from '@/features/teams/team-tab-storage';
 import { useTeams } from '@/features/teams/team-context';
+import { queryKeys } from '@/lib/query-client';
 
 const statusMessages: Record<
   Exclude<InviteInspection['status'], 'active'>,
@@ -30,10 +33,8 @@ export function JoinRoute() {
   const { configIssue, session } = useAuth();
   const { refreshTeams } = useTeams();
   const navigate = useNavigate();
-  const [invite, setInvite] = useState<InviteInspection | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(session));
-  const [joining, setJoining] = useState(false);
+  const queryClient = useQueryClient();
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const validToken = isInviteToken(token);
   const returnTo = validToken && token ? joinPath(token) : null;
@@ -41,31 +42,35 @@ export function JoinRoute() {
     ? `?returnTo=${encodeURIComponent(returnTo)}`
     : '';
 
-  const loadInvite = useCallback(async () => {
-    if (!session || !validToken || !token) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      setInvite(await inspectTeamInvite(token));
-    } catch (nextError) {
-      setError(
-        nextError instanceof Error
-          ? nextError.message
-          : 'Не вдалося перевірити запрошення.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [session, token, validToken]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void loadInvite();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [loadInvite]);
+  const inviteQuery = useQuery({
+    enabled: Boolean(session && validToken && token && !configIssue),
+    queryFn: () => inspectTeamInvite(token!),
+    queryKey: [
+      'team-invite-inspection',
+      session?.user.id ?? 'anonymous',
+      token,
+    ] as const,
+  });
+  const joinMutation = useMutation({
+    mutationFn: acceptTeamInvite,
+    onSuccess: async (result) => {
+      if (!session) return;
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.teams(session.user.id),
+      });
+      await refreshTeams(result.team_id);
+      writeStoredActiveTeamTab(session.user.id, '/team');
+      navigate('/team', { replace: true });
+    },
+  });
+  const invite = inviteQuery.data ?? null;
+  const error =
+    inviteQuery.error instanceof Error
+      ? inviteQuery.error.message
+      : inviteQuery.isError
+        ? 'Не вдалося перевірити запрошення.'
+        : null;
+  const loading = Boolean(session) && inviteQuery.isLoading;
 
   if (!validToken) {
     return (
@@ -109,21 +114,15 @@ export function JoinRoute() {
 
   const join = async () => {
     if (!token) return;
-    setJoining(true);
-    setError(null);
+    setJoinError(null);
     try {
-      const result = await acceptTeamInvite(token);
-      await refreshTeams(result.team_id);
-      writeStoredActiveTeamTab(session.user.id, '/team');
-      navigate('/team', { replace: true });
+      await joinMutation.mutateAsync(token);
     } catch (nextError) {
-      setError(
+      setJoinError(
         nextError instanceof Error
           ? nextError.message
           : 'Не вдалося приєднатися до команди.',
       );
-    } finally {
-      setJoining(false);
     }
   };
 
@@ -175,7 +174,7 @@ export function JoinRoute() {
         <Alert color="error">{error}</Alert>
         <Button
           className="btn-block"
-          onClick={() => void loadInvite()}
+          onClick={() => void inviteQuery.refetch()}
           size="lg"
         >
           Спробувати ще раз
@@ -255,10 +254,11 @@ export function JoinRoute() {
       <AppText>
         Вас запрошують до команди «{invite.teamName ?? 'Команда'}».
       </AppText>
+      {joinError ? <Alert color="error">{joinError}</Alert> : null}
       <Button
         className="btn-block"
         color="primary"
-        loading={joining}
+        loading={joinMutation.isPending}
         onClick={() => void join()}
         size="lg"
       >

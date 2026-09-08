@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import {
   Alert,
@@ -46,6 +46,7 @@ function Section({
 
 export function ThemeShowcase() {
   const [sheetOpen, setSheetOpen] = useState(false);
+  const sheetTriggerRef = useRef<HTMLButtonElement>(null);
   const [cadence, setCadence] = useState<'daily' | 'weekly'>('daily');
   const [weekdays, setWeekdays] = useState<number[]>([1, 3, 5]);
   const toast = useToast();
@@ -204,12 +205,15 @@ export function ThemeShowcase() {
       </Section>
 
       <Section title="Sheet">
-        <Button onClick={() => setSheetOpen(true)}>Відкрити Sheet</Button>
+        <Button onClick={() => setSheetOpen(true)} ref={sheetTriggerRef}>
+          Відкрити Sheet
+        </Button>
         <Sheet
           description="Демо bottom sheet, що закривається через backdrop або Escape."
           onClose={() => setSheetOpen(false)}
           open={sheetOpen}
           title="Помити посуд"
+          triggerRef={sheetTriggerRef}
         >
           <p className="py-4 text-sm text-base-content/60">
             Контент sheet для create/edit/confirm.

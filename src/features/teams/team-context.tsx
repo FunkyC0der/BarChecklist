@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
 import { useAuth } from '@/features/auth/auth-context';
 import { getPublicEnvIssue } from '@/lib/env';
 import { getSupabase } from '@/lib/supabase';
+import { queryKeys } from '@/lib/query-client';
 
 import { fetchTeams, type Team } from './team-api';
 import {
@@ -32,81 +33,64 @@ type TeamContextValue = {
 };
 
 const TeamContext = createContext<TeamContextValue | null>(null);
+const emptyTeams: Team[] = [];
 
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { configIssue, session } = useAuth();
-  const [teams, setTeams] = useState<Team[]>([]);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
-  const [status, setStatus] = useState<TeamStatus>('idle');
-  const [error, setError] = useState<string | null>(null);
-  const hasLoadedTeams = useRef(false);
+  const queryClient = useQueryClient();
+  const userId = session?.user.id;
+  const teamsQuery = useQuery({
+    enabled: Boolean(userId && !configIssue),
+    queryFn: fetchTeams,
+    queryKey: queryKeys.teams(userId ?? 'anonymous'),
+  });
+  const teams = teamsQuery.data ?? emptyTeams;
+  const status: TeamStatus = !userId
+    ? 'idle'
+    : configIssue || teamsQuery.isSuccess
+      ? 'ready'
+      : teamsQuery.isLoading
+        ? 'loading'
+        : teamsQuery.isError
+          ? 'error'
+          : 'idle';
+  const error =
+    teamsQuery.error instanceof Error ? teamsQuery.error.message : null;
 
   const refreshTeams = useCallback(
     async (preferredTeamId?: string) => {
       if (!session) {
-        setTeams([]);
         setActiveTeamId(null);
-        setStatus('idle');
-        hasLoadedTeams.current = false;
         return [];
       }
 
       if (configIssue) {
-        setTeams([]);
         setActiveTeamId(null);
-        setStatus('ready');
-        hasLoadedTeams.current = false;
         return [];
       }
-
-      const isInitialLoad = !hasLoadedTeams.current;
-      if (isInitialLoad) setStatus('loading');
-      setError(null);
       try {
-        const nextTeams = await fetchTeams();
+        await queryClient.refetchQueries({
+          queryKey: queryKeys.teams(session.user.id),
+        });
+        const nextTeams =
+          queryClient.getQueryData<Team[]>(queryKeys.teams(session.user.id)) ??
+          [];
         const nextActiveId = resolveActiveTeamId(
           readStoredActiveTeam(session.user.id),
           nextTeams,
           preferredTeamId,
         );
-        setTeams(nextTeams);
         setActiveTeamId(nextActiveId);
         writeStoredActiveTeam(session.user.id, nextActiveId);
-        hasLoadedTeams.current = true;
-        setStatus('ready');
         return nextTeams;
       } catch (nextError) {
-        if (!isInitialLoad) {
-          setStatus('ready');
-          setError(
-            nextError instanceof Error
-              ? nextError.message
-              : 'Не вдалося оновити команди.',
-          );
-          return [];
-        }
-
-        setTeams([]);
-        setActiveTeamId(null);
-        setStatus('error');
-        setError(
-          nextError instanceof Error
-            ? nextError.message
-            : 'Не вдалося завантажити команди.',
-        );
+        void nextError;
         return [];
       }
     },
-    [configIssue, session],
+    [configIssue, queryClient, session],
   );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void refreshTeams();
-    }, 0);
-
-    return () => clearTimeout(timer);
-  }, [refreshTeams]);
 
   useEffect(() => {
     if (!session || configIssue || getPublicEnvIssue()) return;
@@ -116,19 +100,25 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'teams' },
-        () => void refreshTeams(),
+        () =>
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.teams(session.user.id),
+          }),
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'team_members' },
-        () => void refreshTeams(),
+        () =>
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.teams(session.user.id),
+          }),
       )
       .subscribe();
 
     return () => {
       void getSupabase().removeChannel(channel);
     };
-  }, [configIssue, refreshTeams, session]);
+  }, [configIssue, queryClient, session]);
 
   const selectTeam = useCallback(
     (teamId: string | null) => {
@@ -139,7 +129,22 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     [session, teams],
   );
 
-  const activeTeam = teams.find((team) => team.id === activeTeamId) ?? null;
+  const resolvedActiveTeamId = resolveActiveTeamId(
+    activeTeamId && teams.some((team) => team.id === activeTeamId)
+      ? activeTeamId
+      : userId
+        ? readStoredActiveTeam(userId)
+        : null,
+    teams,
+  );
+  const activeTeam =
+    teams.find((team) => team.id === resolvedActiveTeamId) ?? null;
+  useEffect(() => {
+    if (!userId || !teamsQuery.isSuccess) return;
+    if (readStoredActiveTeam(userId) !== resolvedActiveTeamId) {
+      writeStoredActiveTeam(userId, resolvedActiveTeamId);
+    }
+  }, [resolvedActiveTeamId, teamsQuery.isSuccess, userId]);
   const value = useMemo(
     () => ({ activeTeam, error, refreshTeams, selectTeam, status, teams }),
     [activeTeam, error, refreshTeams, selectTeam, status, teams],

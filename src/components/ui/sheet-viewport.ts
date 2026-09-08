@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect } from 'react';
 
 const focusGap = 12;
 const keyboardGap = 12;
@@ -89,21 +89,17 @@ function isKeyboardOpen(viewport: VisualViewport) {
 }
 
 export function useSheetViewport(
-  dialogRef: RefObject<HTMLDialogElement | null>,
-  boxRef: RefObject<HTMLDivElement | null>,
+  dialog: HTMLElement | null,
+  box: HTMLDivElement | null,
   open: boolean,
 ) {
   useEffect(() => {
-    const dialog = dialogRef.current;
-    const box = boxRef.current;
     const viewport = window.visualViewport;
     if (!open || !dialog || !box || !viewport) return;
 
     let frame: number | undefined;
     const update = () => {
       frame = undefined;
-      if (!dialog.open) return;
-
       // iOS shrinks/pans the visual viewport while a fixed dialog still occupies
       // the layout viewport. Move its frame with the viewport. When the keyboard
       // owns the bottom edge, replace the dock clearance with a deliberate gap.
@@ -148,5 +144,5 @@ export function useSheetViewport(
       dialog.style.removeProperty('--sheet-bottom-clearance');
       box.style.removeProperty('max-height');
     };
-  }, [boxRef, dialogRef, open]);
+  }, [box, dialog, open]);
 }

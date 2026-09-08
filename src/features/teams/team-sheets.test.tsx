@@ -42,12 +42,16 @@ describe('InviteSheet', () => {
     const dialog = screen.getByRole('dialog', {
       name: 'Запрошення до команди',
     });
-    const content = dialog.querySelector<HTMLElement>('.modal-box');
+    const content = dialog;
     expect(content).not.toBeNull();
     expect(
       screen.getByText('Посилання готове').closest('[role="alert"]'),
     ).toHaveClass('alert-success', 'alert-outline');
-    expect(within(content!).getAllByRole('button')).toHaveLength(1);
+    expect(
+      within(content!)
+        .getAllByRole('button')
+        .filter((button) => !button.classList.contains('sr-only')),
+    ).toHaveLength(1);
     expect(
       within(content!).getByRole('button', { name: 'Поділитися' }),
     ).toBeInTheDocument();

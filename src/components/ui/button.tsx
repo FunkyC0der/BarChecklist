@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 import { cn } from '@/lib/cn';
 
@@ -36,34 +36,40 @@ export type ButtonProps = {
   variant?: keyof typeof variantClass;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color'>;
 
-export function Button({
-  children,
-  className,
-  color = 'default',
-  disabled,
-  loading = false,
-  shape = 'square',
-  size = 'md',
-  type = 'button',
-  variant = 'solid',
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      className={cn(
-        'btn transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100',
-        colorClass[color],
-        sizeClass[size],
-        variantClass[variant],
-        shapeClass[shape],
-        className,
-      )}
-      disabled={disabled || loading}
-      type={type}
-      {...props}
-    >
-      {loading ? <span className="loading loading-spinner" /> : null}
-      {children}
-    </button>
-  );
-}
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    {
+      children,
+      className,
+      color = 'default',
+      disabled,
+      loading = false,
+      shape = 'square',
+      size = 'md',
+      type = 'button',
+      variant = 'solid',
+      ...props
+    },
+    ref,
+  ) {
+    return (
+      <button
+        className={cn(
+          'btn transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100',
+          colorClass[color],
+          sizeClass[size],
+          variantClass[variant],
+          shapeClass[shape],
+          className,
+        )}
+        disabled={disabled || loading}
+        ref={ref}
+        type={type}
+        {...props}
+      >
+        {loading ? <span className="loading loading-spinner" /> : null}
+        {children}
+      </button>
+    );
+  },
+);

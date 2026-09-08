@@ -63,7 +63,7 @@ export function ToastViewport() {
   return (
     <div
       className={cn(
-        'pointer-events-none toast toast-center toast-bottom',
+        'app-toast pointer-events-none toast toast-center toast-bottom',
         'bottom-[calc(4.5rem+max(0.75rem,env(safe-area-inset-bottom)))]',
       )}
     >

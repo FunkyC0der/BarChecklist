@@ -1,24 +1,26 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router';
+import { renderWithRouter } from '@/test/router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({
   fetchHistory: vi.fn(),
   fetchHistoryFilterOptions: vi.fn(),
 }));
+const teamState = vi.hoisted(() => ({
+  activeTeam: {
+    id: 'team-1',
+    name: 'Бар',
+    owner_id: 'owner-1',
+    timezone: 'Europe/Kyiv',
+  } as { id: string; name: string; owner_id: string; timezone: string } | null,
+  status: 'ready' as 'error' | 'idle' | 'loading' | 'ready',
+}));
 
 vi.mock('@/features/history/history-api', () => api);
 vi.mock('@/features/teams/team-context', () => ({
-  useTeams: () => ({
-    activeTeam: {
-      id: 'team-1',
-      name: 'Бар',
-      owner_id: 'owner-1',
-      timezone: 'Europe/Kyiv',
-    },
-    status: 'ready',
-  }),
+  useTeams: () => teamState,
 }));
 vi.mock('@/components/ui', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/components/ui')>();
@@ -78,11 +80,17 @@ const snapshot = (
 });
 
 function renderHistory() {
-  return render(
-    <MemoryRouter>
-      <HistoryRoute />
-    </MemoryRouter>,
-  );
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderWithRouter({
+    component: () => (
+      <QueryClientProvider client={queryClient}>
+        <HistoryRoute />
+      </QueryClientProvider>
+    ),
+    path: '/history',
+  });
 }
 
 describe('HistoryRoute', () => {
@@ -93,6 +101,13 @@ describe('HistoryRoute', () => {
       checklists: [{ id: 'checklist-1', name: 'Відкриття', archived: true }],
       users: [{ id: 'user-1', displayName: 'Олена', currentMember: false }],
     });
+    teamState.activeTeam = {
+      id: 'team-1',
+      name: 'Бар',
+      owner_id: 'owner-1',
+      timezone: 'Europe/Kyiv',
+    };
+    teamState.status = 'ready';
   });
 
   it('loads defaults, derives the 14-day dates, and renders localized details', async () => {
@@ -287,5 +302,88 @@ describe('HistoryRoute', () => {
     expect(api.fetchHistory).toHaveBeenCalledTimes(2);
     resolveMore?.(snapshot([day('2026-09-04', 'Попередній день')]));
     expect(await screen.findByText('Попередній день')).toBeInTheDocument();
+  });
+
+  it('does not keep showing the previous team data while the new team loads (P1-1)', async () => {
+    let resolveTeam2:
+      ((value: ReturnType<typeof snapshot>) => void) | undefined;
+    api.fetchHistory
+      .mockResolvedValueOnce(snapshot([day('2026-09-05', 'Задача команди 1')]))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveTeam2 = resolve;
+          }),
+      );
+
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const Wrapped = () => (
+      <QueryClientProvider client={queryClient}>
+        <HistoryRoute />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(<Wrapped />);
+    expect(await screen.findByText('Задача команди 1')).toBeInTheDocument();
+
+    teamState.activeTeam = {
+      id: 'team-2',
+      name: 'Інший бар',
+      owner_id: 'owner-2',
+      timezone: 'Europe/Kyiv',
+    };
+    rerender(<Wrapped />);
+
+    // The old team's completions must not linger under the new team while
+    // the new team's history is still loading.
+    await waitFor(() =>
+      expect(screen.queryByText('Задача команди 1')).not.toBeInTheDocument(),
+    );
+
+    resolveTeam2?.(snapshot([day('2026-09-04', 'Задача команди 2')]));
+    expect(await screen.findByText('Задача команди 2')).toBeInTheDocument();
+    expect(api.fetchHistory).toHaveBeenLastCalledWith(
+      'team-2',
+      expect.objectContaining({ beforeDate: null }),
+    );
+  });
+
+  it('resets active filters when the team changes (P2-3)', async () => {
+    api.fetchHistory.mockResolvedValue(snapshot());
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const Wrapped = () => (
+      <QueryClientProvider client={queryClient}>
+        <HistoryRoute />
+      </QueryClientProvider>
+    );
+    const { rerender } = render(<Wrapped />);
+    await screen.findByText('Закрити зміну');
+    fireEvent.click(screen.getByRole('button', { name: 'Фільтри історії' }));
+    fireEvent.change(screen.getByLabelText('Чекліст'), {
+      target: { value: 'checklist-1' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Застосувати' }));
+    await waitFor(() =>
+      expect(document.querySelector('.badge')).toHaveTextContent('1'),
+    );
+
+    teamState.activeTeam = {
+      id: 'team-2',
+      name: 'Інший бар',
+      owner_id: 'owner-2',
+      timezone: 'Europe/Kyiv',
+    };
+    rerender(<Wrapped />);
+
+    await waitFor(() =>
+      expect(api.fetchHistory).toHaveBeenLastCalledWith(
+        'team-2',
+        expect.objectContaining({ checklistId: null, userId: null }),
+      ),
+    );
+    expect(document.querySelector('.badge')).not.toBeInTheDocument();
   });
 });

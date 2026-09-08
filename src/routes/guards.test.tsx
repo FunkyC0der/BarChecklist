@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { renderWithRouter } from '@/test/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const authState = vi.hoisted(() => ({
@@ -22,23 +22,22 @@ vi.mock('@/features/auth/auth-context', () => ({
   }),
 }));
 
-import { RequireGuest, SessionGate } from './guards';
+import { RequireAuth, RequireGuest, SessionGate } from './guards';
 
 const token = 'a'.repeat(64);
 
 function renderGuestRoute(path: string) {
-  return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route element={<RequireGuest />}>
-          <Route element={<div>sign-up</div>} path="/sign-up" />
-        </Route>
-        <Route element={<div>join</div>} path="/join/:token" />
-        <Route element={<div>today</div>} path="/today" />
-        <Route element={<div>home</div>} path="/" />
-      </Routes>
-    </MemoryRouter>,
-  );
+  return renderWithRouter({
+    component: () => <div>sign-up</div>,
+    initialPath: path,
+    outsideRoutes: [
+      { component: () => <div>join</div>, path: '/join/$token' },
+      { component: () => <div>today</div>, path: '/today' },
+      { component: () => <div>home</div>, path: '/' },
+    ],
+    path: '/sign-up',
+    wrapper: RequireGuest,
+  });
 }
 
 describe('RequireGuest', () => {
@@ -49,27 +48,114 @@ describe('RequireGuest', () => {
     authState.session = null;
   });
 
-  it('keeps guests on the auth screen', () => {
+  it('keeps guests on the auth screen', async () => {
     renderGuestRoute(`/sign-up?returnTo=/join/${token}`);
-    expect(screen.getByText('sign-up')).toBeInTheDocument();
+    expect(await screen.findByText('sign-up')).toBeInTheDocument();
   });
 
-  it('returns an authenticated user to the invite path instead of home', () => {
+  it('returns an authenticated user to the invite path instead of home', async () => {
     authState.session = { user: { id: 'user-1' } };
     renderGuestRoute(`/sign-up?returnTo=/join/${token}`);
-    expect(screen.getByText('join')).toBeInTheDocument();
+    expect(await screen.findByText('join')).toBeInTheDocument();
   });
 
-  it('sends an authenticated user to Today when there is no invite returnTo', () => {
+  it('sends an authenticated user to Today when there is no invite returnTo', async () => {
     authState.session = { user: { id: 'user-1' } };
     renderGuestRoute('/sign-up');
-    expect(screen.getByText('today')).toBeInTheDocument();
+    expect(await screen.findByText('today')).toBeInTheDocument();
   });
 
-  it('returns an authenticated user to a known product route with its query', () => {
+  it('returns an authenticated user to a known product route with its query', async () => {
     authState.session = { user: { id: 'user-1' } };
     renderGuestRoute('/sign-up?returnTo=/today%3Fdate%3D2026-09-06');
-    expect(screen.getByText('today')).toBeInTheDocument();
+    expect(await screen.findByText('today')).toBeInTheDocument();
+  });
+});
+
+// The authenticated shell lives in a pathless parent route (see src/app.tsx),
+// so RequireAuth is exercised here through `layout` rather than `wrapper`.
+function renderProtectedRoutes(initialPath: string) {
+  return renderWithRouter({
+    additionalRoutes: [
+      { component: () => <div>checklists</div>, path: '/checklists' },
+    ],
+    component: () => <div>today</div>,
+    initialPath,
+    layout: RequireAuth,
+    outsideRoutes: [
+      { component: () => <div>sign-in</div>, path: '/sign-in' },
+      { component: () => <div>join</div>, path: '/join/$token' },
+      { component: () => <div>home</div>, path: '/' },
+    ],
+    path: '/today',
+  });
+}
+
+describe('RequireAuth in a shared layout route', () => {
+  beforeEach(() => {
+    authState.initializationError = null;
+    authState.initialized = true;
+    authState.session = null;
+    window.history.replaceState({}, '', '/');
+  });
+
+  // Note: memory history pins window.location for the whole test, so this
+  // case cannot see the target being recomputed mid-redirect. That is
+  // covered directly in guards-redirect.test.tsx.
+  it('sends an unauthenticated user to sign-in with a returnTo for the current path', async () => {
+    window.history.replaceState({}, '', '/today');
+    const { router } = renderProtectedRoutes('/today');
+
+    expect(await screen.findByText('sign-in')).toBeInTheDocument();
+    expect(router.state.location.href).toContain(
+      `returnTo=${encodeURIComponent('/today')}`,
+    );
+  });
+
+  it('sends an unauthenticated user to bare sign-in for an unknown path', async () => {
+    window.history.replaceState({}, '', '/not-a-product-path');
+    const { router } = renderProtectedRoutes('/today');
+
+    expect(await screen.findByText('sign-in')).toBeInTheDocument();
+    expect(router.state.location.href).not.toContain('returnTo');
+  });
+
+  it('renders protected routes for a signed-in user', async () => {
+    authState.session = { user: { id: 'user-1' } };
+    renderProtectedRoutes('/today');
+
+    expect(await screen.findByText('today')).toBeInTheDocument();
+  });
+
+  it('serves a direct load of a sibling protected route', async () => {
+    authState.session = { user: { id: 'user-1' } };
+    renderProtectedRoutes('/checklists');
+
+    expect(await screen.findByText('checklists')).toBeInTheDocument();
+  });
+
+  // This case has a session, so RequireAuth renders children and never
+  // redirects; it covers the shared layout serving siblings across history
+  // back/forward. Redirect *counting* needs a signed-out user and cannot be
+  // observed under memory history (window.location never moves), so it lives
+  // in guards-redirect.test.tsx.
+  it('serves sibling protected routes across history back and forward', async () => {
+    authState.session = { user: { id: 'user-1' } };
+    const { router } = renderProtectedRoutes('/today');
+
+    await screen.findByText('today');
+    router.history.push('/checklists');
+    expect(await screen.findByText('checklists')).toBeInTheDocument();
+
+    router.history.back();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/today'));
+    expect(await screen.findByText('today')).toBeInTheDocument();
+
+    router.history.forward();
+    await waitFor(() =>
+      expect(router.state.location.pathname).toBe('/checklists'),
+    );
+    expect(await screen.findByText('checklists')).toBeInTheDocument();
   });
 });
 

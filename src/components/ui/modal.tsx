@@ -1,10 +1,12 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { Dialog } from '@base-ui/react/dialog';
+import { useState, type ReactNode, type RefObject } from 'react';
 
 import {
   floatingPopupBoxClass,
   floatingPopupDialogClass,
 } from './bottom-surface';
 import { useSheetViewport } from './sheet-viewport';
+import { cn } from '@/lib/cn';
 
 export function Modal({
   children,
@@ -12,50 +14,54 @@ export function Modal({
   onClose,
   open,
   title,
+  triggerRef,
 }: {
   children: ReactNode;
   description?: string | undefined;
   onClose: () => void;
   open: boolean;
   title: string;
+  triggerRef?: RefObject<HTMLElement | null> | undefined;
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const boxRef = useRef<HTMLDivElement>(null);
-  const titleId = useId();
-  const descriptionId = useId();
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
-  useSheetViewport(dialogRef, boxRef, open);
-
+  const [dialog, setDialog] = useState<HTMLDivElement | null>(null);
+  const [box, setBox] = useState<HTMLDivElement | null>(null);
+  useSheetViewport(dialog, box, open);
   return (
-    <dialog
-      aria-describedby={description ? descriptionId : undefined}
-      aria-labelledby={titleId}
-      className={floatingPopupDialogClass}
-      onClose={onClose}
-      ref={dialogRef}
+    <Dialog.Root
+      onOpenChange={(nextOpen) => !nextOpen && onClose()}
+      open={open}
     >
-      <div className={floatingPopupBoxClass} ref={boxRef}>
-        <h3 className="text-2xl font-bold tracking-tight" id={titleId}>
-          {title}
-        </h3>
-        {description ? (
-          <p className="py-4" id={descriptionId}>
-            {description}
-          </p>
-        ) : null}
-        {children}
-      </div>
-      <form className="modal-backdrop" method="dialog">
-        <button type="submit">Закрити</button>
-      </form>
-    </dialog>
+      <Dialog.Portal>
+        <Dialog.Viewport
+          className={cn(
+            floatingPopupDialogClass,
+            'app-overlay-surface',
+            open && 'modal-open',
+          )}
+          ref={setDialog}
+        >
+          <Dialog.Backdrop className="app-overlay-backdrop modal-backdrop" />
+          <Dialog.Popup
+            className={`${floatingPopupBoxClass} app-overlay-popup`}
+            finalFocus={triggerRef}
+            initialFocus
+            ref={setBox}
+          >
+            <Dialog.Title className="text-2xl font-bold tracking-tight">
+              {title}
+            </Dialog.Title>
+            {description ? (
+              <Dialog.Description className="py-4">
+                {description}
+              </Dialog.Description>
+            ) : null}
+            {children}
+            <Dialog.Close className="sr-only focus-visible:btn focus-visible:not-sr-only focus-visible:absolute focus-visible:top-3 focus-visible:right-3 focus-visible:btn-ghost focus-visible:btn-sm">
+              Закрити
+            </Dialog.Close>
+          </Dialog.Popup>
+        </Dialog.Viewport>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

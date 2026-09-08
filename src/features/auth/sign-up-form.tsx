@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@/lib/router-hooks';
 import { z } from 'zod';
 
 import { Alert, Button, Input } from '@/components/ui';
@@ -37,6 +38,15 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
     kind: 'error' | 'success';
     text: string;
   } | null>(null);
+  const signUpMutation = useMutation({
+    mutationFn: ({
+      emailRedirectTo,
+      values,
+    }: {
+      emailRedirectTo: string;
+      values: FormValues;
+    }) => signUp(values, emailRedirectTo),
+  });
   const {
     control,
     handleSubmit,
@@ -54,10 +64,12 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
   const onSubmit = handleSubmit(async (values) => {
     setMessage(null);
     try {
-      const result = await signUp(
+      const result = await signUpMutation.mutateAsync({
+        emailRedirectTo: returnTo
+          ? buildAppUrl(returnTo)
+          : buildAppUrl('/today'),
         values,
-        returnTo ? buildAppUrl(returnTo) : buildAppUrl('/today'),
-      );
+      });
       if (result.needsEmailConfirmation) {
         setMessage({
           kind: 'success',
@@ -152,7 +164,7 @@ export function SignUpForm({ returnTo = null }: SignUpFormProps) {
       <Button
         className="btn-block"
         color="primary"
-        loading={isSubmitting}
+        loading={isSubmitting || signUpMutation.isPending}
         size="lg"
         type="submit"
       >

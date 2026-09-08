@@ -114,6 +114,33 @@ describe('useTodayRealtime', () => {
     expect(supabase.removeChannel).toHaveBeenCalledWith(oldChannel);
   });
 
+  it('forces a refresh at a max-wait ceiling during a sustained event burst (P2-5)', () => {
+    const refresh = vi.fn();
+    renderHook(() =>
+      useTodayRealtime({
+        teamId: 'team',
+        checklistIds: [],
+        onRefresh: refresh,
+      }),
+    );
+    const current = supabase.channels[0]!;
+    const completionsCall = current.on.mock.calls.find(
+      (call) => (call[1] as { table?: string })?.table === 'task_completions',
+    );
+    const trigger = completionsCall![2] as () => void;
+
+    // Events arrive every 100ms, each resetting the 150ms debounce, so
+    // without a ceiling the refetch would never fire. It must still fire
+    // once around the ~1s max wait.
+    for (let i = 0; i < 12; i += 1) {
+      act(() => {
+        trigger();
+        vi.advanceTimersByTime(100);
+      });
+    }
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
   it('clears pending refresh and removes channel on team change and unmount', () => {
     const refresh = vi.fn();
     const hook = renderHook(

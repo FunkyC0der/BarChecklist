@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router';
+import { Navigate } from '@/lib/router';
 
 import { AuthShell } from '@/components/common/auth-shell';
 import { ConfigNotice } from '@/components/common/config-notice';

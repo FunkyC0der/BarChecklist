@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router';
+import { Link } from '@/lib/router';
 
 import { cn } from '@/lib/cn';
 
@@ -70,7 +70,7 @@ export function ListRow({
   // grid row: it stays in the a11y tree and gets native tap/focus feedback.
   const interactiveRow = cn(
     rowClass,
-    'w-full text-start transition-colors active:bg-base-200',
+    'w-full text-start transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.99] active:bg-base-200 motion-reduce:transition-none motion-reduce:active:scale-100',
     'focus-visible:outline-2 focus-visible:outline-primary',
   );
 

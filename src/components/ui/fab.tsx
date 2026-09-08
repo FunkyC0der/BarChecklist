@@ -1,3 +1,5 @@
+import { type Ref } from 'react';
+
 import { cn } from '@/lib/cn';
 
 import { Icon } from './icon';
@@ -7,11 +9,13 @@ export function Fab({
   disabledHint,
   label,
   onClick,
+  ref,
 }: {
   disabled?: boolean | undefined;
   disabledHint?: string | undefined;
   label: string;
   onClick: () => void;
+  ref?: Ref<HTMLButtonElement> | undefined;
 }) {
   const button = (
     <button
@@ -19,6 +23,7 @@ export function Fab({
       className="btn btn-circle transition-transform duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] btn-lg btn-primary active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
       disabled={disabled}
       onClick={onClick}
+      ref={ref}
       type="button"
     >
       <Icon name="plus" />

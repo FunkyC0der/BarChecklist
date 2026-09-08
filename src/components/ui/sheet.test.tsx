@@ -15,6 +15,8 @@ import {
   vi,
 } from 'vitest';
 
+import { useRef, useState } from 'react';
+
 import { ChecklistForm } from '@/features/checklists/checklist-form';
 import { TaskForm } from '@/features/checklists/task-form';
 
@@ -83,8 +85,14 @@ function mockEditorPosition(editor: HTMLElement, top: () => number) {
   );
 }
 
+function getSurface(dialog: HTMLElement) {
+  const surface = dialog.closest<HTMLElement>('.modal');
+  if (!surface) throw new Error('Sheet surface was not rendered');
+  return surface;
+}
+
 describe('Sheet', () => {
-  it('uses native backdrop and close behavior without an explicit X control', () => {
+  it('uses Base UI backdrop and close behavior without an explicit X control', () => {
     const onClose = vi.fn();
 
     render(
@@ -95,12 +103,12 @@ describe('Sheet', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Тест' });
     expect(dialog.querySelector('svg')).not.toBeInTheDocument();
-    expect(dialog.querySelector('form.modal-backdrop')).toHaveAttribute(
-      'method',
-      'dialog',
-    );
+    expect(dialog.querySelector('button.sr-only')).toHaveTextContent('Закрити');
+    expect(
+      getSurface(dialog).querySelector('.modal-backdrop'),
+    ).toBeInTheDocument();
 
-    fireEvent(dialog, new Event('close'));
+    fireEvent.keyDown(document, { key: 'Escape' });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -126,8 +134,10 @@ describe('Sheet', () => {
     );
 
     const dialog = screen.getByRole('dialog');
-    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
-    expect(dialog).toHaveClass(
+    const box = dialog;
+    const surface = getSurface(dialog);
+    expect(surface).toHaveClass('modal-open');
+    expect(surface).toHaveClass(
       'modal',
       'items-end',
       'justify-items-center',
@@ -137,7 +147,7 @@ describe('Sheet', () => {
       '[--bottom-popup-gap:0.75rem]',
       '[--sheet-bottom-clearance:calc(max(var(--bottom-popup-gap),env(safe-area-inset-bottom))+var(--bottom-dock-height)+var(--bottom-popup-gap))]',
     );
-    expect(dialog).not.toHaveClass('place-items-end');
+    expect(surface).not.toHaveClass('place-items-end');
     expect(box).toHaveClass(
       'w-full',
       'max-w-xl',
@@ -160,21 +170,26 @@ describe('Sheet', () => {
     );
 
     const dialog = screen.getByRole('dialog');
-    const sheet = dialog.querySelector<HTMLElement>('.modal-box')!;
+    const sheet = dialog;
+    const surface = getSurface(dialog);
     nextFrame();
-    expect(dialog).toHaveStyle({ top: '0px', height: '700px', bottom: 'auto' });
+    expect(surface).toHaveStyle({
+      top: '0px',
+      height: '700px',
+      bottom: 'auto',
+    });
     expect(sheet.style.maxHeight).toBe('');
 
     viewport.height = 320;
     viewport.offsetTop = 60;
     viewport.dispatchEvent(new Event('resize'));
     nextFrame();
-    expect(dialog).toHaveStyle({
+    expect(surface).toHaveStyle({
       top: '60px',
       height: '320px',
       bottom: 'auto',
     });
-    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
+    expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
       '12px',
     );
     expect(sheet).toHaveStyle({ maxHeight: '308px' });
@@ -182,13 +197,13 @@ describe('Sheet', () => {
     viewport.offsetTop = 90;
     viewport.dispatchEvent(new Event('scroll'));
     nextFrame();
-    expect(dialog).toHaveStyle({ top: '90px', height: '320px' });
+    expect(surface).toHaveStyle({ top: '90px', height: '320px' });
 
     viewport.height = 700;
     viewport.offsetTop = 0;
     viewport.dispatchEvent(new Event('resize'));
     nextFrame();
-    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
     expect(sheet.style.maxHeight).toBe('');
   });
 
@@ -210,9 +225,7 @@ describe('Sheet', () => {
         </Sheet>,
       );
 
-      const box = screen
-        .getByRole('dialog')
-        .querySelector<HTMLElement>('.modal-box')!;
+      const box = screen.getByRole<HTMLElement>('dialog');
       const editor = screen.getByRole('textbox');
       mockScrollArea(
         box,
@@ -261,9 +274,7 @@ describe('Sheet', () => {
         </div>
       </Sheet>,
     );
-    const box = screen
-      .getByRole('dialog')
-      .querySelector<HTMLElement>('.modal-box')!;
+    const box = screen.getByRole<HTMLElement>('dialog');
     const nested = screen.getByTestId('nested');
     const first = screen.getByRole('textbox', { name: 'Перше' });
     const second = screen.getByRole('textbox', { name: 'Друге' });
@@ -307,9 +318,7 @@ describe('Sheet', () => {
         <input aria-label="Назва задачі" />
       </Sheet>,
     );
-    const box = screen
-      .getByRole('dialog')
-      .querySelector<HTMLElement>('.modal-box')!;
+    const box = screen.getByRole<HTMLElement>('dialog');
     const editor = screen.getByRole('textbox');
     mockScrollArea(
       box,
@@ -337,7 +346,8 @@ describe('Sheet', () => {
       </Sheet>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog.querySelector('.modal-box');
+    const box = dialog;
+    const surface = getSurface(dialog);
     nextFrame();
     viewport.dispatchEvent(new Event('resize'));
     rerender(
@@ -346,13 +356,10 @@ describe('Sheet', () => {
       </Sheet>,
     );
     nextFrame();
-    expect(dialog.style.height).toBe('');
-    expect(dialog.style.top).toBe('');
-    expect(dialog.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
-    expect(box).not.toHaveAttribute(
-      'style',
-      expect.stringContaining('max-height'),
-    );
+    expect(surface.style.height).toBe('');
+    expect(surface.style.top).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
+    expect(box.style.maxHeight).toBe('');
     expect(removeListener).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(removeListener).toHaveBeenCalledWith('scroll', expect.any(Function));
     expect(vi.getTimerCount()).toBe(0);
@@ -366,17 +373,105 @@ describe('Sheet', () => {
       </Sheet>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
+    const box = dialog;
+    const surface = getSurface(dialog);
     const editor = screen.getByRole('textbox');
     act(() => editor.focus());
     nextFrame();
     expect(editor).toHaveFocus();
-    expect(dialog).not.toHaveAttribute('style');
-    expect(box).not.toHaveAttribute('style');
+    expect(surface.style.top).toBe('');
+    expect(surface.style.height).toBe('');
+    expect(box.style.maxHeight).toBe('');
     expect(box.scrollTop).toBe(0);
     expect(box).toHaveClass(
       'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
       'overflow-y-auto',
     );
+  });
+
+  it('opens from a real trigger button click and restores focus to the trigger on close', async () => {
+    function TriggeredSheet() {
+      const [open, setOpen] = useState(false);
+      const triggerRef = useRef<HTMLButtonElement>(null);
+      return (
+        <>
+          <button
+            onClick={(event) => {
+              triggerRef.current = event.currentTarget;
+              setOpen(true);
+            }}
+            ref={triggerRef}
+            type="button"
+          >
+            Відкрити Sheet
+          </button>
+          <Sheet
+            onClose={() => setOpen(false)}
+            open={open}
+            title="Помити посуд"
+            triggerRef={triggerRef}
+          >
+            <p>Контент sheet</p>
+          </Sheet>
+        </>
+      );
+    }
+
+    render(<TriggeredSheet />);
+
+    const trigger = screen.getByRole('button', { name: 'Відкрити Sheet' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Deliberately do NOT call trigger.focus() here: a real pointer click
+    // must be what opens the Sheet. Safari/Firefox don't focus buttons on
+    // click by default, so `document.activeElement` stays on `<body>` —
+    // this asserts that Sheet restores focus via the explicit `triggerRef`
+    // it was given (base UI's `finalFocus`), not via relying on the browser
+    // having focused the trigger.
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+    nextFrame();
+
+    const dialog = screen.getByRole('dialog', { name: 'Помити посуд' });
+    expect(dialog).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    nextFrame();
+    // Base UI restores focus from a `queueMicrotask` scheduled by the
+    // dialog's unmount cleanup; flush the real microtask queue (fake timers
+    // don't touch it) before asserting.
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('dismisses when the backdrop is pressed', () => {
+    const onClose = vi.fn();
+
+    render(
+      <Sheet onClose={onClose} open title="Помити посуд">
+        <p>Контент sheet</p>
+      </Sheet>,
+    );
+
+    nextFrame();
+
+    const dialog = screen.getByRole('dialog', { name: 'Помити посуд' });
+    const backdrop =
+      getSurface(dialog).parentElement?.querySelector('.modal-backdrop');
+    if (!backdrop) throw new Error('Sheet backdrop was not rendered');
+
+    // Base UI treats outside-press as "intentional" whenever a backdrop
+    // element is present: it only commits the dismissal on `click`, but
+    // gates that on having also observed a real `pointerdown` press first
+    // (so a programmatic `.click()` without a preceding press is ignored).
+    // Reproduce the full real-world press-then-click sequence.
+    fireEvent.pointerDown(backdrop);
+    fireEvent.click(backdrop);
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

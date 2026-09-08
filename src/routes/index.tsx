@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router';
+import { Navigate } from '@/lib/router';
 
 import { Loading, Screen } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';

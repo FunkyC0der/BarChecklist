@@ -1,7 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router';
+import { useNavigate } from '@/lib/router-hooks';
 import { z } from 'zod';
 
 import { Alert, Button, Input } from '@/components/ui';
@@ -23,6 +24,9 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const signInMutation = useMutation({
+    mutationFn: ({ email, password }: FormValues) => signIn(email, password),
+  });
   const {
     control,
     handleSubmit,
@@ -35,7 +39,7 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
   const onSubmit = handleSubmit(async (values) => {
     setSubmitError(null);
     try {
-      await signIn(values.email, values.password);
+      await signInMutation.mutateAsync(values);
       navigate(returnTo ?? '/', { replace: true });
     } catch (error) {
       setSubmitError(
@@ -87,7 +91,7 @@ export function SignInForm({ returnTo = null }: SignInFormProps) {
       <Button
         className="btn-block"
         color="primary"
-        loading={isSubmitting}
+        loading={isSubmitting || signInMutation.isPending}
         size="lg"
         type="submit"
       >

@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -39,6 +40,10 @@ export function OnboardingForm({
   const { session } = useAuth();
   const { refreshTeams, teams } = useTeams();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const createTeamMutation = useMutation({
+    mutationFn: (values: Parameters<typeof createTeam>[0]) =>
+      createTeam(values),
+  });
   const {
     control,
     handleSubmit,
@@ -54,7 +59,7 @@ export function OnboardingForm({
     setSubmitError(null);
     try {
       const existingTeamIds = new Set(teams.map((team) => team.id));
-      await createTeam({
+      await createTeamMutation.mutateAsync({
         name: values.name,
         ownerId: session.user.id,
         timezone: values.timezone,
@@ -123,7 +128,7 @@ export function OnboardingForm({
       <Button
         className="btn-block"
         color="primary"
-        loading={isSubmitting}
+        loading={isSubmitting || createTeamMutation.isPending}
         size="lg"
         type="submit"
       >

@@ -1,3 +1,5 @@
+import { type RefObject } from 'react';
+
 import { Alert, Button, Icon, Input, Sheet } from '@/components/ui';
 
 export function InviteSheet({
@@ -8,6 +10,7 @@ export function InviteSheet({
   onClose,
   onShareInvite,
   open,
+  triggerRef,
 }: {
   formatExpiry: (value: string) => string;
   inviteFeedback: {
@@ -19,6 +22,7 @@ export function InviteSheet({
   onClose: () => void;
   onShareInvite: () => void;
   open: boolean;
+  triggerRef?: RefObject<HTMLElement | null> | undefined;
 }) {
   return (
     <Sheet
@@ -26,6 +30,7 @@ export function InviteSheet({
       onClose={onClose}
       open={open}
       title="Запрошення до команди"
+      triggerRef={triggerRef}
     >
       <div className="flex flex-col gap-4">
         {inviteLink ? (
@@ -75,6 +80,7 @@ export function DeleteTeamSheet({
   onDeleteNameChange,
   open,
   teamName,
+  triggerRef,
 }: {
   deleteError?: string | null | undefined;
   deleteLoading: boolean;
@@ -84,6 +90,7 @@ export function DeleteTeamSheet({
   onDeleteNameChange: (value: string) => void;
   open: boolean;
   teamName: string;
+  triggerRef?: RefObject<HTMLElement | null> | undefined;
 }) {
   return (
     <Sheet
@@ -91,6 +98,7 @@ export function DeleteTeamSheet({
       onClose={onClose}
       open={open}
       title="Видалити команду?"
+      triggerRef={triggerRef}
     >
       <div className="flex flex-col gap-4">
         <Input

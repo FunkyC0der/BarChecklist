@@ -1,11 +1,6 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from '@testing-library/react';
-import { MemoryRouter } from 'react-router';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
+import { renderWithRouter } from '@/test/router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { TodaySnapshot } from '@/features/completions/today-api';
@@ -139,11 +134,20 @@ function withCompletion(
 }
 
 function renderToday() {
-  return render(
-    <MemoryRouter>
-      <TodayRoute />
-    </MemoryRouter>,
-  );
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return {
+    queryClient,
+    ...renderWithRouter({
+      component: () => (
+        <QueryClientProvider client={queryClient}>
+          <TodayRoute />
+        </QueryClientProvider>
+      ),
+      path: '/today',
+    }),
+  };
 }
 
 describe('TodayRoute', () => {
@@ -166,13 +170,13 @@ describe('TodayRoute', () => {
     teamState.status = 'ready';
   });
 
-  it('keeps an authenticated user without a team on Today with a creation path', () => {
+  it('keeps an authenticated user without a team on Today with a creation path', async () => {
     teamState.activeTeam = null;
 
     renderToday();
 
     expect(
-      screen.getByRole('heading', { name: 'Почніть із команди' }),
+      await screen.findByRole('heading', { name: 'Почніть із команди' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'Створити команду' }),
@@ -215,16 +219,19 @@ describe('TodayRoute', () => {
         }),
     );
 
-    renderToday();
+    const { queryClient } = renderToday();
+    const invalidateQueries = vi.spyOn(queryClient, 'invalidateQueries');
     const checkbox = await screen.findByRole('checkbox', {
       name: 'Виконати: Увімкнути світло',
     });
 
     fireEvent.click(checkbox);
 
-    expect(checkbox).toBeChecked();
+    await waitFor(() => expect(checkbox).toBeChecked());
     expect(checkbox).toBeDisabled();
-    expect(api.completeTask).toHaveBeenCalledWith('task-1');
+    await waitFor(() =>
+      expect(api.completeTask).toHaveBeenCalledWith('task-1'),
+    );
 
     await act(async () => finishMutation({ status: 'already_completed' }));
 
@@ -234,6 +241,12 @@ describe('TodayRoute', () => {
       }),
     ).toBeChecked();
     expect(showToast).not.toHaveBeenCalled();
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['today', 'team-1'],
+    });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['history', 'team-1'],
+    });
   });
 
   it('rolls back a failed uncomplete and exposes a retry action', async () => {

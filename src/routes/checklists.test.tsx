@@ -2,11 +2,11 @@ import {
   act,
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
 } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { renderWithRouter } from '@/test/router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   afterEach,
   beforeAll,
@@ -64,19 +64,26 @@ afterEach(() => {
 });
 
 function renderRoute() {
-  return render(
-    <ToastProvider>
-      <MemoryRouter initialEntries={['/checklists']}>
-        <Routes>
-          <Route element={<ChecklistsRoute />} path="/checklists" />
-          <Route
-            element={<div>Нова сторінка чекліста</div>}
-            path="/checklists/:checklistId"
-          />
-        </Routes>
-      </MemoryRouter>
-    </ToastProvider>,
-  );
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderWithRouter({
+    additionalRoutes: [
+      {
+        component: () => <div>Нова сторінка чекліста</div>,
+        path: '/checklists/$checklistId',
+      },
+    ],
+    component: () => (
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <ChecklistsRoute />
+        </ToastProvider>
+      </QueryClientProvider>
+    ),
+    initialPath: '/checklists',
+    path: '/checklists',
+  });
 }
 
 describe('ChecklistsRoute', () => {
@@ -113,6 +120,23 @@ describe('ChecklistsRoute', () => {
     });
   });
 
+  it('restores focus to the checklist creation trigger after the Sheet closes', async () => {
+    renderRoute();
+
+    await screen.findByRole('heading', { name: 'Чеклістів поки немає' });
+    const trigger = screen.getAllByRole('button', {
+      name: 'Створити чекліст',
+    })[0]!;
+    fireEvent.click(trigger);
+    expect(
+      await screen.findByRole('dialog', { name: 'Новий чекліст' }),
+    ).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
   it('keeps the actual name input above the keyboard after the + opens a short checklist sheet', async () => {
     const viewport = Object.assign(new EventTarget(), {
       height: 700,
@@ -146,7 +170,9 @@ describe('ChecklistsRoute', () => {
     fireEvent.click(addButton);
 
     const dialog = screen.getByRole('dialog', { name: 'Новий чекліст' });
-    const box = dialog.querySelector<HTMLElement>('.modal-box')!;
+    const box = dialog;
+    const surface = dialog.closest<HTMLElement>('.modal');
+    if (!surface) throw new Error('Checklist sheet surface was not rendered');
     const editor = screen.getByRole('textbox', { name: 'Назва чекліста' });
     expect(box).toContainElement(editor);
     expect(editor).toHaveFocus();
@@ -154,8 +180,8 @@ describe('ChecklistsRoute', () => {
     // jsdom has no layout. Model the floating bottom-aligned dialog grid: a short box ends
     // at the dialog's bottom, and has no scroll range. A box-height cap alone
     // therefore cannot reveal this field; the dialog anchor must move too.
-    const dialogTop = () => Number.parseFloat(dialog.style.top) || 0;
-    const dialogHeight = () => Number.parseFloat(dialog.style.height) || 700;
+    const dialogTop = () => Number.parseFloat(surface.style.top) || 0;
+    const dialogHeight = () => Number.parseFloat(surface.style.height) || 700;
     const boxTop = () => dialogTop() + dialogHeight() - 220;
     Object.defineProperties(box, {
       clientHeight: { configurable: true, value: 220 },
@@ -210,7 +236,7 @@ describe('ChecklistsRoute', () => {
     renderRoute();
 
     expect(
-      screen.getByRole('heading', { name: 'Команди ще немає' }),
+      await screen.findByRole('heading', { name: 'Команди ще немає' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'Створити команду' }),

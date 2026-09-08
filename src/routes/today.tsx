@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router';
+import { useCallback, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { motion, useReducedMotion } from 'motion/react';
+import { Link } from '@/lib/router';
 
 import {
   Alert,
@@ -22,6 +24,8 @@ import { useTodayRealtime } from '@/features/completions/use-today-realtime';
 import { useTeams } from '@/features/teams/team-context';
 import { cn } from '@/lib/cn';
 import { getErrorMessage } from '@/lib/errors';
+import { logicalDate } from '@/lib/dates';
+import { queryKeys } from '@/lib/query-client';
 
 type TodayTask = TodaySnapshot['checklists'][number]['tasks'][number];
 type TodayCompletion = NonNullable<TodayTask['completion']>;
@@ -66,57 +70,42 @@ export function TodayRoute() {
   const { session } = useAuth();
   const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const teamId = activeTeam?.id ?? null;
-  const [snapshot, setSnapshot] = useState<TodaySnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const teamTimeZone = activeTeam?.timezone ?? 'UTC';
+  const [, refreshLogicalDate] = useState(0);
+  const todayDate = logicalDate(new Date(), teamTimeZone);
+  const reducedMotion = useReducedMotion();
   const [mutationFailure, setMutationFailure] =
     useState<MutationFailure | null>(null);
   const [pendingTaskIds, setPendingTaskIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const requestId = useRef(0);
-
-  const loadToday = useCallback(
-    async (showLoading = false) => {
-      if (!teamId) return;
-
-      const currentRequest = ++requestId.current;
-      if (showLoading) setLoading(true);
-      setError(null);
-      try {
-        const nextSnapshot = await fetchTodaySnapshot(teamId);
-        if (currentRequest === requestId.current) setSnapshot(nextSnapshot);
-      } catch (loadError) {
-        if (currentRequest === requestId.current) {
-          setError(
-            getErrorMessage(loadError, 'Не вдалося завантажити задачі.'),
-          );
-        }
-      } finally {
-        if (currentRequest === requestId.current) setLoading(false);
-      }
-    },
-    [teamId],
-  );
+  const queryClient = useQueryClient();
+  const completionMutation = useMutation({
+    mutationFn: ({
+      completionId,
+      shouldComplete,
+      taskId,
+    }: {
+      completionId: string;
+      shouldComplete: boolean;
+      taskId: string;
+    }) =>
+      shouldComplete ? completeTask(taskId) : uncompleteTask(completionId),
+  });
+  const todayQuery = useQuery({
+    enabled: Boolean(teamId),
+    queryFn: () => fetchTodaySnapshot(teamId!),
+    queryKey: queryKeys.today(teamId ?? 'none', todayDate),
+  });
+  const snapshot = todayQuery.data ?? null;
+  const loading = todayQuery.isLoading;
+  const error = todayQuery.error
+    ? getErrorMessage(todayQuery.error, 'Не вдалося завантажити задачі.')
+    : null;
 
   const refreshToday = useCallback(() => {
-    void loadToday(false);
-  }, [loadToday]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setSnapshot(null);
-      setError(null);
-      setMutationFailure(null);
-      setPendingTaskIds(new Set());
-      void loadToday(true);
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-      requestId.current += 1;
-    };
-  }, [loadToday]);
+    void todayQuery.refetch();
+  }, [todayQuery]);
 
   const checklistIds = useMemo(
     () => snapshot?.checklists.map((checklist) => checklist.id) ?? [],
@@ -130,7 +119,7 @@ export function TodayRoute() {
 
   useLogicalDateRefresh({
     logicalDate: snapshot?.logicalDate ?? null,
-    onRefresh: refreshToday,
+    onRefresh: () => refreshLogicalDate((version) => version + 1),
     timeZone: snapshot?.timezone ?? activeTeam?.timezone ?? null,
   });
 
@@ -152,37 +141,52 @@ export function TodayRoute() {
 
       setMutationFailure(null);
       setPendingTaskIds((current) => new Set(current).add(task.id));
-      setSnapshot((current) =>
-        current
-          ? withTaskCompletion(
-              current,
-              task.id,
-              shouldComplete ? optimisticCompletion : null,
-            )
-          : current,
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.today(teamId!, todayDate),
+      });
+      queryClient.setQueryData<TodaySnapshot>(
+        queryKeys.today(teamId!, todayDate),
+        (current) =>
+          current
+            ? withTaskCompletion(
+                current,
+                task.id,
+                shouldComplete ? optimisticCompletion : null,
+              )
+            : current,
       );
 
       try {
-        const result = shouldComplete
-          ? await completeTask(task.id)
-          : await uncompleteTask(previousCompletion?.id ?? '');
+        const result = await completionMutation.mutateAsync({
+          completionId: previousCompletion?.id ?? '',
+          shouldComplete,
+          taskId: task.id,
+        });
 
         if (result.status === 'created') showToast('Задачу виконано');
         if (result.status === 'removed') showToast('Виконання скасовано');
-        await loadToday(false);
-      } catch (mutationError) {
-        setSnapshot((current) => {
-          if (!current) return current;
-          const currentTask = findTask(current, task.id);
-          const ownsOptimisticComplete =
-            shouldComplete && currentTask?.completion?.id === optimisticId;
-          const stillOptimisticallyUncompleted =
-            !shouldComplete && currentTask?.completion === null;
-
-          return ownsOptimisticComplete || stillOptimisticallyUncompleted
-            ? withTaskCompletion(current, task.id, previousCompletion)
-            : current;
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.todayForTeam(teamId!),
         });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.historyForTeam(teamId!),
+        });
+      } catch (mutationError) {
+        queryClient.setQueryData<TodaySnapshot>(
+          queryKeys.today(teamId!, todayDate),
+          (current) => {
+            if (!current) return current;
+            const currentTask = findTask(current, task.id);
+            const ownsOptimisticComplete =
+              shouldComplete && currentTask?.completion?.id === optimisticId;
+            const stillOptimisticallyUncompleted =
+              !shouldComplete && currentTask?.completion === null;
+
+            return ownsOptimisticComplete || stillOptimisticallyUncompleted
+              ? withTaskCompletion(current, task.id, previousCompletion)
+              : current;
+          },
+        );
         setMutationFailure({
           action: shouldComplete ? 'complete' : 'uncomplete',
           taskId: task.id,
@@ -202,7 +206,18 @@ export function TodayRoute() {
         });
       }
     },
-    [loadToday, pendingTaskIds, session, showToast, snapshot],
+    [
+      completionMutation,
+      pendingTaskIds,
+      queryClient,
+      session,
+      setMutationFailure,
+      setPendingTaskIds,
+      showToast,
+      snapshot,
+      teamId,
+      todayDate,
+    ],
   );
 
   const retryMutation = () => {
@@ -240,6 +255,7 @@ export function TodayRoute() {
       count + checklist.tasks.filter((task) => task.completion).length,
     0,
   );
+  const completionRatio = taskCount ? completedCount / taskCount : 0;
 
   if (status === 'idle' || status === 'loading') {
     return (
@@ -297,7 +313,7 @@ export function TodayRoute() {
           color="error"
         >
           <span className="flex-1">{error}</span>
-          <Button onClick={() => void loadToday(true)} size="sm">
+          <Button onClick={() => void todayQuery.refetch()} size="sm">
             Повторити
           </Button>
         </Alert>
@@ -316,6 +332,21 @@ export function TodayRoute() {
         ) : undefined
       }
     >
+      {taskCount > 0 ? (
+        <div
+          aria-label={`Виконано ${completedCount} з ${taskCount}`}
+          aria-valuemax={taskCount}
+          aria-valuemin={0}
+          aria-valuenow={completedCount}
+          className="h-1 overflow-hidden rounded-full bg-base-200"
+          role="progressbar"
+        >
+          <div
+            className="app-progress-fill h-full w-full rounded-full bg-primary motion-reduce:transition-none"
+            style={{ transform: `scaleX(${completionRatio})` }}
+          />
+        </div>
+      ) : null}
       {error ? (
         <Alert
           className="flex-col items-start sm:flex-row sm:items-center"
@@ -392,9 +423,20 @@ export function TodayRoute() {
                   Boolean(completion && !canUndo);
 
                 return (
-                  <li
+                  <motion.li
+                    animate={{
+                      opacity: 1,
+                      transform: completion
+                        ? 'translateY(0) scale(0.995)'
+                        : 'translateY(0) scale(1)',
+                    }}
                     className="list-row min-h-14 items-start px-0"
+                    initial={false}
                     key={task.id}
+                    transition={{
+                      duration: reducedMotion ? 0.01 : 0.18,
+                      ease: 'easeOut',
+                    }}
                   >
                     <label
                       className={cn(
@@ -424,7 +466,7 @@ export function TodayRoute() {
                     <div className="pt-2 list-col-grow">
                       <div
                         className={cn(
-                          'text-base',
+                          'text-base transition-[color,text-decoration-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none',
                           completion &&
                             'text-base-content/60 line-through decoration-base-content/40',
                         )}
@@ -448,7 +490,7 @@ export function TodayRoute() {
                         role="status"
                       />
                     ) : null}
-                  </li>
+                  </motion.li>
                 );
               })}
             </ul>

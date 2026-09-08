@@ -34,9 +34,21 @@ export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
   useEffect(() => {
     if (!teamId || getPublicEnvIssue()) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let maxWaitTimer: ReturnType<typeof setTimeout> | undefined;
+    const fire = () => {
+      if (timer) clearTimeout(timer);
+      timer = undefined;
+      if (maxWaitTimer) clearTimeout(maxWaitTimer);
+      maxWaitTimer = undefined;
+      refreshRef.current();
+    };
     const refresh = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => refreshRef.current(), 150);
+      timer = setTimeout(fire, 150);
+      // A sustained burst of events keeps resetting the 150ms debounce, so
+      // without a ceiling the refetch never fires. Force one at least once
+      // per second while events keep arriving.
+      if (!maxWaitTimer) maxWaitTimer = setTimeout(fire, 1000);
     };
     const supabase = getSupabase();
     const channel = supabase
@@ -97,6 +109,7 @@ export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
       });
     return () => {
       if (timer) clearTimeout(timer);
+      if (maxWaitTimer) clearTimeout(maxWaitTimer);
       void supabase.removeChannel(channel);
     };
   }, [teamId, retryToken, checklistKey]);

@@ -1,8 +1,16 @@
 # Єдиний стиль UI
 
-Оновлено: 6 вересня 2026 року.
+Оновлено: 8 вересня 2026 року.
 
 Цей документ фіксує принципи, токени, типографіку, ритм, мапу компонентів і шаблони екранів для мобільного інтерфейсу Checklister на daisyUI 5 (тема `cupcake`).
+
+Візуальний референс для app-like ієрархії: `docs/design/references/app-feel-reference.png`. Він визначає тиху операційну щільність, плаваючу нижню навігацію, липкий team header і короткі transition-и; палітра лишається Cupcake, а компоненти — daisyUI.
+
+### Motion
+
+- `MotionConfig reducedMotion="user"` є глобальним контрактом. Рух застосовується лише до active-pill dock, присутності sheet/menu/toast і змін completion/progress/list.
+- Навігація не анімує pathname як глобальний transition і не remount-ить screen tree. CSS лишається відповідальним за hover/focus/tap feedback.
+- Mobile shell займає `h-dvh` із safe-area inset; на `sm+` контент зберігає центровану колонку `max-w-md`.
 
 ## 2. Єдиний стиль
 
