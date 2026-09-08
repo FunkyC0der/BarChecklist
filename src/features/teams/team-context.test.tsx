@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
+
+import { createTestQueryClient } from '@/test/query-client';
 
 const auth = vi.hoisted(() => ({ userId: 'user-1' }));
 const fetchTeams = vi.hoisted(() => vi.fn());
@@ -46,11 +48,7 @@ function Probe() {
 }
 function mount() {
   return render(
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
+    <QueryClientProvider client={createTestQueryClient()}>
       <TeamProvider>
         <Probe />
       </TeamProvider>
@@ -115,11 +113,7 @@ describe('TeamProvider active-team resolution', () => {
     );
     auth.userId = 'user-2';
     view.rerender(
-      <QueryClientProvider
-        client={
-          new QueryClient({ defaultOptions: { queries: { retry: false } } })
-        }
-      >
+      <QueryClientProvider client={createTestQueryClient()}>
         <TeamProvider>
           <Probe />
         </TeamProvider>
