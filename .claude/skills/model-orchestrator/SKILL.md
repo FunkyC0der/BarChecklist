@@ -9,6 +9,10 @@ You own decisions, permissions, conflict resolution, acceptance, and everything 
 
 This skill only applies while the user has asked for delegated work. Absent that ask, do the task inline; a task that is merely large, multi-part, or "thorough" is not a request to spawn.
 
+**Say when orchestration is not worth it.** Even under an explicit ask, a single localized package — one diagnosed change across a handful of files in one language, no migration, no deploy, no independent verification needed — costs more orchestrated than done inline: the subagents are cheap, but your own turns re-read the whole context and dominate the bill. Do not silently obey. Say in one line that this one is cheaper inline, then do it inline unless the user reaffirms. Reserve the full loop for several packages, long or risky work, or anything where an independent verifier earns its spawn.
+
+**Never stack two planning layers.** In plan mode you are already the planner: read the code yourself and write the plan file, spawning `Explore` only for genuine fan-out. Outside plan mode a `Plan` agent may design. Running plan mode *and* a `Plan` agent puts the same design in your context three times — the agent report, the file you write, and the approval echo.
+
 ## Workflow
 
 1. Write an assignment capsule: outcome, scope, permissions, acceptance criteria, checks, unknowns.
@@ -65,6 +69,10 @@ scope/ownership: boundaries and exclusively owned paths
 inputs/artifacts: paths to read — not pasted contents
 contracts/invariants/permissions: must-preserve behavior and authorization
 acceptance: observable definition of done
+  When acceptance rests on one predicate — a precedence rule, a mode switch,
+  a threshold — prose is not enough: enumerate the input cases with their
+  expected outcome, and require a test that covers them. A wrong boolean
+  leaves every gate green.
 checks: exact commands or verification expected
 deliverable: artifact and report to return
 model/subagent_type: exact profile spawned
@@ -78,6 +86,8 @@ Background subagents notify you on completion; read the report with `TaskOutput`
 Terse, evidence over narration. The subagent's final report is never shown to the user — relay what matters.
 
 **Executors: keep the report under ~150 words.** A report that sprawls is a signal the package was too big — cut the next one smaller. **Verifiers are the exception**: their length tracks how many defects they found, which is signal, not sprawl — and splitting an audit across agents costs more, since each re-derives the codebase. Have a verifier write findings to a file and return one line: count, highest severity, path. Read the file only when you act on it.
+
+**Design agents follow the verifier pattern, not the exception.** A `Plan` agent writes the plan to its file and returns only the path plus the open decisions that need your judgment. A design pasted into your context as prose is re-read on every later turn, and you will restate it in the plan file anyway.
 
 ```text
 status: complete | partial | blocked
