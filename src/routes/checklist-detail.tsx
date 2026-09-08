@@ -425,7 +425,6 @@ export function ChecklistDetailRoute() {
         onClose={closeDialog}
         triggerRef={dialogTriggerRef}
         open={dialog?.type === 'create-task'}
-        title="Нова задача"
       >
         {dialog?.type === 'create-task' ? (
           <TaskForm

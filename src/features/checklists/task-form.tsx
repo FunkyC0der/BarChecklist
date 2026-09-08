@@ -4,7 +4,6 @@ import { Controller, useForm } from 'react-hook-form';
 
 import { Alert, AppText, Button } from '@/components/ui';
 import { Icon } from '@/components/ui/icon';
-import { TaskMarker } from '@/components/ui/list-row';
 import { getErrorMessage } from '@/lib/errors';
 
 import {
@@ -59,22 +58,19 @@ export function TaskForm({
         control={control}
         name="title"
         render={({ field, fieldState }) => (
-          <div className="flex items-start gap-3">
-            <TaskMarker className="mt-1" />
-            <div className="min-w-0 flex-1">
-              <input
-                aria-label="Назва задачі"
-                autoFocus
-                className="input w-full input-ghost px-0 text-base font-semibold input-sm"
-                onBlur={field.onBlur}
-                onChange={field.onChange}
-                placeholder="Назва задачі"
-                value={field.value}
-              />
-              {fieldState.error?.message ? (
-                <p className="label text-error">{fieldState.error.message}</p>
-              ) : null}
-            </div>
+          <div>
+            <input
+              aria-label="Назва задачі"
+              autoFocus
+              className="input w-full input-ghost px-0 text-base font-semibold input-sm"
+              onBlur={field.onBlur}
+              onChange={field.onChange}
+              placeholder="Назва задачі"
+              value={field.value}
+            />
+            {fieldState.error?.message ? (
+              <p className="label text-error">{fieldState.error.message}</p>
+            ) : null}
           </div>
         )}
       />
