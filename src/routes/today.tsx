@@ -15,10 +15,10 @@ import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/features/auth/auth-context';
 import {
   completeTask,
-  fetchTodaySnapshot,
   type TodaySnapshot,
   uncompleteTask,
 } from '@/features/completions/today-api';
+import { todaySnapshotQueryOptions } from '@/features/completions/today-queries';
 import { useLogicalDateRefresh } from '@/features/completions/use-logical-date-refresh';
 import { useTodayRealtime } from '@/features/completions/use-today-realtime';
 import { useTeams } from '@/features/teams/team-context';
@@ -93,9 +93,8 @@ export function TodayRoute() {
       shouldComplete ? completeTask(taskId) : uncompleteTask(completionId),
   });
   const todayQuery = useQuery({
+    ...todaySnapshotQueryOptions(teamId ?? 'none', todayDate),
     enabled: Boolean(teamId),
-    queryFn: () => fetchTodaySnapshot(teamId!),
-    queryKey: queryKeys.today(teamId ?? 'none', todayDate),
   });
   const snapshot = todayQuery.data ?? null;
   const loading = todayQuery.isLoading;

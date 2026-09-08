@@ -20,6 +20,7 @@ import {
   resolveTeamTabRoot,
   writeStoredActiveTeamTab,
 } from '@/features/teams/team-tab-storage';
+import { useTabPrefetch } from '@/features/teams/use-tab-prefetch';
 import { cn } from '@/lib/cn';
 
 const tabs = [
@@ -48,6 +49,7 @@ export function AppLayout({ children }: { children?: React.ReactNode }) {
     onSuccess: () => queryClient.clear(),
   });
   const { activeTeam, selectTeam, status, teams = [] } = useTeams();
+  useTabPrefetch();
   const location = useLocation();
   const reducedMotion = useReducedMotion();
   const navigate = useNavigate();

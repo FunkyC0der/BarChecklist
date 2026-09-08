@@ -21,7 +21,6 @@ import {
   createTeamInvite,
   deleteTeam,
   fetchCurrentTeamInvite,
-  fetchTeamMembers,
   leaveTeam,
   removeTeamMember,
   updateTeam,
@@ -30,6 +29,7 @@ import { initials } from '@/features/teams/team-display';
 import { OnboardingForm } from '@/features/teams/onboarding-form';
 import { DeleteTeamSheet, InviteSheet } from '@/features/teams/team-sheets';
 import { joinPath } from '@/features/teams/team-routes';
+import { teamMembersQueryOptions } from '@/features/teams/team-queries';
 import { useTeams } from '@/features/teams/team-context';
 import { useTeamRealtime } from '@/features/teams/use-team-realtime';
 import { buildAppUrl, shareLink } from '@/lib/platform';
@@ -107,9 +107,8 @@ export function TeamRoute() {
   });
   const inviteCreateRequestId = useRef(0);
   const membersQuery = useQuery({
+    ...teamMembersQueryOptions(activeTeam?.id ?? 'none'),
     enabled: Boolean(activeTeam),
-    queryFn: () => fetchTeamMembers(activeTeam!.id),
-    queryKey: queryKeys.teamMembers(activeTeam?.id ?? 'none'),
   });
   const inviteQuery = useQuery({
     enabled: Boolean(activeTeam && session?.user.id === activeTeam?.owner_id),

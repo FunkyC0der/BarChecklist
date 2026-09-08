@@ -20,7 +20,7 @@ export const queryKeys = {
 export function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
-      queries: { retry: 1, staleTime: 15_000 },
+      queries: { gcTime: 30 * 60_000, retry: 1, staleTime: 15_000 },
       mutations: { retry: false },
     },
   });

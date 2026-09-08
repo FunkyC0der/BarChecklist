@@ -1,9 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import {
-  type InfiniteData,
-  useInfiniteQuery,
-  useQuery,
-} from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link } from '@/lib/router';
 
 import {
@@ -18,23 +14,17 @@ import {
   Sheet,
   Skeleton,
 } from '@/components/ui';
-import {
-  fetchHistory,
-  fetchHistoryFilterOptions,
-  type HistoryFilters,
-  type HistoryResponse,
+import type {
+  HistoryFilters,
+  HistoryResponse,
 } from '@/features/history/history-api';
+import {
+  emptyFilters,
+  historyOptionsQueryOptions,
+  historyQueryOptions,
+} from '@/features/history/history-queries';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
-import { queryKeys } from '@/lib/query-client';
-
-const emptyFilters: HistoryFilters = {
-  beforeDate: null,
-  checklistId: null,
-  fromDate: null,
-  toDate: null,
-  userId: null,
-};
 
 function isPermissionError(error: unknown) {
   return (
@@ -79,26 +69,13 @@ export function HistoryRoute() {
     if (filters !== emptyFilters) setFilters(emptyFilters);
     if (draft !== emptyFilters) setDraft(emptyFilters);
   }
-  const historyQuery = useInfiniteQuery<
-    HistoryResponse,
-    Error,
-    InfiniteData<HistoryResponse>,
-    readonly unknown[],
-    string | null
-  >({
+  const historyQuery = useInfiniteQuery({
+    ...historyQueryOptions(teamId ?? 'none', filters),
     enabled: Boolean(teamId),
-    getNextPageParam: (page) => page?.nextBeforeDate ?? undefined,
-    initialPageParam: null as string | null,
-    placeholderData: (previousData, previousQuery) =>
-      previousQuery?.queryKey[1] === teamId ? previousData : undefined,
-    queryFn: ({ pageParam }) =>
-      fetchHistory(teamId!, { ...filters, beforeDate: pageParam }),
-    queryKey: queryKeys.history(teamId ?? 'none', filters),
   });
   const optionsQuery = useQuery({
+    ...historyOptionsQueryOptions(teamId ?? 'none'),
     enabled: Boolean(teamId),
-    queryFn: () => fetchHistoryFilterOptions(teamId!),
-    queryKey: queryKeys.historyOptions(teamId ?? 'none'),
   });
   const history = useMemo<HistoryResponse | null>(() => {
     const pages = historyQuery.data?.pages.filter(Boolean);

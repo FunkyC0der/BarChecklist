@@ -18,12 +18,9 @@ import {
 import { IconTile } from '@/components/ui/list-row';
 import { useToast } from '@/components/ui/toast';
 import { useAuth } from '@/features/auth/auth-context';
-import {
-  createChecklist,
-  fetchActiveTaskCounts,
-  fetchChecklists,
-} from '@/features/checklists/checklist-api';
+import { createChecklist } from '@/features/checklists/checklist-api';
 import { ChecklistForm } from '@/features/checklists/checklist-form';
+import { checklistListQueryOptions } from '@/features/checklists/checklist-queries';
 import { taskCountLabel } from '@/features/checklists/checklist-schedule';
 import {
   MAX_ACTIVE_CHECKLISTS_PER_TEAM,
@@ -42,17 +39,8 @@ export function ChecklistsRoute() {
   const createTriggerRef = useRef<HTMLButtonElement>(null);
   const queryClient = useQueryClient();
   const checklistQuery = useQuery({
+    ...checklistListQueryOptions(activeTeam?.id ?? 'none'),
     enabled: Boolean(activeTeam),
-    queryFn: async () => {
-      const nextChecklists = await fetchChecklists(activeTeam!.id);
-      return {
-        checklists: nextChecklists,
-        taskCounts: await fetchActiveTaskCounts(
-          nextChecklists.map(({ id }) => id),
-        ),
-      };
-    },
-    queryKey: queryKeys.checklistList(activeTeam?.id ?? 'none'),
   });
   const createMutation = useMutation({
     mutationFn: (values: ChecklistFormValues) =>
