@@ -14,23 +14,41 @@ This skill only applies while the user has asked for delegated work. Absent that
 1. Write an assignment capsule: outcome, scope, permissions, acceptance criteria, checks, unknowns.
 2. **One executor by default.** Do not spawn a child to split commands, files, or routine checks. One owner does discovery, implementation, focused checks, fixes, and artifacts for its package. Instruct the owner not to delegate further. Parallelize only genuinely disjoint packages when the saved wall-clock beats the duplicated context — normally at most two, never a broad fan-out.
 3. **Pick the profile at spawn time.** In Claude Code a subagent's model is set only by the `Agent` call's `model` parameter (`haiku` | `sonnet` | `opus` | `fable`) plus `subagent_type`; text inside the prompt does not switch models, and a later `SendMessage` cannot change a running agent's model. Read the live `model` enum in the `Agent` tool schema for this session rather than assuming. Choose the cheapest profile likely to pass on the first try given risk, context size, latency, and retry cost. Record the exact `subagent_type` + `model` and a one-line `selection_reason`.
-4. **Reuse before rotating.** Continue an owner with `SendMessage` while its phase, context, and role stay useful (`ListAgents` to find it; a fresh `Agent` call starts cold and re-derives everything). Rotate only for a new phase, a new role, an ownership boundary, independent verification, or stale/noisy context. In plan mode, keep agents read-only (`Explore`, `Plan`).
+4. **Reuse before rotating.** Continue an owner with `SendMessage` while its phase, context, and role stay useful (`ListAgents` to find it; a fresh `Agent` call starts cold and re-derives everything). Rotate only for a new phase, a new role, an ownership boundary, independent verification, or stale/noisy context. In plan mode, keep agents read-only (`Explore`, `Plan`). **`SendMessage` is not always available.** When it is disabled, every continuation becomes a cold spawn — plan fewer and larger packages, and hand a replacement agent the prior findings as an explicit list so it does not re-derive them.
 5. **Verify proportionally.** Use an independent read-only verifier (`Explore` or a read-only `claude`) only for material code/data/security/permissions/migration/destructive work, deploys, multi-package integration, or conflicting evidence. Low-risk docs and local config get the owner's own focused check. Run the full gate once per stable integration point; after changes rerun only affected checks plus the gate. Reuse a passed gate while its inputs are unchanged.
-6. **Escalate on evidence only.** Triggers: acceptance failure, contradictory or incomplete artifact, a failure reproduced after a changed hypothesis, or newly found security/data/destructive risk. First classify the failure — model capability, context/assignment, code/environment, permission, or external state — then change that variable before retrying. Never blindly retry, never invent usage savings. Stop when every acceptance criterion has evidence; otherwise report the blocker or residual risk.
+6. **Escalate on evidence only.** Triggers: acceptance failure, contradictory or incomplete artifact, a failure reproduced after a changed hypothesis, or newly found security/data/destructive risk. First classify the failure — model capability, context/assignment, code/environment, permission, or external state — then change that variable before retrying. A usage-limit kill (HTTP 429) is external state, not a model failure: re-running it needs no new hypothesis. Before a long package, weigh the remaining limit, and require agents to leave the tree in a consistent state so a mid-edit death is recoverable. Never blindly retry, never invent usage savings. Stop when every acceptance criterion has evidence; otherwise report the blocker or residual risk.
+
+## Orchestrator cost
+
+You are the most expensive model in the loop, and every tool call you make re-reads your entire context. Cost is **your turns × your context size** — usually a bigger driver than which model each subagent got.
+
+- **Verification means reading the diff, not re-running the executor's gate.** A green gate the executor already ran is not evidence worth buying twice; re-run one check (usually `test`) only when the report is internally contradictory or auth/data is involved. Reading the actual code is what catches defects a green gate misses.
+- **One call per check.** Chain commands with `&&`/`;` and trim output in the command (`grep`, `tail`) instead of spending separate turns.
+- **Delegate output triage, not green results.** A failing `build`/`test` is hundreds of lines — a `haiku` agent that returns "which command, which test, which message" earns its spawn. A passing gate does not: spawning costs about what the inline call costs.
+- **Capsules point at documents, they do not restate them.** Keep a capsule ≤ ~250 words; pass invariants as a path to read (`AGENTS.md`, design docs, a prior report). The agent pays for that reading in its own context; a pasted contract sits in yours for the rest of the session.
+- **Do not re-invoke this skill's slash command mid-session** — each invocation re-injects the whole skill body plus its arguments. Once orchestration is running, ordinary messages are enough.
+- **Read code narrowly:** `grep -n` with tight `-A/-B` over dumping whole files.
+- **Your messages to the user are context too.** Keep them short; do not re-narrate a report that is already above.
+- **Checkpoint yourself** after each accepted stage: overwrite `<scratchpad>/orchestrator-state.md` with ~10 lines (stage, decisions to retain, gate status, open risks, next target) so deliberate compaction stays safe. Keep it out of the working tree — process state is not project documentation, and any file there lands in `git status` and then accidentally in a commit. Append one ledger line per accepted stage: `agent · model · tokens · tools · duration · outcome · was the profile right`. The data arrives in the completion notification, so this is near-free; do no analysis during the run — a retrospective over the full context is the most expensive turn available. Keep tasks atomic enough to finish in one session rather than carrying state across sessions; if one does not fit, cut it smaller.
 
 ## Initial profile heuristic
 
-Capability shorthand, not a claim about exact price multipliers.
+Capability shorthand, not a claim about exact price multipliers. Match the **shape of the work**, not its topic.
 
-| Work shape                                                        | Initial profile                                                         | Why                                         |
-| ----------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------- |
-| Bounded edit, copy change, single-file tweak                      | `claude` / `haiku`                                                      | cheap, local, deterministic                 |
-| Locating code across many files, no edits                         | `Explore` / `haiku` or `sonnet`                                         | read-only fan-out, conclusion only          |
-| Routine implementation across a few files                         | `claude` / `sonnet`                                                     | enough context for ordinary execution       |
-| Cross-package integration, shared state, multi-route refactor     | `general-purpose` / `sonnet`                                            | broader coordination, full tool access      |
-| Auth, RLS, permissions, DB migrations, destructive or deploy work | `claude` / `opus`                                                       | high consequence, high review burden        |
-| Ambiguous, novel, or failing again after a new hypothesis         | `claude` / `opus` (+ `isolation: worktree` when it may thrash the tree) | spend only when evidence warrants it        |
-| Prose-heavy deliverable (user-facing copy, long-form docs)        | `fable`                                                                 | drafting register, not engineering judgment |
+| Work shape                                                                       | Initial profile                                                         | Why                                            |
+| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------- |
+| Find unknown defects: audit, independent verification, "what did we miss"        | `claude` / `opus`                                                       | a green gate is not proof; finding needs depth |
+| Apply a diagnosed fix already located to file:line with a hypothesis             | `claude` / `sonnet`                                                     | the hard part is already done                  |
+| Bounded edit, copy change, single-file tweak                                     | `claude` / `haiku`                                                      | cheap, local, deterministic                    |
+| Locating code across many files, no edits                                        | `Explore` / `haiku` or `sonnet`                                         | read-only fan-out, conclusion only             |
+| Routine implementation across a few files                                        | `claude` / `sonnet`                                                     | enough context for ordinary execution          |
+| Cross-package integration, shared state, multi-route refactor                    | `general-purpose` / `sonnet`                                            | broader coordination, full tool access         |
+| Judgment call that may need refusing (risky refactor, auth-adjacent restructure) | `claude` / `opus`                                                       | the deliverable includes "do not do this"      |
+| Auth, RLS, permissions, DB migrations, destructive or deploy work                | `claude` / `opus`                                                       | high consequence, high review burden           |
+| Ambiguous, novel, or failing again after a new hypothesis                        | `claude` / `opus` (+ `isolation: worktree` when it may thrash the tree) | spend only when evidence warrants it           |
+| Prose-heavy deliverable (user-facing copy, long-form docs)                       | `fable`                                                                 | drafting register, not engineering judgment    |
+
+A cheap executor reporting a green gate is not evidence that the work is defect-free — it is evidence that the gate passed. Independent reading is what finds what the gate cannot see, so do not trade the verifier away for savings.
 
 If the profile you want is unavailable in this session's enum, pick the nearest available one that fits the risk and record the substitution. Never silently fall back to the most expensive model.
 
@@ -44,7 +62,7 @@ Do not spawn approval-blocked work — surface the missing authorization instead
 goal: outcome to achieve
 decisions: settled choices, and the open ones you keep
 scope/ownership: boundaries and exclusively owned paths
-inputs/artifacts: relevant context, files, prior evidence
+inputs/artifacts: paths to read — not pasted contents
 contracts/invariants/permissions: must-preserve behavior and authorization
 acceptance: observable definition of done
 checks: exact commands or verification expected
@@ -58,6 +76,8 @@ Background subagents notify you on completion; read the report with `TaskOutput`
 ## Report
 
 Terse, evidence over narration. The subagent's final report is never shown to the user — relay what matters.
+
+**Executors: keep the report under ~150 words.** A report that sprawls is a signal the package was too big — cut the next one smaller. **Verifiers are the exception**: their length tracks how many defects they found, which is signal, not sprawl — and splitting an audit across agents costs more, since each re-derives the codebase. Have a verifier write findings to a file and return one line: count, highest severity, path. Read the file only when you act on it.
 
 ```text
 status: complete | partial | blocked
