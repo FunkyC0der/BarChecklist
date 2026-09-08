@@ -52,6 +52,9 @@ function installViewport() {
     configurable: true,
     value: 700,
   });
+  // The layout-height formula also reads innerHeight; jsdom's default (768)
+  // would otherwise leak in as a phantom keyboard inset.
+  vi.stubGlobal('innerHeight', 700);
   const viewport = Object.assign(new EventTarget(), {
     height: 700,
     offsetTop: 0,
@@ -157,11 +160,11 @@ describe('Sheet', () => {
       'bg-base-100',
       'shadow-xl',
       'overflow-y-auto',
-      'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
+      'max-h-[calc(var(--sheet-viewport-height,100dvh)-var(--sheet-bottom-clearance))]',
     );
   });
 
-  it('moves the dialog bottom anchor with viewport resize and scroll', () => {
+  it('follows the visual viewport via a keyboard-inset transform on resize and scroll', () => {
     const viewport = installViewport();
     render(
       <Sheet onClose={vi.fn()} open title="Нова задача">
@@ -170,41 +173,120 @@ describe('Sheet', () => {
     );
 
     const dialog = screen.getByRole('dialog');
-    const sheet = dialog;
     const surface = getSurface(dialog);
     nextFrame();
-    expect(surface).toHaveStyle({
-      top: '0px',
-      height: '700px',
-      bottom: 'auto',
-    });
-    expect(sheet.style.maxHeight).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe(
+      '0px',
+    );
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe(
+      '700px',
+    );
 
     viewport.height = 320;
     viewport.offsetTop = 60;
     viewport.dispatchEvent(new Event('resize'));
     nextFrame();
-    expect(surface).toHaveStyle({
-      top: '60px',
-      height: '320px',
-      bottom: 'auto',
-    });
+    // layoutHeight(700) - (offsetTop(60) + height(320)) = 320
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe(
+      '320px',
+    );
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe(
+      '320px',
+    );
     expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
       '12px',
     );
-    expect(sheet).toHaveStyle({ maxHeight: '308px' });
 
     viewport.offsetTop = 90;
     viewport.dispatchEvent(new Event('scroll'));
     nextFrame();
-    expect(surface).toHaveStyle({ top: '90px', height: '320px' });
+    // 700 - (90 + 320) = 290
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe(
+      '290px',
+    );
 
     viewport.height = 700;
     viewport.offsetTop = 0;
     viewport.dispatchEvent(new Event('resize'));
     nextFrame();
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe(
+      '0px',
+    );
     expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
-    expect(sheet.style.maxHeight).toBe('');
+  });
+
+  it('smooths keyboard resizes while tracking viewport pans live', () => {
+    const viewport = installViewport();
+    render(
+      <Sheet onClose={vi.fn()} open title="Нова задача">
+        <input aria-label="Назва задачі" />
+      </Sheet>,
+    );
+
+    const surface = getSurface(screen.getByRole('dialog'));
+    nextFrame();
+    expect(surface.dataset.sheetTracking).toBe('live');
+
+    // A keyboard-sized resize is the jump worth animating.
+    viewport.height = 320;
+    viewport.dispatchEvent(new Event('resize'));
+    nextFrame();
+    expect(surface.dataset.sheetTracking).toBeUndefined();
+
+    // Safari pans right behind that resize: stay animated, or the still
+    // running transition gets cut to its target mid-flight.
+    viewport.offsetTop = 20;
+    viewport.dispatchEvent(new Event('scroll'));
+    nextFrame();
+    expect(surface.dataset.sheetTracking).toBeUndefined();
+
+    // Once the transition has settled, panning tracks the viewport 1:1 again.
+    act(() => vi.advanceTimersByTime(300));
+    viewport.offsetTop = 60;
+    viewport.dispatchEvent(new Event('scroll'));
+    nextFrame();
+    expect(surface.dataset.sheetTracking).toBe('live');
+
+    // Jitter below the delta threshold is not worth a transition either.
+    viewport.height = 330;
+    viewport.dispatchEvent(new Event('resize'));
+    nextFrame();
+    expect(surface.dataset.sheetTracking).toBe('live');
+  });
+
+  it('corrects revealFocusedEditor scroll math for the pending transform shift', () => {
+    const viewport = installViewport();
+    render(
+      <Sheet onClose={vi.fn()} open title="Нова задача">
+        <input aria-label="Назва задачі" />
+      </Sheet>,
+    );
+    const box = screen.getByRole<HTMLElement>('dialog');
+    const editor = screen.getByRole('textbox');
+    // Both rects are pinned to their pre-transition ("stale") geometry: a
+    // real device's getBoundingClientRect() still reports this in the same
+    // tick a 'resize' launches the keyboard-inset transition.
+    mockScrollArea(
+      box,
+      () => 0,
+      () => 700,
+    );
+    mockEditorPosition(editor, () => 500);
+    act(() => editor.focus());
+    nextFrame();
+    expect(box.scrollTop).toBe(0);
+
+    viewport.height = 320;
+    viewport.offsetTop = 0;
+    viewport.dispatchEvent(new Event('resize'));
+    nextFrame();
+
+    // keyboardInset = 700 - (0 + 320) = 380, so pendingShift = 380. The
+    // field's stale rect (bottom 544) sits well past the new clip window
+    // (bottom 308), but corrected for the pending shift (544 - 380 = 164) it
+    // already fits — an implementation that ignored pendingShift would
+    // scroll it unnecessarily.
+    expect(box.scrollTop).toBe(0);
   });
 
   it.each(['checklist', 'task'] as const)(
@@ -227,32 +309,46 @@ describe('Sheet', () => {
 
       const box = screen.getByRole<HTMLElement>('dialog');
       const editor = screen.getByRole('textbox');
-      mockScrollArea(
-        box,
-        () => viewport.offsetTop,
-        () => viewport.height,
-      );
+      // The box sits bottom-anchored inside the (always full-height, locally
+      // unshifted) surface: its local top is `layoutHeight - ownHeight`.
+      // `paintedInset` mirrors what the surface's transform currently shows
+      // on screen — it lags behind the target during an animated update,
+      // exactly like a real element's rect would mid-transition.
+      const layoutHeight = 700;
+      const insetFor = (offsetTop: number, height: number) =>
+        Math.max(0, layoutHeight - (offsetTop + height));
+      let paintedInset = 0;
+      const boxTopRaw = () => layoutHeight - viewport.height - paintedInset;
+      mockScrollArea(box, boxTopRaw, () => viewport.height);
       let nativeFocusPan = 0;
       mockEditorPosition(
         editor,
-        () => viewport.offsetTop + 550 + nativeFocusPan - box.scrollTop,
+        () => boxTopRaw() + 550 + nativeFocusPan - box.scrollTop,
       );
       act(() => editor.focus());
       nextFrame();
       expect(box.scrollTop).toBe(0);
 
-      // Focus happens before iOS reports the smaller keyboard viewport.
+      // Focus happens before iOS reports the smaller keyboard viewport: the
+      // resize below launches an animated transition, so the mocked rect
+      // stays at its pre-resize position for this one frame — pendingShift
+      // must correct for that to compute the right scroll.
       viewport.height = 320;
       viewport.offsetTop = 60;
       viewport.dispatchEvent(new Event('resize'));
       nextFrame();
       expect(box.scrollTop).toBeGreaterThan(0);
+      // Settle the transition before checking against the target window.
+      paintedInset = insetFor(viewport.offsetTop, viewport.height);
       expect(editor.getBoundingClientRect().bottom).toBeLessThanOrEqual(368);
       expect(editor.getBoundingClientRect().top).toBeGreaterThanOrEqual(72);
 
       // A later Safari pan must remeasure even if height did not change.
+      // Its delta is small enough to track live (no correction needed), so
+      // the surface is already visually settled by the time it fires.
       nativeFocusPan = 45;
       viewport.offsetTop = 90;
+      paintedInset = insetFor(viewport.offsetTop, viewport.height);
       viewport.dispatchEvent(new Event('scroll'));
       nextFrame();
       expect(editor.getBoundingClientRect().bottom).toBeLessThanOrEqual(398);
@@ -346,7 +442,6 @@ describe('Sheet', () => {
       </Sheet>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog;
     const surface = getSurface(dialog);
     nextFrame();
     viewport.dispatchEvent(new Event('resize'));
@@ -356,10 +451,10 @@ describe('Sheet', () => {
       </Sheet>,
     );
     nextFrame();
-    expect(surface.style.height).toBe('');
-    expect(surface.style.top).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe('');
     expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
-    expect(box.style.maxHeight).toBe('');
+    expect(surface.dataset.sheetTracking).toBeUndefined();
     expect(removeListener).toHaveBeenCalledWith('resize', expect.any(Function));
     expect(removeListener).toHaveBeenCalledWith('scroll', expect.any(Function));
     expect(vi.getTimerCount()).toBe(0);
@@ -379,12 +474,11 @@ describe('Sheet', () => {
     act(() => editor.focus());
     nextFrame();
     expect(editor).toHaveFocus();
-    expect(surface.style.top).toBe('');
-    expect(surface.style.height).toBe('');
-    expect(box.style.maxHeight).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe('');
     expect(box.scrollTop).toBe(0);
     expect(box).toHaveClass(
-      'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
+      'max-h-[calc(var(--sheet-viewport-height,100dvh)-var(--sheet-bottom-clearance))]',
       'overflow-y-auto',
     );
   });

@@ -3,6 +3,14 @@ import { useEffect } from 'react';
 const focusGap = 12;
 const keyboardGap = 12;
 const keyboardThreshold = 80;
+// Below this, a keyboard-inset change is treated as live 1:1 tracking even
+// during a 'resize': too small to be worth animating, and instant keeps the
+// sheet from visibly lagging tiny visualViewport jitter.
+const keyboardDeltaThreshold = 40;
+// iOS often fires 'scroll' right behind 'resize', before the CSS transition
+// settles. Keep animating through this window so the pan doesn't fight the
+// still-running transition with a visible seam.
+const trackingSmoothingWindow = 250;
 const textInputTypes = new Set([
   'text',
   'search',
@@ -13,7 +21,11 @@ const textInputTypes = new Set([
   'number',
 ]);
 
-function revealFocusedEditor(box: HTMLElement, viewport: VisualViewport) {
+function revealFocusedEditor(
+  box: HTMLElement,
+  viewport: VisualViewport,
+  pendingShift: number,
+) {
   const editor = document.activeElement;
   if (
     !(editor instanceof HTMLElement) ||
@@ -42,8 +54,11 @@ function revealFocusedEditor(box: HTMLElement, viewport: VisualViewport) {
       continue;
     }
 
+    // Rects reflect the surface's current transform, not the one just applied
+    // to it. `pendingShift` (0 on immediate paths) corrects them to the final
+    // position so scroll math lands where the sheet is actually headed.
     const bounds = scroller.getBoundingClientRect();
-    const scrollTop = bounds.top + scroller.clientTop;
+    const scrollTop = bounds.top + scroller.clientTop - pendingShift;
     const scrollBottom = scrollTop + scroller.clientHeight;
     // An inner scroller can start entirely below the viewport. Reveal the field
     // in that scroller first, then bring it into the viewport at the outer box.
@@ -59,10 +74,12 @@ function revealFocusedEditor(box: HTMLElement, viewport: VisualViewport) {
     if (visibleBottom <= visibleTop) continue;
 
     const field = editor.getBoundingClientRect();
+    const fieldTop = field.top - pendingShift;
+    const fieldBottom = field.bottom - pendingShift;
     const delta =
-      field.top < visibleTop || field.height > visibleBottom - visibleTop
-        ? field.top - visibleTop
-        : Math.max(0, field.bottom - visibleBottom);
+      fieldTop < visibleTop || field.height > visibleBottom - visibleTop
+        ? fieldTop - visibleTop
+        : Math.max(0, fieldBottom - visibleBottom);
 
     if (delta !== 0) {
       // An immediate scroll avoids competing with the keyboard animation and
@@ -78,13 +95,13 @@ function revealFocusedEditor(box: HTMLElement, viewport: VisualViewport) {
   }
 }
 
-function isKeyboardOpen(viewport: VisualViewport) {
+function getLayoutHeight() {
+  return Math.max(document.documentElement.clientHeight, window.innerHeight);
+}
+
+function isKeyboardOpen(viewport: VisualViewport, layoutHeight: number) {
   // Browser chrome can alter the visual viewport slightly. A substantial
   // reduction is the cross-browser signal that the keyboard owns the bottom.
-  const layoutHeight = Math.max(
-    document.documentElement.clientHeight,
-    window.innerHeight,
-  );
   return viewport.height < layoutHeight - keyboardThreshold;
 }
 
@@ -98,51 +115,82 @@ export function useSheetViewport(
     if (!open || !dialog || !box || !viewport) return;
 
     let frame: number | undefined;
-    const update = () => {
+    let appliedInset = 0;
+    let smoothUntil = 0;
+
+    // `Dialog.Viewport` is `position: fixed; inset: 0` — pinned to the layout
+    // viewport — while the visible area is the visual viewport's
+    // [offsetTop, offsetTop + height]. This is the one offset that reconciles
+    // them for both Android's keyboard resize and Safari's viewport pan.
+    const update = (animated: boolean) => {
       frame = undefined;
-      // iOS shrinks/pans the visual viewport while a fixed dialog still occupies
-      // the layout viewport. Move its frame with the viewport. When the keyboard
-      // owns the bottom edge, replace the dock clearance with a deliberate gap.
-      dialog.style.top = `${viewport.offsetTop}px`;
-      dialog.style.height = `${viewport.height}px`;
-      dialog.style.bottom = 'auto';
-      if (isKeyboardOpen(viewport)) {
+      const layoutHeight = getLayoutHeight();
+      const keyboardInset = Math.max(
+        0,
+        layoutHeight - (viewport.offsetTop + viewport.height),
+      );
+      const delta = Math.abs(keyboardInset - appliedInset);
+      const now = performance.now();
+      // Inside the window a transition is still running, so going live there
+      // would snap the sheet from mid-flight to its target. Only a resize
+      // opens the window, so a sustained pan cannot keep extending it.
+      const live =
+        now >= smoothUntil && (!animated || delta < keyboardDeltaThreshold);
+
+      // Write the tracking mode before the variable it gates, so the browser
+      // resolves the right transition before the value it applies to changes.
+      if (live) {
+        dialog.dataset.sheetTracking = 'live';
+      } else {
+        delete dialog.dataset.sheetTracking;
+        if (animated) smoothUntil = now + trackingSmoothingWindow;
+      }
+
+      const pendingShift = live ? 0 : keyboardInset - appliedInset;
+      appliedInset = keyboardInset;
+      dialog.style.setProperty('--sheet-keyboard-inset', `${keyboardInset}px`);
+      dialog.style.setProperty(
+        '--sheet-viewport-height',
+        `${viewport.height}px`,
+      );
+      if (isKeyboardOpen(viewport, layoutHeight)) {
         dialog.style.setProperty(
           '--sheet-bottom-clearance',
           `${keyboardGap}px`,
         );
-        box.style.maxHeight = `${viewport.height - keyboardGap}px`;
       } else {
         dialog.style.removeProperty('--sheet-bottom-clearance');
-        box.style.removeProperty('max-height');
       }
-      revealFocusedEditor(box, viewport);
+      revealFocusedEditor(box, viewport, pendingShift);
     };
-    const scheduleUpdate = () => {
+    const scheduleUpdate = (animated: boolean) => () => {
       if (frame !== undefined) cancelAnimationFrame(frame);
       // Focus precedes keyboard layout. Measure in a frame after native focus
       // scrolling; later resize/scroll events repeat this as Safari settles.
-      frame = requestAnimationFrame(update);
+      frame = requestAnimationFrame(() => update(animated));
     };
+    const scheduleLive = scheduleUpdate(false);
+    // Only a keyboard resize gets the CSS transition; scroll/focus/transition
+    // events track the visual viewport 1:1 (see `live` above for exceptions).
+    const scheduleAnimated = scheduleUpdate(true);
 
-    scheduleUpdate();
-    dialog.addEventListener('focusin', scheduleUpdate);
-    viewport.addEventListener('resize', scheduleUpdate);
-    viewport.addEventListener('scroll', scheduleUpdate);
+    scheduleLive();
+    dialog.addEventListener('focusin', scheduleLive);
+    viewport.addEventListener('resize', scheduleAnimated);
+    viewport.addEventListener('scroll', scheduleLive);
     // The opening transition can finish after the last keyboard viewport event.
-    box.addEventListener('transitionend', scheduleUpdate);
+    box.addEventListener('transitionend', scheduleLive);
 
     return () => {
       if (frame !== undefined) cancelAnimationFrame(frame);
-      dialog.removeEventListener('focusin', scheduleUpdate);
-      viewport.removeEventListener('resize', scheduleUpdate);
-      viewport.removeEventListener('scroll', scheduleUpdate);
-      box.removeEventListener('transitionend', scheduleUpdate);
-      dialog.style.removeProperty('top');
-      dialog.style.removeProperty('height');
-      dialog.style.removeProperty('bottom');
+      dialog.removeEventListener('focusin', scheduleLive);
+      viewport.removeEventListener('resize', scheduleAnimated);
+      viewport.removeEventListener('scroll', scheduleLive);
+      box.removeEventListener('transitionend', scheduleLive);
+      dialog.style.removeProperty('--sheet-keyboard-inset');
+      dialog.style.removeProperty('--sheet-viewport-height');
       dialog.style.removeProperty('--sheet-bottom-clearance');
-      box.style.removeProperty('max-height');
+      delete dialog.dataset.sheetTracking;
     };
   }, [box, dialog, open]);
 }

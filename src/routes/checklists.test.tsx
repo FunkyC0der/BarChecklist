@@ -179,10 +179,15 @@ describe('ChecklistsRoute', () => {
 
     // jsdom has no layout. Model the floating bottom-aligned dialog grid: a short box ends
     // at the dialog's bottom, and has no scroll range. A box-height cap alone
-    // therefore cannot reveal this field; the dialog anchor must move too.
-    const dialogTop = () => Number.parseFloat(surface.style.top) || 0;
-    const dialogHeight = () => Number.parseFloat(surface.style.height) || 700;
-    const boxTop = () => dialogTop() + dialogHeight() - 220;
+    // therefore cannot reveal this field; the surface's keyboard-inset
+    // transform must move it too. jsdom's default innerHeight (768, never
+    // stubbed here) is the fixed layout height the inset is measured against.
+    const layoutHeight = 768;
+    const keyboardInset = () =>
+      Number.parseFloat(
+        surface.style.getPropertyValue('--sheet-keyboard-inset'),
+      ) || 0;
+    const boxTop = () => layoutHeight - keyboardInset() - 220;
     Object.defineProperties(box, {
       clientHeight: { configurable: true, value: 220 },
       scrollHeight: { configurable: true, value: 220 },

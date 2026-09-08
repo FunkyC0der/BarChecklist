@@ -29,6 +29,12 @@ select {
 
 .app-overlay-surface {
   transform-origin: center;
+  transform: translateY(calc(-1 * var(--sheet-keyboard-inset, 0px)));
+  transition: transform 240ms var(--ease-out);
+}
+
+.app-overlay-surface[data-sheet-tracking='live'] {
+  transition: none;
 }
 
 .app-overlay-popup {
@@ -89,6 +95,7 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .app-overlay-surface,
   .app-overlay-popup,
   .app-menu-popup,
   .app-toast,

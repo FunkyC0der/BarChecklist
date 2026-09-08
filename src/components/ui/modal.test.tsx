@@ -41,6 +41,9 @@ function installViewport() {
     configurable: true,
     value: 700,
   });
+  // The layout-height formula also reads innerHeight; jsdom's default (768)
+  // would otherwise leak in as a phantom keyboard inset.
+  vi.stubGlobal('innerHeight', 700);
   const viewport = Object.assign(new EventTarget(), {
     height: 700,
     offsetTop: 0,
@@ -90,13 +93,13 @@ describe('Modal', () => {
       'bg-base-100',
       'shadow-xl',
       'overflow-y-auto',
-      'max-h-[calc(100dvh-var(--sheet-bottom-clearance))]',
+      'max-h-[calc(var(--sheet-viewport-height,100dvh)-var(--sheet-bottom-clearance))]',
     );
     expect(surface.querySelector('.modal-backdrop')).toBeInTheDocument();
     expect(dialog.querySelector('button.sr-only')).toHaveTextContent('Закрити');
   });
 
-  it('uses a keyboard gap and cleans up viewport overrides', () => {
+  it('follows the visual viewport via a keyboard-inset transform and cleans up on close', () => {
     const viewport = installViewport();
     const { rerender } = render(
       <Modal onClose={vi.fn()} open title="Редагувати команду">
@@ -104,7 +107,6 @@ describe('Modal', () => {
       </Modal>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog;
     const surface = getSurface(dialog);
     nextFrame();
     expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
@@ -113,19 +115,25 @@ describe('Modal', () => {
     viewport.offsetTop = 60;
     viewport.dispatchEvent(new Event('resize'));
     nextFrame();
-    expect(surface).toHaveStyle({ top: '60px', height: '320px' });
+    // layoutHeight(700) - (offsetTop(60) + height(320)) = 320
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe(
+      '320px',
+    );
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe(
+      '320px',
+    );
     expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe(
       '12px',
     );
-    expect(box).toHaveStyle({ maxHeight: '308px' });
 
     rerender(
       <Modal onClose={vi.fn()} open={false} title="Редагувати команду">
         <input aria-label="Назва" />
       </Modal>,
     );
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe('');
     expect(surface.style.getPropertyValue('--sheet-bottom-clearance')).toBe('');
-    expect(box.style.maxHeight).toBe('');
   });
 
   it('keeps native layout when visualViewport is unavailable', () => {
@@ -135,10 +143,8 @@ describe('Modal', () => {
       </Modal>,
     );
     const dialog = screen.getByRole('dialog');
-    const box = dialog;
     const surface = getSurface(dialog);
-    expect(surface.style.top).toBe('');
-    expect(surface.style.height).toBe('');
-    expect(box.style.maxHeight).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-keyboard-inset')).toBe('');
+    expect(surface.style.getPropertyValue('--sheet-viewport-height')).toBe('');
   });
 });

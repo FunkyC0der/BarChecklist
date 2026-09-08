@@ -14,4 +14,4 @@ export const sheetDockClearanceClass =
 export const floatingPopupDialogClass = `modal items-end justify-items-center px-3 pb-[var(--sheet-bottom-clearance)] ${bottomSurfaceTokensClass} ${sheetDockClearanceClass}`;
 
 export const floatingPopupBoxClass =
-  'modal-box w-full max-w-xl max-h-[calc(100dvh-var(--sheet-bottom-clearance))] overflow-y-auto rounded-box border border-base-300/60 bg-base-100 px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl';
+  'modal-box w-full max-w-xl max-h-[calc(var(--sheet-viewport-height,100dvh)-var(--sheet-bottom-clearance))] overflow-y-auto rounded-box border border-base-300/60 bg-base-100 px-4 pt-5 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl';
