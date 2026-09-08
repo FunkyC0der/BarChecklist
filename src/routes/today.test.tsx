@@ -63,10 +63,10 @@ vi.mock('@/features/completions/today-api', () => ({
   uncompleteTask: api.uncompleteTask,
 }));
 
-vi.mock('@/features/completions/use-today-realtime', () => ({
-  useTodayRealtime: () => ({
-    realtimeStatus: realtimeState.status,
-    retryRealtime: realtimeState.retry,
+vi.mock('@/features/completions/today-realtime-context', () => ({
+  useTodayRealtimeStatus: () => ({
+    retry: realtimeState.retry,
+    status: realtimeState.status,
   }),
 }));
 

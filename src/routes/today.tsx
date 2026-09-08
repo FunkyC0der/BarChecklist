@@ -19,8 +19,8 @@ import {
   uncompleteTask,
 } from '@/features/completions/today-api';
 import { todaySnapshotQueryOptions } from '@/features/completions/today-queries';
+import { useTodayRealtimeStatus } from '@/features/completions/today-realtime-context';
 import { useLogicalDateRefresh } from '@/features/completions/use-logical-date-refresh';
-import { useTodayRealtime } from '@/features/completions/use-today-realtime';
 import { useTeams } from '@/features/teams/team-context';
 import { cn } from '@/lib/cn';
 import { getErrorMessage } from '@/lib/errors';
@@ -106,15 +106,8 @@ export function TodayRoute() {
     void todayQuery.refetch();
   }, [todayQuery]);
 
-  const checklistIds = useMemo(
-    () => snapshot?.checklists.map((checklist) => checklist.id) ?? [],
-    [snapshot],
-  );
-  const { realtimeStatus, retryRealtime } = useTodayRealtime({
-    checklistIds,
-    onRefresh: refreshToday,
-    teamId,
-  });
+  const { retry: retryRealtime, status: realtimeStatus } =
+    useTodayRealtimeStatus();
 
   useLogicalDateRefresh({
     logicalDate: snapshot?.logicalDate ?? null,

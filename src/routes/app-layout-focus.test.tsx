@@ -17,6 +17,33 @@ vi.mock('@/features/auth/auth-context', () => ({
 vi.mock('@/features/teams/team-context', () => ({
   useTeams: () => teamState,
 }));
+// AppLayout prefetches team data and mounts the team/today realtime
+// providers, which all reach for the real Supabase client unless stubbed —
+// this keeps the test from making actual network or WebSocket calls.
+vi.mock('@/lib/supabase', () => {
+  const chainable: unknown = new Proxy(
+    {},
+    {
+      get: (_target, prop) =>
+        prop === 'then'
+          ? (resolve: (value: unknown) => void) =>
+              resolve({ count: 0, data: [], error: null })
+          : () => chainable,
+    },
+  );
+  const channel: { on: () => typeof channel; subscribe: () => typeof channel } =
+    {
+      on: () => channel,
+      subscribe: () => channel,
+    };
+  return {
+    getSupabase: () => ({
+      channel: () => channel,
+      from: () => chainable,
+      removeChannel: vi.fn(),
+    }),
+  };
+});
 
 import { AppLayout } from './app-layout';
 

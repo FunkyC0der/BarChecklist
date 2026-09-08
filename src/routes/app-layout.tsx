@@ -12,8 +12,10 @@ import {
   bottomSurfaceTokensClass,
 } from '@/components/ui/bottom-surface';
 import { useAuth } from '@/features/auth/auth-context';
+import { TodayRealtimeProvider } from '@/features/completions/today-realtime-context';
 import { OnboardingForm } from '@/features/teams/onboarding-form';
 import { useTeams } from '@/features/teams/team-context';
+import { TeamRealtimeProvider } from '@/features/teams/team-realtime-context';
 import {
   readStoredActiveTeamTab,
   resolveActiveTeamTab,
@@ -39,6 +41,16 @@ const tabs = [
 ] as const;
 
 export function AppLayout({ children }: { children?: React.ReactNode }) {
+  return (
+    <TeamRealtimeProvider>
+      <TodayRealtimeProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </TodayRealtimeProvider>
+    </TeamRealtimeProvider>
+  );
+}
+
+function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   const { session, signOut } = useAuth();
   const queryClient = useQueryClient();
   const signOutMutation = useMutation({

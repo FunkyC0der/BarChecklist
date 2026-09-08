@@ -69,8 +69,8 @@ vi.mock('@/features/teams/team-api', async (importOriginal) => ({
 vi.mock('@/features/teams/team-context', () => ({
   useTeams: () => ({ ...teamState, refreshTeams }),
 }));
-vi.mock('@/features/teams/use-team-realtime', () => ({
-  useTeamRealtime: () => ({ retry: vi.fn(), status: 'connected' }),
+vi.mock('@/features/teams/team-realtime-context', () => ({
+  useTeamRealtimeStatus: () => ({ retry: vi.fn(), status: 'connected' }),
 }));
 vi.mock('@/lib/platform', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/platform')>()),

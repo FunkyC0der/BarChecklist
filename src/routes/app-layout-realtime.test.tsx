@@ -1,10 +1,9 @@
+import { act, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
 import { renderWithRouter } from '@/test/router';
-import { queryKeys } from '@/lib/query-client';
 
 const api = vi.hoisted(() => ({
   fetchActiveTaskCounts: vi.fn(),
@@ -22,18 +21,13 @@ const teamState = vi.hoisted(() => ({
     owner_id: 'owner-1',
     timezone: 'Europe/Kyiv',
     updated_at: '2026-09-01T00:00:00Z',
-  } as {
-    created_at: string;
-    id: string;
-    name: string;
-    owner_id: string;
-    timezone: string;
-    updated_at: string;
-  } | null,
+  },
+  refreshTeams: vi.fn(),
   selectTeam: vi.fn(),
-  status: 'ready' as 'error' | 'idle' | 'loading' | 'ready',
+  status: 'ready' as const,
   teams: [] as Array<{ id: string; name: string }>,
 }));
+const supabase = vi.hoisted(() => ({ channel: vi.fn() }));
 
 vi.mock('@/features/auth/auth-context', () => ({
   useAuth: () => ({
@@ -58,9 +52,9 @@ vi.mock('@/features/history/history-api', () => ({
   fetchHistory: api.fetchHistory,
   fetchHistoryFilterOptions: api.fetchHistoryFilterOptions,
 }));
-// AppLayout mounts the team and today realtime providers, which open real
-// Supabase channels unless stubbed — this keeps the test from making actual
-// WebSocket connections.
+// Regression coverage for the realtime status banners flashing on every tab
+// switch: the team/today realtime channels must be opened once at the
+// app-shell level, not torn down and recreated whenever a tab route remounts.
 vi.mock('@/lib/supabase', () => {
   const channel: {
     on: () => typeof channel;
@@ -72,15 +66,23 @@ vi.mock('@/lib/supabase', () => {
       return channel;
     },
   };
+  supabase.channel.mockImplementation(() => channel);
   return {
     getSupabase: () => ({
-      channel: () => channel,
+      channel: supabase.channel,
       removeChannel: vi.fn(),
     }),
   };
 });
 
 import { AppLayout } from './app-layout';
+
+function TodayLeaf() {
+  return <div>Today content</div>;
+}
+function TeamLeaf() {
+  return <div>Team content</div>;
+}
 
 function renderApp(queryClient: QueryClient) {
   const withQueryClient = ({ children }: { children?: ReactNode }) => (
@@ -90,14 +92,16 @@ function renderApp(queryClient: QueryClient) {
   );
 
   return renderWithRouter({
-    component: () => <div>Leaf content</div>,
+    additionalRoutes: [{ component: TeamLeaf, path: '/team' }],
+    component: TodayLeaf,
     layout: withQueryClient,
     path: '/today',
   });
 }
 
-describe('AppLayout tab prefetch', () => {
+describe('AppLayout realtime channels', () => {
   beforeEach(() => {
+    supabase.channel.mockClear();
     api.fetchActiveTaskCounts.mockReset().mockResolvedValue(new Map());
     api.fetchChecklists.mockReset().mockResolvedValue([]);
     api.fetchHistory.mockReset().mockResolvedValue({
@@ -117,45 +121,35 @@ describe('AppLayout tab prefetch', () => {
       logicalDate: '2026-09-05',
       timezone: 'Europe/Kyiv',
     });
-    teamState.status = 'ready';
-    teamState.teams = [];
   });
 
-  it('prefetches the other tabs’ queries without navigating to them', async () => {
+  it('keeps the same realtime channels open while switching tabs', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
+    const { findByText, router } = renderApp(queryClient);
 
-    renderApp(queryClient);
+    await findByText('Today content');
+    await waitFor(() => expect(supabase.channel).toHaveBeenCalled());
+    const openedAfterFirstMount = supabase.channel.mock.calls.length;
 
-    await waitFor(() => {
-      expect(
-        queryClient.getQueryData(queryKeys.checklistList('team-1')),
-      ).toBeDefined();
+    await act(async () => {
+      await router.navigate({ to: '/team' as never });
     });
-    expect(
-      queryClient.getQueryData(queryKeys.teamMembers('team-1')),
-    ).toBeDefined();
-    expect(
-      queryClient.getQueryData(queryKeys.historyOptions('team-1')),
-    ).toBeDefined();
-    await waitFor(() => {
-      expect(
-        queryClient.getQueryData(
-          queryKeys.history('team-1', {
-            beforeDate: null,
-            checklistId: null,
-            fromDate: null,
-            toDate: null,
-            userId: null,
-          }),
-        ),
-      ).toBeDefined();
+    await findByText('Team content');
+
+    await act(async () => {
+      await router.navigate({ to: '/today' as never });
     });
-    expect(api.fetchChecklists).toHaveBeenCalledWith('team-1');
-    expect(api.fetchTeamMembers).toHaveBeenCalledWith('team-1');
-    expect(api.fetchHistory).toHaveBeenCalled();
-    expect(api.fetchHistoryFilterOptions).toHaveBeenCalledWith('team-1');
-    expect(api.fetchTodaySnapshot).toHaveBeenCalledWith('team-1');
+    await findByText('Today content');
+
+    await act(async () => {
+      await router.navigate({ to: '/team' as never });
+    });
+    await findByText('Team content');
+
+    // The team and today channels are opened once each, at the app-shell
+    // level — switching tabs must not tear them down and reconnect.
+    expect(supabase.channel).toHaveBeenCalledTimes(openedAfterFirstMount);
   });
 });

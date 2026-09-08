@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from '@/lib/router-hooks';
 
@@ -31,7 +31,7 @@ import { DeleteTeamSheet, InviteSheet } from '@/features/teams/team-sheets';
 import { joinPath } from '@/features/teams/team-routes';
 import { teamMembersQueryOptions } from '@/features/teams/team-queries';
 import { useTeams } from '@/features/teams/team-context';
-import { useTeamRealtime } from '@/features/teams/use-team-realtime';
+import { useTeamRealtimeStatus } from '@/features/teams/team-realtime-context';
 import { buildAppUrl, shareLink } from '@/lib/platform';
 import { queryKeys } from '@/lib/query-client';
 
@@ -155,23 +155,8 @@ export function TeamRoute() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [inviteQuery, membersQuery]);
 
-  const refreshActiveTeam = useCallback(() => {
-    void refreshTeams();
-  }, [refreshTeams]);
-
-  const { retry: retryRealtime, status: realtimeStatus } = useTeamRealtime({
-    isOwner,
-    onInviteChange: () =>
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.teamInvite(activeTeam?.id ?? 'none'),
-      }),
-    onMembersChange: () =>
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.teamMembers(activeTeam?.id ?? 'none'),
-      }),
-    onTeamChange: refreshActiveTeam,
-    teamId: activeTeam?.id ?? null,
-  });
+  const { retry: retryRealtime, status: realtimeStatus } =
+    useTeamRealtimeStatus();
 
   const openTeamEditor = (field: 'name' | 'timezone', trigger: HTMLElement) => {
     editTriggerRef.current = trigger;

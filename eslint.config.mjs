@@ -28,7 +28,14 @@ export default defineConfig([
       'prettier/prettier': 'error',
       'react-refresh/only-export-components': [
         'error',
-        { allowExportNames: ['useAuth', 'useTeams'] },
+        {
+          allowExportNames: [
+            'useAuth',
+            'useTeams',
+            'useTeamRealtimeStatus',
+            'useTodayRealtimeStatus',
+          ],
+        },
       ],
     },
   },
