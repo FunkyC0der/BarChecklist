@@ -4,7 +4,13 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { NavLink, Outlet } from '@/lib/router';
 import { useLocation, useNavigate } from '@/lib/router-hooks';
 
-import { Icon, Sheet, ToastViewport, type IconName } from '@/components/ui';
+import {
+  Icon,
+  Sheet,
+  ToastViewport,
+  useToast,
+  type IconName,
+} from '@/components/ui';
 import {
   bottomDockHeightClass,
   bottomDockInsetClass,
@@ -23,6 +29,8 @@ import {
 } from '@/features/teams/team-tab-storage';
 import { useTabPrefetch } from '@/features/teams/use-tab-prefetch';
 import { cn } from '@/lib/cn';
+import { getErrorMessage } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 
 const tabs = [
   { icon: 'sun' as const satisfies IconName, label: 'Сьогодні', to: '/today' },
@@ -52,12 +60,17 @@ export function AppLayout({ children }: { children?: React.ReactNode }) {
 function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   const { session, signOut } = useAuth();
   const queryClient = useQueryClient();
+  const showToast = useToast();
   const signOutMutation = useMutation({
     mutationFn: () => signOut(),
     // Defense-in-depth: drop every cached query (including any invite
     // token held in teamInvite(teamId)) so it can't leak to whoever signs
     // in next on this device.
     onSuccess: () => queryClient.clear(),
+    onError: (error) => {
+      logger.error('auth.sign-out.failed', error);
+      showToast(getErrorMessage(error, 'Не вдалося вийти з акаунта.'), 'error');
+    },
   });
   const { activeTeam, selectTeam, status, teams = [] } = useTeams();
   useTabPrefetch();

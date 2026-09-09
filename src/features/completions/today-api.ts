@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseOrLog } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 
 const completionSchema = z.object({
@@ -48,35 +49,9 @@ export async function fetchTodaySnapshot(
     p_team_id: teamId,
   });
   if (error) throw error;
-  const raw = z
-    .object({
-      logicalDate: z.string(),
-      timezone: z.string(),
-      checklists: z.array(
-        z.object({
-          id: z.string(),
-          name: z.string(),
-          createdAt: z.string(),
-          tasks: z.array(
-            z.object({
-              id: z.string(),
-              title: z.string(),
-              position: z.number(),
-              completion: z
-                .object({
-                  id: z.string(),
-                  completedBy: z.string(),
-                  completedAt: z.string(),
-                  completedByName: z.string(),
-                })
-                .nullable(),
-            }),
-          ),
-        }),
-      ),
-    })
-    .parse(data);
-  return todaySnapshotSchema.parse(raw);
+  return parseOrLog(todaySnapshotSchema, data, 'today.snapshot.parse-failed', {
+    teamId,
+  });
 }
 
 export async function completeTask(taskId: string) {

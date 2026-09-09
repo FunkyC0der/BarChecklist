@@ -72,6 +72,56 @@ export type Database = {
           },
         ]
       }
+      client_events: {
+        Row: {
+          app_version: string | null
+          code: string | null
+          context: Json
+          created_at: string
+          event: string
+          id: string
+          level: string
+          occurred_at: string
+          session_id: string
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          code?: string | null
+          context?: Json
+          created_at?: string
+          event: string
+          id?: string
+          level: string
+          occurred_at: string
+          session_id: string
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          app_version?: string | null
+          code?: string | null
+          context?: Json
+          created_at?: string
+          event?: string
+          id?: string
+          level?: string
+          occurred_at?: string
+          session_id?: string
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_events_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -348,6 +398,7 @@ export type Database = {
         }[]
       }
       leave_team: { Args: { p_team_id: string }; Returns: undefined }
+      log_client_event: { Args: { p_events: Json }; Returns: undefined }
       remove_team_member: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: undefined

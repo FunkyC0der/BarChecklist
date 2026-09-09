@@ -1,4 +1,7 @@
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
+
+import { normalizeError } from './log-error';
+import { logger } from './logger';
 
 export const queryKeys = {
   teams: (userId: string) => ['teams', userId] as const,
@@ -20,8 +23,30 @@ export const queryKeys = {
 export function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
-      queries: { gcTime: 30 * 60_000, retry: 1, staleTime: 15_000 },
+      // A permission or validation failure (RLS denial, bad input) will
+      // never succeed on retry — only a transient network error might.
+      // Retrying blindly (the old `retry: 1`) doubled every 42501 rejection.
+      queries: {
+        gcTime: 30 * 60_000,
+        retry: (count, error) =>
+          count < 1 && normalizeError(error).kind === 'network',
+        staleTime: 15_000,
+      },
       mutations: { retry: false },
     },
+    mutationCache: new MutationCache({
+      onError: (error, _variables, _context, mutation) => {
+        logger.error('query-client.mutation-failed', error, {
+          mutationKey: JSON.stringify(mutation.options.mutationKey ?? []),
+        });
+      },
+    }),
+    queryCache: new QueryCache({
+      onError: (error, query) => {
+        logger.error('query-client.query-failed', error, {
+          queryKey: JSON.stringify(query.queryKey),
+        });
+      },
+    }),
   });
 }

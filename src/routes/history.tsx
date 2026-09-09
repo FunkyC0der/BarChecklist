@@ -25,15 +25,8 @@ import {
 } from '@/features/history/history-queries';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
+import { isPermissionError } from '@/lib/log-error';
 
-function isPermissionError(error: unknown) {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === '42501'
-  );
-}
 function subtractDays(value: string, days: number) {
   const date = new Date(`${value}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() - days);

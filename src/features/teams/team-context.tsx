@@ -11,6 +11,7 @@ import {
 
 import { useAuth } from '@/features/auth/auth-context';
 import { getPublicEnvIssue } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/query-client';
 
@@ -85,7 +86,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         writeStoredActiveTeam(session.user.id, nextActiveId);
         return nextTeams;
       } catch (nextError) {
-        void nextError;
+        logger.error('teams.refresh.failed', nextError, {
+          userId: session.user.id,
+        });
         return [];
       }
     },
@@ -113,7 +116,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             queryKey: queryKeys.teams(session.user.id),
           }),
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') {
+          logger.warn('teams.realtime.degraded', {
+            userId: session.user.id,
+            status,
+          });
+        }
+      });
 
     return () => {
       void getSupabase().removeChannel(channel);

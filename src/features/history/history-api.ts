@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseOrLog } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 
 const completionSchema = z.object({
@@ -96,7 +97,12 @@ export async function fetchHistory(
     ...(query.beforeDate == null ? {} : { p_before_date: query.beforeDate }),
   });
   if (error) throw error;
-  return historySnapshotSchema.parse(unwrapRpcResult(data));
+  return parseOrLog(
+    historySnapshotSchema,
+    unwrapRpcResult(data),
+    'history.list.parse-failed',
+    { teamId: query.teamId },
+  );
 }
 
 export async function fetchHistoryFilterOptions(
@@ -109,5 +115,10 @@ export async function fetchHistoryFilterOptions(
     },
   );
   if (error) throw error;
-  return historyFilterOptionsSchema.parse(unwrapRpcResult(data));
+  return parseOrLog(
+    historyFilterOptionsSchema,
+    unwrapRpcResult(data),
+    'history.filter-options.parse-failed',
+    { teamId },
+  );
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getPublicEnvIssue } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 export { useLogicalDateRefresh } from './use-logical-date-refresh';
 
@@ -95,7 +96,7 @@ export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
         },
         refresh,
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
           setConnection({ retryKey: retryToken, status: 'connected', teamId });
           refresh();
@@ -104,6 +105,9 @@ export function useTodayRealtime({ teamId, checklistIds, onRefresh }: Args) {
           status === 'TIMED_OUT' ||
           status === 'CLOSED'
         ) {
+          logger.warn('realtime.today.degraded', { teamId, status });
+          if (err)
+            logger.error('realtime.today.error', err, { teamId, status });
           setConnection({ retryKey: retryToken, status: 'degraded', teamId });
         }
       });

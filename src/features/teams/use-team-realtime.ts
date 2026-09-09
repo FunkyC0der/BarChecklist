@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getPublicEnvIssue } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 
 type TeamRealtimeOptions = {
@@ -81,8 +82,17 @@ export function useTeamRealtime({
       );
     }
 
-    channel.subscribe((nextStatus) => {
+    channel.subscribe((nextStatus, err) => {
       if (!active) return;
+      if (nextStatus !== 'SUBSCRIBED') {
+        logger.warn('realtime.team.degraded', { teamId, status: nextStatus });
+        if (err) {
+          logger.error('realtime.team.error', err, {
+            teamId,
+            status: nextStatus,
+          });
+        }
+      }
       setConnection({
         retryKey,
         status: nextStatus === 'SUBSCRIBED' ? 'connected' : 'degraded',

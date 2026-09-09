@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ReactNode } from 'react';
 
+import { ToastProvider } from '@/components/ui';
 import { renderWithRouter } from '@/test/router';
 
 const api = vi.hoisted(() => ({
@@ -87,7 +88,9 @@ function TeamLeaf() {
 function renderApp(queryClient: QueryClient) {
   const withQueryClient = ({ children }: { children?: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <AppLayout>{children}</AppLayout>
+      <ToastProvider>
+        <AppLayout>{children}</AppLayout>
+      </ToastProvider>
     </QueryClientProvider>
   );
 

@@ -3,6 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { Outlet } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 
+import { AppErrorBoundary } from '@/components/app-error-boundary';
 import { ToastProvider } from '@/components/ui';
 import { AuthProvider } from '@/features/auth/auth-context';
 import { TeamProvider } from '@/features/teams/team-context';
@@ -18,19 +19,21 @@ import { RequireAuth, RequireGuest, SessionGate } from './routes/guards';
 const queryClient = createQueryClient();
 export function Root() {
   return (
-    <MotionConfig reducedMotion="user">
-      <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <AuthProvider>
-            <TeamProvider>
-              <SessionGate>
-                <Outlet />
-              </SessionGate>
-            </TeamProvider>
-          </AuthProvider>
-        </ToastProvider>
-      </QueryClientProvider>
-    </MotionConfig>
+    <AppErrorBoundary>
+      <MotionConfig reducedMotion="user">
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <AuthProvider>
+              <TeamProvider>
+                <SessionGate>
+                  <Outlet />
+                </SessionGate>
+              </TeamProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </QueryClientProvider>
+      </MotionConfig>
+    </AppErrorBoundary>
   );
 }
 export function Guest({ children }: { children: ReactNode }) {

@@ -9,6 +9,7 @@
 - [Epic 7 — Beta stabilization](plans/epics/epic-07-beta-stabilization.md)
 - [UI style guide](design/ui-style.md)
 - [Real-device beta smoke](qa/beta-smoke-real-devices.md)
+- [Observability](ops/observability.md)
 
 ## Історія
 

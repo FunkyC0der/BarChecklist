@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Outlet } from '@/lib/router';
 import { useSearchParams } from '@/lib/router-hooks';
 
 import { Alert, Button, Loading, Screen } from '@/components/ui';
 import { useAuth } from '@/features/auth/auth-context';
 import { safeJoinReturnPath } from '@/features/teams/team-routes';
+import { logger } from '@/lib/logger';
 
 export function RequireAuth({ children }: { children?: ReactNode }) {
   const { session } = useAuth();
@@ -80,6 +81,12 @@ export function RequireGuest({ children }: { children?: ReactNode }) {
 export function SessionGate({ children }: { children: ReactNode }) {
   const { initializationError, initialized, retrySessionInitialization } =
     useAuth();
+
+  useEffect(() => {
+    if (initializationError) {
+      logger.error('auth.session-gate.blocked', initializationError);
+    }
+  }, [initializationError]);
 
   if (!initialized) {
     return (

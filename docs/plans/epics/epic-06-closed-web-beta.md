@@ -37,7 +37,9 @@
 2. Налаштувати окремі environment variables і Vercel deployment target.
 3. Перевірити Auth URLs, email templates і доступи.
 4. Виконати migrations та seed лише технічних довідкових даних.
-5. Налаштувати мінімальний operational monitoring без надлишкової аналітики.
+5. Налаштувати мінімальний operational monitoring без надлишкової аналітики —
+   структуровані клієнтські логи + Postgres logs і таблиця `client_events`,
+   задокументовано в [Observability](../../ops/observability.md).
 6. Додати простий feedback mechanism.
 7. Підготувати коротку інструкцію для beta-користувачів.
 8. Провести smoke test на чистих акаунтах.

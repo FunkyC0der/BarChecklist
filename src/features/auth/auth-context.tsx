@@ -11,6 +11,7 @@ import {
 } from 'react';
 
 import { getPublicEnvIssue } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 
 type SignUpValues = {
@@ -58,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       if (generation !== sessionRequestGeneration.current) return;
       setSession(null);
+      logger.error('auth.session-init.failed', error);
       setInitializationError(
         error instanceof Error
           ? error.message
@@ -81,8 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       void initializeSession();
     }, 0);
 
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
+      logger.info('auth.state-change', { event });
       sessionRequestGeneration.current += 1;
       setSession(nextSession);
       setInitializationError(null);

@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 
+import { ToastProvider } from '@/components/ui';
 import { renderWithRouter } from '@/test/router';
 
 const teamState = vi.hoisted(() => ({
@@ -56,7 +57,9 @@ describe('AppLayout menu focus', () => {
       component: () => <div>Today</div>,
       layout: ({ children }) => (
         <QueryClientProvider client={queryClient}>
-          <AppLayout>{children}</AppLayout>
+          <ToastProvider>
+            <AppLayout>{children}</AppLayout>
+          </ToastProvider>
         </QueryClientProvider>
       ),
       path: '/today',
@@ -77,7 +80,9 @@ describe('AppLayout menu focus', () => {
       component: () => <div>Today</div>,
       layout: ({ children }) => (
         <QueryClientProvider client={queryClient}>
-          <AppLayout>{children}</AppLayout>
+          <ToastProvider>
+            <AppLayout>{children}</AppLayout>
+          </ToastProvider>
         </QueryClientProvider>
       ),
       path: '/today',
@@ -104,7 +109,9 @@ describe('AppLayout menu focus', () => {
       component: () => <div>Today</div>,
       layout: ({ children }) => (
         <QueryClientProvider client={queryClient}>
-          <AppLayout>{children}</AppLayout>
+          <ToastProvider>
+            <AppLayout>{children}</AppLayout>
+          </ToastProvider>
         </QueryClientProvider>
       ),
       path: '/today',
