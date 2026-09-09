@@ -95,4 +95,26 @@ describe('AppLayout menu focus', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(trigger).toHaveFocus());
   });
+
+  it('opens the account menu from a touch press', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderWithRouter({
+      component: () => <div>Today</div>,
+      layout: ({ children }) => (
+        <QueryClientProvider client={queryClient}>
+          <AppLayout>{children}</AppLayout>
+        </QueryClientProvider>
+      ),
+      path: '/today',
+    });
+
+    fireEvent.pointerDown(
+      await screen.findByRole('button', { name: 'Меню акаунта' }),
+      { pointerType: 'touch' },
+    );
+
+    expect(await screen.findByRole('menu')).toBeInTheDocument();
+  });
 });

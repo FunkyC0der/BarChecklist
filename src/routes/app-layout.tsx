@@ -70,6 +70,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   const [teamsOpen, setTeamsOpen] = useState(false);
   const teamsTriggerRef = useRef<HTMLElement | null>(null);
   const accountMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const isChecklistDetail = /^\/checklists\/[^/]+$/.test(location.pathname);
   const isOwner = Boolean(
@@ -135,10 +136,22 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
               name="chevron-down"
             />
           </button>
-          <Menu.Root modal={false}>
+          <Menu.Root
+            modal={false}
+            onOpenChange={setAccountMenuOpen}
+            open={accountMenuOpen}
+          >
             <Menu.Trigger
               aria-label="Меню акаунта"
               className="btn btn-circle btn-ghost"
+              onPointerDown={(event) => {
+                // Mobile Safari can omit the compatibility mouse event that
+                // Base UI's menu trigger normally uses. Toggle directly for
+                // touch input so the account menu remains reachable.
+                if (event.pointerType !== 'touch') return;
+                event.preventDefault();
+                setAccountMenuOpen((open) => !open);
+              }}
               ref={accountMenuTriggerRef}
             >
               <Icon name="more-horizontal" />
