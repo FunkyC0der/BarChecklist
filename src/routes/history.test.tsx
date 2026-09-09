@@ -65,6 +65,19 @@ const day = (date: string, taskTitle = 'Закрити зміну') => ({
       completedAt: '2026-09-05T09:07:00.000Z',
     },
   ],
+  missedCount: 0,
+  missed: [] as {
+    taskId: string;
+    taskTitle: string;
+    checklistId: string;
+    checklistName: string;
+  }[],
+});
+const missedTask = (taskId: string, taskTitle: string) => ({
+  taskId,
+  taskTitle,
+  checklistId: 'checklist-1',
+  checklistName: 'Відкриття',
 });
 const snapshot = (
   days = [day('2026-09-05')],
@@ -108,6 +121,54 @@ describe('HistoryRoute', () => {
       timezone: 'Europe/Kyiv',
     };
     teamState.status = 'ready';
+  });
+
+  it('renders missed tasks for past days and counts them in the day total', async () => {
+    api.fetchHistory.mockResolvedValue(
+      snapshot([
+        {
+          ...day('2026-09-05'),
+          missedCount: 2,
+          missed: [
+            missedTask('task-2', 'Помити шейкери'),
+            missedTask('task-3', 'Замовити лід'),
+          ],
+        },
+      ]),
+    );
+    renderHistory();
+    expect(await screen.findByText('Закрити зміну')).toBeInTheDocument();
+    expect(screen.getByText('Не виконано')).toBeInTheDocument();
+    expect(screen.getByText('Помити шейкери')).toBeInTheDocument();
+    expect(screen.getByText('Замовити лід')).toBeInTheDocument();
+    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+  });
+
+  it('renders a day that only has missed tasks', async () => {
+    api.fetchHistory.mockResolvedValue(
+      snapshot([
+        {
+          date: '2026-09-04',
+          completedCount: 0,
+          completions: [],
+          missedCount: 1,
+          missed: [missedTask('task-2', 'Помити шейкери')],
+        },
+      ]),
+    );
+    renderHistory();
+    expect(await screen.findByText('Помити шейкери')).toBeInTheDocument();
+    expect(screen.queryByText('Історія порожня')).not.toBeInTheDocument();
+    expect(screen.getByText('0 / 1')).toBeInTheDocument();
+    expect(screen.getAllByRole('list')).toHaveLength(1);
+  });
+
+  it('omits the missed section for days without missed tasks', async () => {
+    api.fetchHistory.mockResolvedValue(snapshot());
+    renderHistory();
+    expect(await screen.findByText('Закрити зміну')).toBeInTheDocument();
+    expect(screen.queryByText('Не виконано')).not.toBeInTheDocument();
+    expect(screen.getByText('1 / 1')).toBeInTheDocument();
   });
 
   it('loads defaults, derives the 14-day dates, and renders localized details', async () => {

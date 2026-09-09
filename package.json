@@ -19,10 +19,11 @@
     "verify": "node scripts/verify.mjs",
     "verify:docs": "prettier --check AGENT_GUIDE.md AGENTS.md CLAUDE.md && git diff --check",
     "test:watch": "vitest",
+    "db:up": "node scripts/db-up.mjs",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "supabase:reset": "supabase db reset",
-    "supabase:test": "supabase test db",
+    "supabase:test": "node scripts/db-test.mjs",
     "db:types": "supabase gen types typescript --local > src/types/database.generated.ts"
   },
   "dependencies": {

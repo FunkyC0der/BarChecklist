@@ -58,6 +58,47 @@ describe('History API contracts', () => {
     ).toHaveProperty('days[0].completions[0].completedByName', 'Alex');
   });
 
+  it('accepts missed tasks reported alongside completions', () => {
+    expect(
+      historySnapshotSchema.parse({
+        logicalToday: '2026-09-06',
+        fromDate: '2026-08-24',
+        toDate: '2026-09-06',
+        hasMore: false,
+        nextBeforeDate: null,
+        days: [
+          {
+            date: '2026-09-05',
+            completedCount: 0,
+            completions: [],
+            missedCount: 1,
+            missed: [
+              {
+                taskId: 'task-2',
+                taskTitle: 'Restock ice',
+                checklistId: 'checklist-1',
+                checklistName: 'Close',
+              },
+            ],
+          },
+        ],
+      }),
+    ).toHaveProperty('days[0].missed[0].taskTitle', 'Restock ice');
+  });
+
+  it('defaults missed fields when the server omits them', () => {
+    expect(
+      historySnapshotSchema.parse({
+        logicalToday: '2026-09-06',
+        fromDate: '2026-08-24',
+        toDate: '2026-09-06',
+        hasMore: false,
+        nextBeforeDate: null,
+        days: [{ date: '2026-09-05', completedCount: 0, completions: [] }],
+      }).days[0],
+    ).toMatchObject({ missed: [], missedCount: 0 });
+  });
+
   it('requires filter options to retain archived and former-member context', () => {
     expect(
       historyFilterOptionsSchema.parse({

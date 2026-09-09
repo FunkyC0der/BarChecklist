@@ -12,10 +12,18 @@ const completionSchema = z.object({
   completedByName: z.string(),
   completedAt: z.string(),
 });
+const missedTaskSchema = z.object({
+  taskId: z.string(),
+  taskTitle: z.string(),
+  checklistId: z.string(),
+  checklistName: z.string(),
+});
 const historyDaySchema = z.object({
   date: z.string(),
   completedCount: z.number().int().nonnegative(),
   completions: z.array(completionSchema),
+  missedCount: z.number().int().nonnegative().default(0),
+  missed: z.array(missedTaskSchema).default([]),
 });
 export const historySnapshotSchema = z.object({
   logicalToday: z.string(),

@@ -13,6 +13,7 @@ import {
   Page,
   Sheet,
   Skeleton,
+  TaskMarker,
 } from '@/components/ui';
 import type {
   HistoryFilters,
@@ -231,8 +232,8 @@ export function HistoryRoute() {
           }
           description={
             hasFilters
-              ? 'За цими фільтрами виконань не знайдено.'
-              : 'У команди ще немає виконань за останні 14 днів.'
+              ? 'За цими фільтрами нічого не знайдено.'
+              : 'У команди ще немає задач за останні 14 днів.'
           }
           icon="clock"
           title={hasFilters ? 'Нічого не знайдено' : 'Історія порожня'}
@@ -249,18 +250,47 @@ export function HistoryRoute() {
                   {dateLabel(day.date)}
                 </h2>
                 <span className="text-xs text-base-content/60">
-                  {day.completedCount}
+                  {day.completedCount} / {day.completedCount + day.missedCount}
                 </span>
               </div>
-              <ul className="list">
-                {day.completions.map((completion) => (
-                  <ListRow
-                    key={completion.id}
-                    meta={`${completion.checklistName} · ${completion.completedByName} · ${timeLabel(completion.completedAt, activeTeam.timezone)}`}
-                    title={completion.taskTitle}
-                  />
-                ))}
-              </ul>
+              {day.completions.length > 0 ? (
+                <ul className="list">
+                  {day.completions.map((completion) => (
+                    <ListRow
+                      key={completion.id}
+                      meta={`${completion.checklistName} · ${completion.completedByName} · ${timeLabel(completion.completedAt, activeTeam.timezone)}`}
+                      title={completion.taskTitle}
+                    />
+                  ))}
+                </ul>
+              ) : null}
+              {day.missed.length > 0 ? (
+                <>
+                  <h3
+                    className="mt-2 mb-1 text-xs font-medium tracking-wide text-base-content/60 uppercase"
+                    id={`history-day-${day.date}-missed`}
+                  >
+                    Не виконано
+                  </h3>
+                  <ul
+                    aria-labelledby={`history-day-${day.date}-missed`}
+                    className="list"
+                  >
+                    {day.missed.map((task) => (
+                      <ListRow
+                        key={task.taskId}
+                        leading={<TaskMarker />}
+                        meta={task.checklistName}
+                        title={
+                          <span className="text-base-content/60">
+                            {task.taskTitle}
+                          </span>
+                        }
+                      />
+                    ))}
+                  </ul>
+                </>
+              ) : null}
             </section>
           ))}
           {history.hasMore ? (

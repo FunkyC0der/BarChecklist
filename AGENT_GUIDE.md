@@ -43,6 +43,12 @@ set of failures. For edits limited to these agent guides, run
 `pnpm verify:docs`. For database, RLS, or RPC changes, run `pnpm verify` and
 `pnpm supabase:test`.
 
+Database verification needs the local stack. Run `pnpm db:up` first: it starts
+Docker if needed, reports when another Supabase project holds port 54322, and
+brings the stack up with every migration applied. Always reach the CLI through
+the `pnpm supabase:*` scripts; a bare `supabase` command is not on `PATH`
+because the CLI is a devDependency.
+
 Treat ESLint as the source of truth for unused imports and similar static
 checks; do not manually grep for them between edits. Before verification,
 inspect the complete intended change with `git diff`; use `git diff --check` to
@@ -68,6 +74,31 @@ requires it.
 - Vitest is configured for jsdom in `vite.config.ts` and loads
   `src/test/setup.ts`. The setup provides Testing Library matchers and a
   spyable no-op `window.scrollTo`.
+
+## Data model
+
+There is no schedule history and no occurrence table. A day exists only as a
+_logical date_ — `(now() at time zone team.timezone)::date` — and the only rows
+that persist are completions.
+
+- `task_completions` holds one row per `(task_id, completion_date)`. Done means
+  an active row (`undone_at is null`); not done means no such row. Undo is soft.
+- Whether a task belonged to a past day is _computed_, never stored:
+  `private.task_is_scheduled(cadence, weekdays, logical_date)`. Because
+  `tasks.cadence`, `tasks.weekdays` and the soft-delete flags describe the
+  current state only, a past day can be reconstructed but not recovered
+  exactly. `get_history` therefore treats a task as scheduled for a past day
+  when it is currently active, was created on or before that day, and its
+  current cadence matches.
+- `tasks.cadence` and `tasks.weekdays` are both `not null`, and the
+  `task_schedule_matches_cadence` constraint ties them together: `daily` demands
+  an empty `weekdays` (`'{}'`, never `null`), `weekly` demands 1–7 unique ISO
+  weekdays. Fixtures that pass `null` for a daily task fail on insert.
+- Completions are written only through `complete_task` / `uncomplete_task`; the
+  `task_completion_prepared` trigger stamps the team, actor and logical date. A
+  pgTAP fixture that needs completions on past dates must wrap its inserts in
+  `alter table public.task_completions disable trigger task_completion_prepared`
+  and re-enable it afterwards.
 
 ## Tests and mocks
 
