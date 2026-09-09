@@ -39,15 +39,24 @@ vi.mock('@/features/teams/team-context', () => ({
 vi.mock('@/features/checklists/sortable-task-list', () => ({
   SortableTaskList: ({
     onReorder,
+    onSelect,
     tasks,
   }: {
     onReorder: (ids: string[]) => Promise<void>;
+    onSelect?: (task: Task, element: HTMLElement) => void;
     tasks: Task[];
   }) => (
     <div>
       <ul>
         {tasks.map((task) => (
-          <li key={task.id}>{task.title}</li>
+          <li key={task.id}>
+            <button
+              onClick={(event) => onSelect?.(task, event.currentTarget)}
+              type="button"
+            >
+              {task.title}
+            </button>
+          </li>
         ))}
       </ul>
       <button
@@ -186,6 +195,24 @@ describe('ChecklistDetailRoute', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => expect(accountTrigger).toHaveFocus());
     accountTrigger.remove();
+  });
+
+  it('opens the task actions menu from the edit sheet', async () => {
+    api.fetchChecklist.mockResolvedValue(checklist);
+    api.fetchTasks.mockResolvedValue(tasks);
+    renderRoute();
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Перша задача' }),
+    );
+    expect(
+      await screen.findByRole('dialog', { name: 'Редагувати задачу' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ще' }));
+    expect(
+      await screen.findByRole('menuitem', { name: 'Видалити задачу' }),
+    ).toBeVisible();
   });
 
   it('keeps the task list mounted and shows an inline alert on a failed reorder (P1-3)', async () => {

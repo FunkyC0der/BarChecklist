@@ -449,7 +449,7 @@ export function ChecklistDetailRoute() {
               <Menu.Portal>
                 <Menu.Positioner
                   align="end"
-                  className="dropdown dropdown-end z-30"
+                  className="dropdown dropdown-end z-[1000]"
                   side="bottom"
                 >
                   <Menu.Popup
