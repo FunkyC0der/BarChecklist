@@ -49,6 +49,12 @@ brings the stack up with every migration applied. Always reach the CLI through
 the `pnpm supabase:*` scripts; a bare `supabase` command is not on `PATH`
 because the CLI is a devDependency.
 
+After a schema, RLS, or RPC change passes `pnpm supabase:test` locally, push it
+to production with `pnpm db:push`. A migration that only exists locally is not
+deployed — the frontend can ship ahead of a migration that never reaches the
+linked project, leaving production running an old function silently (Zod
+defaults on the client can mask the mismatch instead of erroring).
+
 Treat ESLint as the source of truth for unused imports and similar static
 checks; do not manually grep for them between edits. Before verification,
 inspect the complete intended change with `git diff`; use `git diff --check` to
