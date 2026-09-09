@@ -96,7 +96,7 @@ describe('AppLayout menu focus', () => {
     await waitFor(() => expect(trigger).toHaveFocus());
   });
 
-  it('opens the account menu from a touch press', async () => {
+  it('opens the account menu from a touch activation', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -110,10 +110,11 @@ describe('AppLayout menu focus', () => {
       path: '/today',
     });
 
-    fireEvent.pointerDown(
-      await screen.findByRole('button', { name: 'Меню акаунта' }),
-      { pointerType: 'touch' },
-    );
+    const trigger = await screen.findByRole('button', {
+      name: 'Меню акаунта',
+    });
+    fireEvent.pointerDown(trigger, { pointerType: 'touch' });
+    fireEvent.click(trigger);
 
     expect(await screen.findByRole('menu')).toBeInTheDocument();
   });

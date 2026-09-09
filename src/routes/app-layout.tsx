@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Menu } from '@base-ui/react/menu';
 import { NavLink, Outlet } from '@/lib/router';
 import { useLocation, useNavigate } from '@/lib/router-hooks';
 
@@ -69,7 +68,8 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   const restoreTarget = useRef<string | null>(null);
   const [teamsOpen, setTeamsOpen] = useState(false);
   const teamsTriggerRef = useRef<HTMLElement | null>(null);
-  const accountMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDetailsElement>(null);
+  const accountMenuTriggerRef = useRef<HTMLElement>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const isChecklistDetail = /^\/checklists\/[^/]+$/.test(location.pathname);
@@ -111,6 +111,23 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
     }
   }, [activeTeam, location.pathname, session]);
 
+  useEffect(() => {
+    const dismissAccountMenu = (event: PointerEvent) => {
+      const menu = accountMenuRef.current;
+      if (
+        menu?.open &&
+        event.target instanceof Node &&
+        !menu.contains(event.target)
+      ) {
+        setAccountMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', dismissAccountMenu);
+    return () =>
+      document.removeEventListener('pointerdown', dismissAccountMenu);
+  }, []);
+
   return (
     <div className="flex h-dvh flex-col overflow-x-clip bg-base-200 pt-[env(safe-area-inset-top)]">
       <div className="relative mx-auto flex min-h-0 w-full flex-1 flex-col bg-base-100 sm:max-w-md">
@@ -136,93 +153,94 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
               name="chevron-down"
             />
           </button>
-          <Menu.Root
-            modal={false}
-            onOpenChange={setAccountMenuOpen}
+          <details
+            className="dropdown dropdown-end dropdown-bottom"
+            onKeyDown={(event) => {
+              if (event.key !== 'Escape') return;
+              event.preventDefault();
+              setAccountMenuOpen(false);
+              accountMenuTriggerRef.current?.focus();
+            }}
+            onToggle={(event) => setAccountMenuOpen(event.currentTarget.open)}
             open={accountMenuOpen}
+            ref={accountMenuRef}
           >
-            <Menu.Trigger
+            <summary
+              aria-controls="account-menu"
+              aria-expanded={accountMenuOpen}
               aria-label="Меню акаунта"
-              className="btn btn-circle btn-ghost"
-              onPointerDown={(event) => {
-                // Mobile Safari can omit the compatibility mouse event that
-                // Base UI's menu trigger normally uses. Toggle directly for
-                // touch input so the account menu remains reachable.
-                if (event.pointerType !== 'touch') return;
-                event.preventDefault();
-                setAccountMenuOpen((open) => !open);
-              }}
+              className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
               ref={accountMenuTriggerRef}
+              role="button"
             >
               <Icon name="more-horizontal" />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <Menu.Positioner
-                align="end"
-                className="dropdown dropdown-end dropdown-bottom z-40"
-                side="bottom"
+            </summary>
+            {accountMenuOpen ? (
+              <ul
+                className="app-menu-popup menu dropdown-content z-40 mt-1 w-56 rounded-box bg-base-100 p-2 shadow-sm"
+                id="account-menu"
+                role="menu"
               >
-                <Menu.Popup
-                  render={
-                    <ul className="app-menu-popup menu dropdown-content mt-1 w-56 rounded-box bg-base-100 p-2 shadow-sm" />
-                  }
-                >
-                  {session?.user.email ? (
-                    <li className="max-w-full truncate menu-title px-3 py-2 text-xs font-normal normal-case">
-                      {session.user.email}
-                    </li>
-                  ) : null}
+                {session?.user.email ? (
+                  <li className="max-w-full truncate menu-title px-3 py-2 text-xs font-normal normal-case">
+                    {session.user.email}
+                  </li>
+                ) : null}
+                <li>
+                  <button
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      teamsTriggerRef.current = accountMenuTriggerRef.current;
+                      setTeamsOpen(true);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <Icon name="users" />
+                    Команди
+                  </button>
+                </li>
+                {isChecklistDetail && isOwner ? (
                   <li>
-                    <Menu.Item
-                      nativeButton
-                      render={<button type="button" />}
+                    <button
+                      className="text-error"
                       onClick={() => {
-                        teamsTriggerRef.current = accountMenuTriggerRef.current;
-                        setTeamsOpen(true);
+                        setAccountMenuOpen(false);
+                        queueMicrotask(() =>
+                          window.dispatchEvent(
+                            new CustomEvent('checklister:delete-checklist', {
+                              detail: {
+                                trigger: accountMenuTriggerRef.current,
+                              },
+                            }),
+                          ),
+                        );
                       }}
+                      role="menuitem"
+                      type="button"
                     >
-                      <Icon name="users" />
-                      Команди
-                    </Menu.Item>
+                      <Icon name="trash" />
+                      Видалити чекліст
+                    </button>
                   </li>
-                  {isChecklistDetail && isOwner ? (
-                    <li>
-                      <Menu.Item
-                        className="text-error"
-                        nativeButton
-                        onClick={() => {
-                          queueMicrotask(() =>
-                            window.dispatchEvent(
-                              new CustomEvent('checklister:delete-checklist', {
-                                detail: {
-                                  trigger: accountMenuTriggerRef.current,
-                                },
-                              }),
-                            ),
-                          );
-                        }}
-                        render={<button type="button" />}
-                      >
-                        <Icon name="trash" />
-                        Видалити чекліст
-                      </Menu.Item>
-                    </li>
-                  ) : null}
-                  <li>
-                    <Menu.Item
-                      disabled={signOutMutation.isPending}
-                      nativeButton
-                      onClick={() => void signOutMutation.mutateAsync()}
-                      render={<button type="button" />}
-                    >
-                      <Icon name="log-out" />
-                      Вийти з акаунта
-                    </Menu.Item>
-                  </li>
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
+                ) : null}
+                <li>
+                  <button
+                    disabled={signOutMutation.isPending}
+                    onClick={() => {
+                      setAccountMenuOpen(false);
+                      void signOutMutation.mutateAsync();
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    <Icon name="log-out" />
+                    Вийти з акаунта
+                  </button>
+                </li>
+              </ul>
+            ) : null}
+          </details>
         </header>
         <motion.main
           animate={{ opacity: 1, transform: 'translateY(0)' }}
