@@ -5,7 +5,6 @@ import { motion } from 'motion/react';
 import { useRef, useState } from 'react';
 
 import { Icon } from '@/components/ui/icon';
-import { TaskMarker } from '@/components/ui/list-row';
 import { cn } from '@/lib/cn';
 
 import { type Task } from './checklist-api';
@@ -47,7 +46,6 @@ function SortableTaskRow({
       )}
       ref={ref}
     >
-      <TaskMarker />
       {isOwner && onSelect ? (
         <motion.button
           className="rounded-box text-start list-col-grow active:bg-base-200"
