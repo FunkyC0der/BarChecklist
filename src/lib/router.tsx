@@ -7,7 +7,7 @@ import type { ComponentPropsWithoutRef, ComponentType } from 'react';
 
 export { Outlet };
 
-type LinkProps = ComponentPropsWithoutRef<'a'> & { to: string };
+export type LinkProps = ComponentPropsWithoutRef<'a'> & { to: string };
 
 /** Retains the string `to` API while delegating every link interaction to TanStack. */
 export const Link = TanStackLink as unknown as ComponentType<LinkProps>;

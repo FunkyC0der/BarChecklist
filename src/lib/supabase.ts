@@ -33,3 +33,9 @@ export function getSupabase(): SupabaseClient {
   singleton ??= createSupabaseClient();
   return singleton;
 }
+
+/** Postgres RPCs that `returns jsonb` come back as a bare object; those that
+ * `returns table (...)` come back wrapped in a single-element array. */
+export function unwrapRpcResult(data: unknown): unknown {
+  return Array.isArray(data) ? data[0] : data;
+}

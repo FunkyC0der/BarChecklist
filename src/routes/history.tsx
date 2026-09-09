@@ -23,6 +23,7 @@ import {
   historyOptionsQueryOptions,
   historyQueryOptions,
 } from '@/features/history/history-queries';
+import { HistoryViewTabs } from '@/features/history/history-view-tabs';
 import { useTeams } from '@/features/teams/team-context';
 import { getErrorMessage } from '@/lib/errors';
 import { isPermissionError } from '@/lib/log-error';
@@ -148,12 +149,14 @@ export function HistoryRoute() {
   if (status === 'idle' || status === 'loading')
     return (
       <Page title="Історія">
+        <HistoryViewTabs />
         <Skeleton rows={5} />
       </Page>
     );
   if (status === 'error')
     return (
       <Page title="Історія">
+        <HistoryViewTabs />
         <Alert color="error">
           <span className="flex-1">
             {teamsError ?? 'Не вдалося завантажити команди.'}
@@ -167,6 +170,7 @@ export function HistoryRoute() {
   if (!activeTeam)
     return (
       <Page title="Історія">
+        <HistoryViewTabs />
         <EmptyState
           action={
             <Link className="btn btn-primary" to="/team">
@@ -182,12 +186,14 @@ export function HistoryRoute() {
   if (loading && !history)
     return (
       <Page title="Історія">
+        <HistoryViewTabs />
         <Skeleton rows={5} />
       </Page>
     );
   if (permissionDenied)
     return (
       <Page title="Історія">
+        <HistoryViewTabs />
         <Alert color="error">
           <span className="flex-1">
             У вас немає доступу до історії цієї команди.
@@ -220,6 +226,7 @@ export function HistoryRoute() {
         ) : undefined
       }
     >
+      <HistoryViewTabs />
       {error ? (
         <Alert color="error">
           <span className="flex-1">{error}</span>

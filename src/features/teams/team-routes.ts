@@ -21,6 +21,8 @@ export function safeJoinReturnPath(
       url.pathname === '/checklists' ||
       /^\/checklists\/[^/]+$/.test(url.pathname) ||
       url.pathname === '/history' ||
+      url.pathname === '/history/stats' ||
+      /^\/history\/stats\/[^/]+$/.test(url.pathname) ||
       url.pathname === '/team';
 
     if (

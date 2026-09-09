@@ -59,6 +59,9 @@ export function ChecklistsRoute() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.historyForTeam(activeTeam!.id),
       });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.statsForTeam(activeTeam!.id),
+      });
       setCreateOpen(false);
       toast('Чекліст створено');
       navigate(`/checklists/${checklist.id}`);

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { parseOrLog } from '@/lib/logger';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, unwrapRpcResult } from '@/lib/supabase';
 
 const completionSchema = z.object({
   id: z.string(),
@@ -67,10 +67,6 @@ export type HistoryQuery = {
   limit?: number;
   beforeDate?: string | null;
 };
-
-function unwrapRpcResult(data: unknown): unknown {
-  return Array.isArray(data) ? data[0] : data;
-}
 
 export async function fetchHistory(
   teamId: string,

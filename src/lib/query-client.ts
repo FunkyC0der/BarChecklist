@@ -18,6 +18,14 @@ export const queryKeys = {
     ['history', teamId, filters] as const,
   historyOptions: (teamId: string) => ['history', teamId, 'options'] as const,
   historyForTeam: (teamId: string) => ['history', teamId] as const,
+  memberStats: (teamId: string, filters: Record<string, unknown>) =>
+    ['stats', teamId, 'members', filters] as const,
+  memberTaskStats: (
+    teamId: string,
+    userId: string,
+    filters: Record<string, unknown>,
+  ) => ['stats', teamId, 'member', userId, filters] as const,
+  statsForTeam: (teamId: string) => ['stats', teamId] as const,
 };
 
 export function createQueryClient() {

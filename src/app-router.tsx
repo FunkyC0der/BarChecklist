@@ -11,6 +11,8 @@ import { Authenticated, Guest, Root, Shell } from './app-shells';
 import { ChecklistDetailRoute } from './routes/checklist-detail';
 import { ChecklistsRoute } from './routes/checklists';
 import { HistoryRoute } from './routes/history';
+import { HistoryStatsRoute } from './routes/history-stats';
+import { HistoryStatsMemberRoute } from './routes/history-stats-member';
 import { IndexRoute } from './routes/index';
 import { JoinRoute } from './routes/join';
 import { OnboardingRoute } from './routes/onboarding';
@@ -64,6 +66,8 @@ const routeTree = rootRoute.addChildren([
     shellChild('/checklists', ChecklistsRoute),
     shellChild('/checklists/$checklistId', ChecklistDetailRoute),
     shellChild('/history', HistoryRoute),
+    shellChild('/history/stats', HistoryStatsRoute),
+    shellChild('/history/stats/$userId', HistoryStatsMemberRoute),
     shellChild('/team', TeamRoute),
   ]),
 ]);

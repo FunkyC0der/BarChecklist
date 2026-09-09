@@ -234,7 +234,7 @@ describe('ChecklistDetailRoute', () => {
       screen.getByRole('button', { name: 'Додати задачу' }),
     ).toBeInTheDocument();
     await waitFor(() => expect(api.fetchChecklist).toHaveBeenCalledTimes(2));
-    expect(invalidateQueries).toHaveBeenCalledTimes(4);
+    expect(invalidateQueries).toHaveBeenCalledTimes(5);
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: ['checklist', 'team-1', 'checklist-1'],
     });

@@ -8,7 +8,10 @@ import {
   historySnapshotSchema,
 } from './history-api';
 
-vi.mock('@/lib/supabase', () => ({ getSupabase: vi.fn() }));
+vi.mock('@/lib/supabase', () => ({
+  getSupabase: vi.fn(),
+  unwrapRpcResult: (data: unknown) => (Array.isArray(data) ? data[0] : data),
+}));
 
 const rpc = vi.fn();
 const mockedGetSupabase = vi.mocked(getSupabase);

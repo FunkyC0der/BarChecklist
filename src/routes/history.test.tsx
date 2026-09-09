@@ -19,6 +19,9 @@ const teamState = vi.hoisted(() => ({
 }));
 
 vi.mock('@/features/history/history-api', () => api);
+vi.mock('@/features/history/history-view-tabs', () => ({
+  HistoryViewTabs: () => null,
+}));
 vi.mock('@/features/teams/team-context', () => ({
   useTeams: () => teamState,
 }));

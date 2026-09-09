@@ -163,6 +163,9 @@ export function TodayRoute() {
         await queryClient.invalidateQueries({
           queryKey: queryKeys.historyForTeam(teamId!),
         });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.statsForTeam(teamId!),
+        });
       } catch (mutationError) {
         queryClient.setQueryData<TodaySnapshot>(
           queryKeys.today(teamId!, todayDate),

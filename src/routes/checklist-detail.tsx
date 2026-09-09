@@ -102,6 +102,9 @@ export function ChecklistDetailRoute() {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.historyForTeam(activeTeam.id),
       });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.statsForTeam(activeTeam.id),
+      });
     }
   };
   const updateChecklistMutation = useMutation({
@@ -129,6 +132,9 @@ export function ChecklistDetailRoute() {
         });
         await queryClient.invalidateQueries({
           queryKey: queryKeys.historyForTeam(activeTeam.id),
+        });
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.statsForTeam(activeTeam.id),
         });
       }
     },
