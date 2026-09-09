@@ -13,7 +13,6 @@ import {
   Page,
   Sheet,
   Skeleton,
-  TaskMarker,
 } from '@/components/ui';
 import type {
   HistoryFilters,
@@ -279,7 +278,6 @@ export function HistoryRoute() {
                     {day.missed.map((task) => (
                       <ListRow
                         key={task.taskId}
-                        leading={<TaskMarker />}
                         meta={task.checklistName}
                         title={
                           <span className="text-base-content/60">
