@@ -54,6 +54,20 @@ function timeLabel(value: string, timeZone: string) {
   }).format(new Date(value));
 }
 
+function HistoryTaskStatus({ completed }: { completed: boolean }) {
+  const label = completed ? 'Виконано' : 'Не виконано';
+
+  return (
+    <span
+      aria-label={label}
+      className={`mt-0.5 status status-md shrink-0 ${
+        completed ? 'status-primary' : 'status-neutral'
+      }`}
+      role="img"
+    />
+  );
+}
+
 export function HistoryRoute() {
   const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
   const teamId = activeTeam?.id ?? null;
@@ -253,10 +267,14 @@ export function HistoryRoute() {
                 </span>
               </div>
               {day.completions.length > 0 ? (
-                <ul className="list">
+                <ul
+                  aria-labelledby={`history-day-${day.date}`}
+                  className="list"
+                >
                   {day.completions.map((completion) => (
                     <ListRow
                       key={completion.id}
+                      leading={<HistoryTaskStatus completed />}
                       meta={`${completion.checklistName} · ${completion.completedByName} · ${timeLabel(completion.completedAt, activeTeam.timezone)}`}
                       title={completion.taskTitle}
                     />
@@ -278,6 +296,7 @@ export function HistoryRoute() {
                     {day.missed.map((task) => (
                       <ListRow
                         key={task.taskId}
+                        leading={<HistoryTaskStatus completed={false} />}
                         meta={task.checklistName}
                         title={
                           <span className="text-base-content/60">

@@ -123,7 +123,7 @@ describe('HistoryRoute', () => {
     teamState.status = 'ready';
   });
 
-  it('renders missed tasks for past days and counts them in the day total', async () => {
+  it('renders static accessible statuses and counts missed tasks in the day total', async () => {
     api.fetchHistory.mockResolvedValue(
       snapshot([
         {
@@ -142,6 +142,26 @@ describe('HistoryRoute', () => {
     expect(screen.getByText('Помити шейкери')).toBeInTheDocument();
     expect(screen.getByText('Замовити лід')).toBeInTheDocument();
     expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    const completedStatuses = screen.getAllByRole('img', {
+      name: 'Виконано',
+    });
+    const missedStatuses = screen.getAllByRole('img', { name: 'Не виконано' });
+    expect(completedStatuses).toHaveLength(1);
+    expect(missedStatuses).toHaveLength(2);
+    expect(completedStatuses[0]).toHaveClass(
+      'status',
+      'status-primary',
+      'status-md',
+    );
+    expect(missedStatuses[0]).toHaveClass(
+      'status',
+      'status-neutral',
+      'status-md',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Виконано' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
 
   it('renders a day that only has missed tasks', async () => {
@@ -161,6 +181,9 @@ describe('HistoryRoute', () => {
     expect(screen.queryByText('Історія порожня')).not.toBeInTheDocument();
     expect(screen.getByText('0 / 1')).toBeInTheDocument();
     expect(screen.getAllByRole('list')).toHaveLength(1);
+    expect(
+      screen.getByRole('img', { name: 'Не виконано' }),
+    ).toBeInTheDocument();
   });
 
   it('omits the missed section for days without missed tasks', async () => {
@@ -169,6 +192,7 @@ describe('HistoryRoute', () => {
     expect(await screen.findByText('Закрити зміну')).toBeInTheDocument();
     expect(screen.queryByText('Не виконано')).not.toBeInTheDocument();
     expect(screen.getByText('1 / 1')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Виконано' })).toBeInTheDocument();
   });
 
   it('loads defaults, derives the 14-day dates, and renders localized details', async () => {
