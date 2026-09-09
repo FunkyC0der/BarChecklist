@@ -210,9 +210,19 @@ describe('ChecklistDetailRoute', () => {
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ще' }));
+    const menuItem = await screen.findByRole('menuitem', {
+      name: 'Видалити задачу',
+    });
+    expect(menuItem).toBeVisible();
+    // The Sheet's modal makes nodes outside its overlay inert. Keep the
+    // portaled menu within that overlay so taps work on mobile browsers.
+    expect(menuItem.closest('.modal')).not.toBeNull();
+
+    fireEvent.pointerDown(menuItem);
+    fireEvent.click(menuItem);
     expect(
-      await screen.findByRole('menuitem', { name: 'Видалити задачу' }),
-    ).toBeVisible();
+      await screen.findByRole('dialog', { name: 'Видалити задачу?' }),
+    ).toBeInTheDocument();
   });
 
   it('keeps the task list mounted and shows an inline alert on a failed reorder (P1-3)', async () => {

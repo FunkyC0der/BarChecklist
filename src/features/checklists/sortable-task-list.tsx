@@ -50,6 +50,7 @@ function SortableTaskRow({
         <motion.button
           className="rounded-box text-start list-col-grow active:bg-base-200"
           onClick={(event) => onSelect(task, event.currentTarget)}
+          ref={handleRef}
           transition={{ duration: 0.1, ease: 'easeOut' }}
           type="button"
           whileTap={{ scale: 0.98 }}
@@ -59,16 +60,6 @@ function SortableTaskRow({
       ) : (
         <div className="list-col-grow">{titleContent}</div>
       )}
-      {isOwner ? (
-        <button
-          aria-label={`Перемістити «${task.title}»`}
-          className="btn -my-1 btn-circle touch-none btn-ghost"
-          ref={handleRef}
-          type="button"
-        >
-          <Icon name="grip-vertical" />
-        </button>
-      ) : null}
     </li>
   );
 }

@@ -443,7 +443,7 @@ export function ChecklistDetailRoute() {
 
       <Sheet
         ariaLabel="Редагування задачі"
-        more={
+        more={(portalContainer) =>
           dialog?.type === 'edit-task' ? (
             <Menu.Root modal={false}>
               <Menu.Trigger
@@ -452,10 +452,10 @@ export function ChecklistDetailRoute() {
               >
                 <Icon name="more-horizontal" />
               </Menu.Trigger>
-              <Menu.Portal>
+              <Menu.Portal container={portalContainer}>
                 <Menu.Positioner
                   align="end"
-                  className="dropdown dropdown-end z-[1000]"
+                  className="dropdown dropdown-end z-10"
                   side="bottom"
                 >
                   <Menu.Popup

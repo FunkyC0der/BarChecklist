@@ -88,6 +88,7 @@ describe('SortableTaskList', () => {
       <SortableTaskList
         isOwner
         onReorder={vi.fn().mockResolvedValue(undefined)}
+        onSelect={vi.fn()}
         tasks={tasks}
       />,
     );
@@ -96,7 +97,7 @@ describe('SortableTaskList', () => {
     expect(screen.getByText('Друга задача')).toBeInTheDocument();
   });
 
-  it('does not render drag handles for members', () => {
+  it('does not render a separate drag button for members', () => {
     render(
       <SortableTaskList
         isOwner={false}
@@ -113,20 +114,27 @@ describe('SortableTaskList', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders drag handles for owners', () => {
+  it('does not render a separate drag button for owners', () => {
     render(
       <SortableTaskList
         isOwner
         onReorder={vi.fn().mockResolvedValue(undefined)}
+        onSelect={vi.fn()}
         tasks={tasks}
       />,
     );
 
     expect(
-      screen.getByRole('button', { name: 'Перемістити «Перша задача»' }),
+      screen.queryByRole('button', { name: 'Перемістити «Перша задача»' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Перемістити «Друга задача»' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Перша задача/ }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'Перемістити «Друга задача»' }),
+      screen.getByRole('button', { name: /Друга задача/ }),
     ).toBeInTheDocument();
   });
 
