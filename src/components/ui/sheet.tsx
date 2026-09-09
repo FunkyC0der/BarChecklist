@@ -39,6 +39,7 @@ export function Sheet({
   ariaLabel,
   children,
   description,
+  initialFocus = true,
   more,
   onClose,
   open,
@@ -48,7 +49,8 @@ export function Sheet({
   ariaLabel?: string | undefined;
   children: ReactNode;
   description?: string | undefined;
-  more?: ReactNode | ((portalContainer: HTMLDivElement | null) => ReactNode);
+  initialFocus?: boolean | undefined;
+  more?: ReactNode;
   onClose: () => void;
   open: boolean;
   title?: string | undefined;
@@ -56,7 +58,6 @@ export function Sheet({
 }) {
   const [dialog, setDialog] = useState<HTMLDivElement | null>(null);
   const [box, setBox] = useState<HTMLDivElement | null>(null);
-  const moreContent = typeof more === 'function' ? more(dialog) : more;
 
   useSheetViewport(dialog, box, open);
 
@@ -79,10 +80,10 @@ export function Sheet({
             aria-label={!title ? ariaLabel : undefined}
             className={`${floatingPopupBoxClass} app-overlay-popup`}
             finalFocus={triggerRef}
-            initialFocus
+            initialFocus={initialFocus}
             ref={setBox}
           >
-            {title || moreContent ? (
+            {title || more ? (
               <div className="flex items-start justify-between gap-3">
                 {title ? (
                   <Dialog.Title className="text-2xl font-bold tracking-tight">
@@ -91,9 +92,7 @@ export function Sheet({
                 ) : (
                   <span />
                 )}
-                {moreContent ? (
-                  <div className="shrink-0">{moreContent}</div>
-                ) : null}
+                {more ? <div className="shrink-0">{more}</div> : null}
               </div>
             ) : null}
             {description ? (
@@ -101,11 +100,7 @@ export function Sheet({
                 {description}
               </Dialog.Description>
             ) : null}
-            <div
-              className={
-                title || description || moreContent ? 'mt-4' : undefined
-              }
-            >
+            <div className={title || description || more ? 'mt-4' : undefined}>
               {children}
             </div>
             <Dialog.Close className="sr-only focus-visible:btn focus-visible:not-sr-only focus-visible:absolute focus-visible:top-3 focus-visible:right-3 focus-visible:btn-ghost focus-visible:btn-sm">

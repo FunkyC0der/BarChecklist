@@ -208,8 +208,13 @@ describe('ChecklistDetailRoute', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Редагувати задачу' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('textbox', { name: 'Назва задачі' }),
+    ).not.toHaveFocus();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ще' }));
+    const menuTrigger = screen.getByRole('button', { name: 'Ще' });
+    fireEvent.click(menuTrigger);
+    expect(menuTrigger.closest('details')).toHaveAttribute('open');
     const menuItem = await screen.findByRole('menuitem', {
       name: 'Видалити задачу',
     });

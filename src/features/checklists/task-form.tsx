@@ -13,11 +13,13 @@ import {
 } from './checklist-schema';
 
 export function TaskForm({
+  autoFocus = true,
   checklistName,
   initialValues,
   onSubmit,
   submitLabel,
 }: {
+  autoFocus?: boolean | undefined;
   checklistName: string;
   initialValues?: Partial<TaskFormValues>;
   onSubmit: (values: TaskFormValues) => Promise<void>;
@@ -61,7 +63,7 @@ export function TaskForm({
           <div>
             <input
               aria-label="Назва задачі"
-              autoFocus
+              autoFocus={autoFocus}
               className="input w-full input-ghost px-0 text-base font-semibold input-sm"
               onBlur={field.onBlur}
               onChange={field.onChange}

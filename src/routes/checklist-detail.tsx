@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Menu } from '@base-ui/react/menu';
 import { Navigate } from '@/lib/router';
 import { useNavigate, useParams } from '@/lib/router-hooks';
 
@@ -443,47 +442,40 @@ export function ChecklistDetailRoute() {
 
       <Sheet
         ariaLabel="Редагування задачі"
-        more={(portalContainer) =>
+        initialFocus={false}
+        more={
           dialog?.type === 'edit-task' ? (
-            <Menu.Root modal={false}>
-              <Menu.Trigger
+            <details className="dropdown dropdown-end dropdown-bottom">
+              <summary
                 aria-label="Ще"
-                className="btn btn-circle btn-ghost"
+                className="btn btn-circle list-none btn-ghost [&::-webkit-details-marker]:hidden"
+                role="button"
               >
                 <Icon name="more-horizontal" />
-              </Menu.Trigger>
-              <Menu.Portal container={portalContainer}>
-                <Menu.Positioner
-                  align="end"
-                  className="dropdown dropdown-end z-10"
-                  side="bottom"
-                >
-                  <Menu.Popup
-                    render={
-                      <ul className="app-menu-popup menu dropdown-content w-52 rounded-box bg-base-100 shadow-sm" />
-                    }
+              </summary>
+              <ul
+                className="app-menu-popup menu dropdown-content z-10 mt-1 w-52 rounded-box bg-base-100 p-2 shadow-sm"
+                role="menu"
+              >
+                <li>
+                  <button
+                    className="text-error"
+                    onClick={() => {
+                      if (dialog?.type !== 'edit-task') return;
+                      const task = dialog.task;
+                      closeDialog();
+                      queueMicrotask(() =>
+                        openDialog({ task, type: 'delete-task' }),
+                      );
+                    }}
+                    role="menuitem"
+                    type="button"
                   >
-                    <li>
-                      <Menu.Item
-                        className="text-error"
-                        nativeButton
-                        onClick={() => {
-                          if (dialog?.type !== 'edit-task') return;
-                          const task = dialog.task;
-                          closeDialog();
-                          queueMicrotask(() =>
-                            openDialog({ task, type: 'delete-task' }),
-                          );
-                        }}
-                        render={<button type="button" />}
-                      >
-                        Видалити задачу
-                      </Menu.Item>
-                    </li>
-                  </Menu.Popup>
-                </Menu.Positioner>
-              </Menu.Portal>
-            </Menu.Root>
+                    Видалити задачу
+                  </button>
+                </li>
+              </ul>
+            </details>
           ) : undefined
         }
         onClose={closeDialog}
@@ -493,6 +485,7 @@ export function ChecklistDetailRoute() {
       >
         {dialog?.type === 'edit-task' ? (
           <TaskForm
+            autoFocus={false}
             checklistName={checklist.name}
             initialValues={{
               cadence: dialog.task.cadence,
