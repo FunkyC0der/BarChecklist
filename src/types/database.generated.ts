@@ -406,6 +406,11 @@ export type Database = {
         }
         Returns: Json
       }
+      get_platform_overview: { Args: never; Returns: Json }
+      get_platform_teams: {
+        Args: { p_limit?: number; p_offset?: number; p_sort?: string }
+        Returns: Json
+      }
       get_today_snapshot: { Args: { p_team_id: string }; Returns: Json }
       inspect_team_invite: {
         Args: { p_token: string }
@@ -416,6 +421,7 @@ export type Database = {
           team_name: string
         }[]
       }
+      is_super_admin: { Args: never; Returns: boolean }
       leave_team: { Args: { p_team_id: string }; Returns: undefined }
       log_client_event: { Args: { p_events: Json }; Returns: undefined }
       remove_team_member: {

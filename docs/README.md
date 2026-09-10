@@ -5,7 +5,9 @@
 ## Поточні операційні документи
 
 - [Roadmap](plans/next-steps.md)
+- [Модель монетизації](plans/monetization.md)
 - [Epic 6 — Closed Web beta](plans/epics/epic-06-closed-web-beta.md)
+- [Epic 6c — Адмінська консоль](plans/epics/epic-06c-admin-console.md)
 - [Epic 7 — Beta stabilization](plans/epics/epic-07-beta-stabilization.md)
 - [UI style guide](design/ui-style.md)
 - [Real-device beta smoke](qa/beta-smoke-real-devices.md)

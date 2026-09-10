@@ -23,7 +23,8 @@ export function safeJoinReturnPath(
       url.pathname === '/history' ||
       url.pathname === '/history/stats' ||
       /^\/history\/stats\/[^/]+$/.test(url.pathname) ||
-      url.pathname === '/team';
+      url.pathname === '/team' ||
+      url.pathname === '/admin';
 
     if (
       !(inviteMatch && inviteTokenPattern.test(inviteMatch[1] ?? '')) &&

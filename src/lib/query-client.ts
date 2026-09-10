@@ -26,6 +26,11 @@ export const queryKeys = {
     filters: Record<string, unknown>,
   ) => ['stats', teamId, 'member', userId, filters] as const,
   statsForTeam: (teamId: string) => ['stats', teamId] as const,
+  superAdminFlag: (userId: string) =>
+    ['admin', userId, 'is-super-admin'] as const,
+  adminOverview: () => ['admin', 'overview'] as const,
+  adminTeams: (params: Record<string, unknown>) =>
+    ['admin', 'teams', params] as const,
 };
 
 export function createQueryClient() {

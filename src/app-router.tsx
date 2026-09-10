@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from 'react';
 
 import { Authenticated, Guest, Root, Shell } from './app-shells';
+import { AdminRoute } from './routes/admin';
 import { ChecklistDetailRoute } from './routes/checklist-detail';
 import { ChecklistsRoute } from './routes/checklists';
 import { HistoryRoute } from './routes/history';
@@ -16,6 +17,7 @@ import { HistoryStatsMemberRoute } from './routes/history-stats-member';
 import { IndexRoute } from './routes/index';
 import { JoinRoute } from './routes/join';
 import { OnboardingRoute } from './routes/onboarding';
+import { RequireSuperAdmin } from './routes/guards';
 import { SignInRoute } from './routes/sign-in';
 import { SignUpRoute } from './routes/sign-up';
 import { TeamRoute } from './routes/team';
@@ -59,6 +61,13 @@ const routeTree = rootRoute.addChildren([
   route('/onboarding', () => (
     <Authenticated>
       <OnboardingRoute />
+    </Authenticated>
+  )),
+  route('/admin', () => (
+    <Authenticated>
+      <RequireSuperAdmin>
+        <AdminRoute />
+      </RequireSuperAdmin>
     </Authenticated>
   )),
   shellRoute.addChildren([

@@ -23,7 +23,8 @@ export type IconName =
   | 'copy'
   | 'x'
   | 'log-out'
-  | 'arrow-left-right';
+  | 'arrow-left-right'
+  | 'shield';
 
 const paths: Record<IconName, ReactNode> = {
   sun: (
@@ -159,6 +160,11 @@ const paths: Record<IconName, ReactNode> = {
       <path d="M4 7h16" />
       <path d="m16 21 4-4-4-4" />
       <path d="M20 17H4" />
+    </>
+  ),
+  shield: (
+    <>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
     </>
   ),
 };

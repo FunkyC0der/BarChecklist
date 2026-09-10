@@ -3,6 +3,7 @@ import { Navigate, Outlet } from '@/lib/router';
 import { useSearchParams } from '@/lib/router-hooks';
 
 import { Alert, Button, Loading, Screen } from '@/components/ui';
+import { useSuperAdmin } from '@/features/admin/use-super-admin';
 import { useAuth } from '@/features/auth/auth-context';
 import { safeJoinReturnPath } from '@/features/teams/team-routes';
 import { logger } from '@/lib/logger';
@@ -73,6 +74,24 @@ export function RequireGuest({ children }: { children?: ReactNode }) {
 
   if (session) {
     return <Navigate replace to={target ?? '/today'} />;
+  }
+
+  return children ?? <Outlet />;
+}
+
+export function RequireSuperAdmin({ children }: { children?: ReactNode }) {
+  const { isAdmin, isResolved } = useSuperAdmin();
+
+  if (!isResolved) {
+    return (
+      <Screen scroll={false}>
+        <Loading label="Перевіряємо доступ…" size="lg" />
+      </Screen>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate replace to="/today" />;
   }
 
   return children ?? <Outlet />;

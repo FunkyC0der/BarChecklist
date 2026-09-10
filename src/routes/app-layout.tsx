@@ -16,6 +16,7 @@ import {
   bottomDockInsetClass,
   bottomSurfaceTokensClass,
 } from '@/components/ui/bottom-surface';
+import { useSuperAdmin } from '@/features/admin/use-super-admin';
 import { useAuth } from '@/features/auth/auth-context';
 import { TodayRealtimeProvider } from '@/features/completions/today-realtime-context';
 import { OnboardingForm } from '@/features/teams/onboarding-form';
@@ -73,6 +74,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
     },
   });
   const { activeTeam, selectTeam, status, teams = [] } = useTeams();
+  const { isAdmin: isSuperAdmin } = useSuperAdmin();
   useTabPrefetch();
   const location = useLocation();
   const reducedMotion = useReducedMotion();
@@ -213,6 +215,18 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
                     Команди
                   </button>
                 </li>
+                {isSuperAdmin ? (
+                  <li>
+                    <NavLink
+                      onClick={() => setAccountMenuOpen(false)}
+                      role="menuitem"
+                      to="/admin"
+                    >
+                      <Icon name="shield" />
+                      Адмінка
+                    </NavLink>
+                  </li>
+                ) : null}
                 {isChecklistDetail && isOwner ? (
                   <li>
                     <button

@@ -20,6 +20,7 @@
 | 5    | History та Web MVP stabilization   | DONE       | Feature-complete Web MVP; device gate перенесено в beta smoke |
 | 6    | Closed Web beta                    | NEXT       | Контрольована beta smoke wave та operational decisions        |
 | 6b   | Статистика учасників команди       | NEXT       | Per-member completion stats у Історія (owner override)        |
+| 6c   | Адмінська консоль                  | NEXT       | Платформні метрики та seam для адмінських дій                 |
 | 7    | Beta fixes та production hardening | PLANNED    | UX, security і data-model hardening                           |
 | 8    | iOS та Android foundation          | SUPERSEDED | Expo native скасовано; Capacitor відкладено                   |
 | 9    | Mobile beta та release readiness   | SUPERSEDED | Store-релізи після майбутнього native-рішення                 |
@@ -30,6 +31,7 @@
 - Архівні Epics 2b і 3b: [archive](./archive/).
 - Поточний Epic 6: [epic-06-closed-web-beta.md](./epics/epic-06-closed-web-beta.md) — закритий Web beta, ізоляція середовища, support/feedback, smoke і cohort gate.
 - Epic 6b: [epic-06b-member-stats.md](./epics/epic-06b-member-stats.md) — статистика учасників команди, деталі в [member-stats-spec.md](../member-stats-spec.md).
+- Epic 6c: [epic-06c-admin-console.md](./epics/epic-06c-admin-console.md) — адмінська консоль платформи (`/admin`), seam для ролі супер-адміна.
 - Запланований Epic 7: [epic-07-beta-stabilization.md](./epics/epic-07-beta-stabilization.md).
 - Superseded Epics 8–9: [archive/superseded](./archive/superseded/).
 
