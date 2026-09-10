@@ -50,4 +50,19 @@ describe('AuthShell', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Content')).toBeInTheDocument();
   });
+
+  it('does not render a description when one is not provided', () => {
+    render(
+      <AuthShell footer={<span>Footer</span>} title="Title">
+        <p>Content</p>
+      </AuthShell>,
+    );
+
+    expect(
+      screen.queryByText('Щоденні чеклісти команди без зайвого шуму.'),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Title' }),
+    ).toBeInTheDocument();
+  });
 });

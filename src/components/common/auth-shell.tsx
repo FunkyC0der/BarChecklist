@@ -5,7 +5,7 @@ import { AppText } from '@/components/ui';
 type AuthShellProps = {
   brand?: boolean;
   children?: ReactNode;
-  description: string;
+  description?: string;
   footer: ReactNode;
   title: string;
 };
@@ -26,17 +26,16 @@ export function AuthShell({
               <AppText as="h1" variant="display">
                 Checklister
               </AppText>
-              <AppText className="text-sm" variant="body">
-                Щоденні чеклісти команди без зайвого шуму.
-              </AppText>
             </div>
           ) : null}
           <AppText as="h2" variant="heading">
             {title}
           </AppText>
-          <AppText className="mt-1 text-sm" variant="body">
-            {description}
-          </AppText>
+          {description ? (
+            <AppText className="mt-1 text-sm" variant="body">
+              {description}
+            </AppText>
+          ) : null}
           <div className="mt-6 flex flex-col gap-4">{children ?? null}</div>
           <div className="mt-auto pt-8 text-center text-sm">{footer}</div>
         </div>

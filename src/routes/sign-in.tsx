@@ -18,7 +18,6 @@ export function SignInRoute() {
 
   return (
     <AuthShell
-      description="Введіть дані, щоб продовжити роботу з командою."
       footer={
         <AppText>
           Ще немає акаунта?{' '}
