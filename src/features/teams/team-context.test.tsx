@@ -30,6 +30,7 @@ const team = (id: string) => ({
   created_at: '2026-01-01T00:00:00Z',
   id,
   name: id,
+  myRole: 'member' as const,
   owner_id: 'user-1',
   timezone: 'UTC',
   updated_at: '2026-01-01T00:00:00Z',
@@ -69,6 +70,11 @@ describe('TeamProvider active-team resolution', () => {
     await waitFor(() =>
       expect(screen.getByText('ready:b')).toBeInTheDocument(),
     );
+  });
+  it('passes the signed-in user id to fetchTeams', async () => {
+    fetchTeams.mockResolvedValue([team('a')]);
+    mount();
+    await waitFor(() => expect(fetchTeams).toHaveBeenCalledWith('user-1'));
   });
   it('uses and persists the deterministic first fallback without stored state', async () => {
     fetchTeams.mockResolvedValue([team('a'), team('b')]);

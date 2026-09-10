@@ -279,16 +279,19 @@ export type Database = {
       team_members: {
         Row: {
           joined_at: string
+          role: string
           team_id: string
           user_id: string
         }
         Insert: {
           joined_at?: string
+          role?: string
           team_id: string
           user_id: string
         }
         Update: {
           joined_at?: string
+          role?: string
           team_id?: string
           user_id?: string
         }
@@ -433,6 +436,10 @@ export type Database = {
         Returns: undefined
       }
       revoke_team_invite: { Args: { p_team_id: string }; Returns: undefined }
+      set_team_member_role: {
+        Args: { p_role: string; p_team_id: string; p_user_id: string }
+        Returns: undefined
+      }
       soft_delete_checklist: {
         Args: { p_checklist_id: string }
         Returns: undefined

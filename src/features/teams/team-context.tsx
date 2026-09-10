@@ -15,7 +15,7 @@ import { logger } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 import { queryKeys } from '@/lib/query-client';
 
-import { fetchTeams, type Team } from './team-api';
+import { fetchTeams, type TeamWithRole } from './team-api';
 import {
   readStoredActiveTeam,
   resolveActiveTeamId,
@@ -25,16 +25,16 @@ import {
 type TeamStatus = 'error' | 'idle' | 'loading' | 'ready';
 
 type TeamContextValue = {
-  activeTeam: Team | null;
+  activeTeam: TeamWithRole | null;
   error: string | null;
-  refreshTeams: (preferredTeamId?: string) => Promise<Team[]>;
+  refreshTeams: (preferredTeamId?: string) => Promise<TeamWithRole[]>;
   selectTeam: (teamId: string | null) => void;
   status: TeamStatus;
-  teams: Team[];
+  teams: TeamWithRole[];
 };
 
 const TeamContext = createContext<TeamContextValue | null>(null);
-const emptyTeams: Team[] = [];
+const emptyTeams: TeamWithRole[] = [];
 
 export function TeamProvider({ children }: { children: ReactNode }) {
   const { configIssue, session } = useAuth();
@@ -43,7 +43,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const userId = session?.user.id;
   const teamsQuery = useQuery({
     enabled: Boolean(userId && !configIssue),
-    queryFn: fetchTeams,
+    queryFn: () => fetchTeams(userId!),
     queryKey: queryKeys.teams(userId ?? 'anonymous'),
   });
   const teams = teamsQuery.data ?? emptyTeams;
@@ -75,8 +75,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           queryKey: queryKeys.teams(session.user.id),
         });
         const nextTeams =
-          queryClient.getQueryData<Team[]>(queryKeys.teams(session.user.id)) ??
-          [];
+          queryClient.getQueryData<TeamWithRole[]>(
+            queryKeys.teams(session.user.id),
+          ) ?? [];
         const nextActiveId = resolveActiveTeamId(
           readStoredActiveTeam(session.user.id),
           nextTeams,

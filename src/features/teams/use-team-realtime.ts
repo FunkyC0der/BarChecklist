@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 import { getSupabase } from '@/lib/supabase';
 
 type TeamRealtimeOptions = {
-  isOwner: boolean;
+  canManage: boolean;
   onInviteChange: () => void;
   onMembersChange: () => void;
   onTeamChange: () => void;
@@ -15,7 +15,7 @@ type TeamRealtimeOptions = {
 export type TeamRealtimeStatus = 'connecting' | 'connected' | 'degraded';
 
 export function useTeamRealtime({
-  isOwner,
+  canManage,
   onInviteChange,
   onMembersChange,
   onTeamChange,
@@ -43,7 +43,7 @@ export function useTeamRealtime({
     const refreshCanonicalData = () => {
       callbacks.current.onTeamChange();
       callbacks.current.onMembersChange();
-      if (isOwner) callbacks.current.onInviteChange();
+      if (canManage) callbacks.current.onInviteChange();
     };
 
     const channel = getSupabase()
@@ -69,7 +69,7 @@ export function useTeamRealtime({
         () => callbacks.current.onMembersChange(),
       );
 
-    if (isOwner) {
+    if (canManage) {
       channel.on(
         'postgres_changes',
         {
@@ -112,7 +112,7 @@ export function useTeamRealtime({
       window.removeEventListener('online', onOnline);
       void getSupabase().removeChannel(channel);
     };
-  }, [isOwner, retry, retryKey, teamId]);
+  }, [canManage, retry, retryKey, teamId]);
 
   const status: TeamRealtimeStatus =
     !teamId || getPublicEnvIssue()

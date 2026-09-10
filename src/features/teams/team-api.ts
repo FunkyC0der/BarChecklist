@@ -1,7 +1,11 @@
 import { getSupabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.generated';
 
-export type Team = Database['public']['Tables']['teams']['Row'];
+export type TeamRole = 'member' | 'admin';
+export type Team = Database['public']['Tables']['teams']['Row'] & {
+  myRole?: TeamRole;
+};
+export type TeamWithRole = Team & { myRole: TeamRole };
 export type TeamMember = Database['public']['Tables']['team_members']['Row'] & {
   displayName: string;
 };
@@ -12,13 +16,17 @@ export type InviteInspection = {
   teamName: string | null;
 };
 
-export async function fetchTeams() {
+export async function fetchTeams(userId: string): Promise<TeamWithRole[]> {
   const { data, error } = await getSupabase()
     .from('teams')
-    .select('*')
+    .select('*, membership:team_members!inner(role)')
+    .eq('membership.user_id', userId)
     .order('created_at', { ascending: true });
   if (error) throw error;
-  return data;
+  return data.map(({ membership, ...team }) => ({
+    ...team,
+    myRole: membership[0]!.role as TeamRole,
+  }));
 }
 
 export async function createTeam(values: {
@@ -53,7 +61,7 @@ export async function deleteTeam(teamId: string) {
 export async function fetchTeamMembers(teamId: string): Promise<TeamMember[]> {
   const { data: memberships, error: membershipsError } = await getSupabase()
     .from('team_members')
-    .select('user_id, team_id, joined_at')
+    .select('user_id, team_id, joined_at, role')
     .eq('team_id', teamId)
     .order('joined_at', { ascending: true });
   if (membershipsError) throw membershipsError;
@@ -154,6 +162,19 @@ export async function leaveTeam(teamId: string) {
 
 export async function removeTeamMember(teamId: string, userId: string) {
   const { error } = await getSupabase().rpc('remove_team_member', {
+    p_team_id: teamId,
+    p_user_id: userId,
+  });
+  if (error) throw error;
+}
+
+export async function setTeamMemberRole(
+  teamId: string,
+  userId: string,
+  role: TeamRole,
+) {
+  const { error } = await getSupabase().rpc('set_team_member_role', {
+    p_role: role,
     p_team_id: teamId,
     p_user_id: userId,
   });

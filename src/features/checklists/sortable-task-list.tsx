@@ -12,17 +12,17 @@ import { formatTaskSchedule } from './checklist-schedule';
 
 function SortableTaskRow({
   index,
-  isOwner,
+  canManage,
   onSelect,
   task,
 }: {
   index: number;
-  isOwner: boolean;
+  canManage: boolean;
   onSelect?: ((task: Task, element: HTMLElement) => void) | undefined;
   task: Task;
 }) {
   const { handleRef, isDragging, ref } = useSortable({
-    disabled: !isOwner,
+    disabled: !canManage,
     id: task.id,
     index,
   });
@@ -46,7 +46,7 @@ function SortableTaskRow({
       )}
       ref={ref}
     >
-      {isOwner && onSelect ? (
+      {canManage && onSelect ? (
         <motion.button
           className="rounded-box text-start list-col-grow active:bg-base-200"
           onClick={(event) => onSelect(task, event.currentTarget)}
@@ -65,12 +65,12 @@ function SortableTaskRow({
 }
 
 export function SortableTaskList({
-  isOwner,
+  canManage,
   onReorder,
   onSelect,
   tasks,
 }: {
-  isOwner: boolean;
+  canManage: boolean;
   onReorder: (ids: string[]) => Promise<void>;
   onSelect?: ((task: Task, element: HTMLElement) => void) | undefined;
   tasks: Task[];
@@ -125,7 +125,7 @@ export function SortableTaskList({
         {orderedTasks.map((task, index) => (
           <SortableTaskRow
             index={index}
-            isOwner={isOwner}
+            canManage={canManage}
             key={task.id}
             onSelect={onSelect}
             task={task}

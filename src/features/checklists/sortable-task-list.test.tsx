@@ -86,7 +86,7 @@ describe('SortableTaskList', () => {
   it('renders task rows', () => {
     render(
       <SortableTaskList
-        isOwner
+        canManage
         onReorder={vi.fn().mockResolvedValue(undefined)}
         onSelect={vi.fn()}
         tasks={tasks}
@@ -100,7 +100,7 @@ describe('SortableTaskList', () => {
   it('does not render a separate drag button for members', () => {
     render(
       <SortableTaskList
-        isOwner={false}
+        canManage={false}
         onReorder={vi.fn().mockResolvedValue(undefined)}
         tasks={tasks}
       />,
@@ -117,7 +117,7 @@ describe('SortableTaskList', () => {
   it('does not render a separate drag button for owners', () => {
     render(
       <SortableTaskList
-        isOwner
+        canManage
         onReorder={vi.fn().mockResolvedValue(undefined)}
         onSelect={vi.fn()}
         tasks={tasks}
@@ -150,7 +150,7 @@ describe('SortableTaskList', () => {
       )
       .mockResolvedValue(undefined);
 
-    render(<SortableTaskList isOwner onReorder={onReorder} tasks={tasks} />);
+    render(<SortableTaskList canManage onReorder={onReorder} tasks={tasks} />);
 
     // `dragCapture.onDragEnd` is reassigned on every SortableTaskList
     // render (its closure captures the current orderedTasks/ref state), so

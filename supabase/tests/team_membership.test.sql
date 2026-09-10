@@ -66,7 +66,7 @@ select is((select count(*) from public.team_invites), 0::bigint, 'outsider canno
 select throws_ok(
   $$select * from public.create_team_invite('50000000-0000-0000-0000-000000000001')$$,
   '42501',
-  'Only the team owner can create an invite.',
+  'Only the team owner or an admin can create an invite.',
   'outsider cannot create an invite'
 );
 select is(

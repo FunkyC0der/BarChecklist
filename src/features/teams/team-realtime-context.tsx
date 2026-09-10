@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/features/auth/auth-context';
 import { useTeams } from '@/features/teams/team-context';
+import { getTeamPermissions } from '@/features/teams/team-permissions';
 import {
   useTeamRealtime,
   type TeamRealtimeStatus,
@@ -29,12 +30,10 @@ export function TeamRealtimeProvider({ children }: { children: ReactNode }) {
   const { activeTeam, refreshTeams } = useTeams();
   const queryClient = useQueryClient();
   const teamId = activeTeam?.id ?? null;
-  const isOwner = Boolean(
-    activeTeam && session?.user.id === activeTeam.owner_id,
-  );
+  const { canManage } = getTeamPermissions(activeTeam, session?.user.id);
 
   const { retry, status } = useTeamRealtime({
-    isOwner,
+    canManage,
     onInviteChange: () =>
       void queryClient.invalidateQueries({
         queryKey: queryKeys.teamInvite(teamId ?? 'none'),

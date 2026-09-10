@@ -37,6 +37,7 @@ import {
 import { SortableTaskList } from '@/features/checklists/sortable-task-list';
 import { TaskForm } from '@/features/checklists/task-form';
 import { useTeams } from '@/features/teams/team-context';
+import { getTeamPermissions } from '@/features/teams/team-permissions';
 import { getErrorMessage } from '@/lib/errors';
 import { queryKeys } from '@/lib/query-client';
 
@@ -82,9 +83,7 @@ export function ChecklistDetailRoute() {
   const loading = detailQuery.isLoading;
   const notFound = detailQuery.isSuccess && !detailQuery.data;
 
-  const isOwner = Boolean(
-    activeTeam && session?.user.id === activeTeam.owner_id,
-  );
+  const { canManage } = getTeamPermissions(activeTeam, session?.user.id);
   const atTaskLimit = tasks.length >= MAX_ACTIVE_TASKS_PER_CHECKLIST;
 
   const invalidateDetail = async () => {
@@ -166,7 +165,7 @@ export function ChecklistDetailRoute() {
       const trigger = (event as CustomEvent<{ trigger?: HTMLElement | null }>)
         .detail?.trigger;
       if (trigger) dialogTriggerRef.current = trigger;
-      if (isOwner) openDialog({ type: 'delete-checklist' });
+      if (canManage) openDialog({ type: 'delete-checklist' });
     };
     window.addEventListener('checklister:delete-checklist', onDeleteRequest);
     return () =>
@@ -174,7 +173,7 @@ export function ChecklistDetailRoute() {
         'checklister:delete-checklist',
         onDeleteRequest,
       );
-  }, [isOwner]);
+  }, [canManage]);
 
   const submitChecklistEdit = async (values: ChecklistFormValues) => {
     if (!checklist) return;
@@ -319,7 +318,7 @@ export function ChecklistDetailRoute() {
   return (
     <Page
       actions={
-        isOwner ? (
+        canManage ? (
           <>
             <IconButton
               icon="pencil"
@@ -335,7 +334,7 @@ export function ChecklistDetailRoute() {
       back="/checklists"
       title={checklist.name}
       titleBadge={
-        isOwner ? (
+        canManage ? (
           <Badge size="sm" soft>
             {`${tasks.length} / ${MAX_ACTIVE_TASKS_PER_CHECKLIST}`}
           </Badge>
@@ -348,7 +347,7 @@ export function ChecklistDetailRoute() {
       {tasks.length === 0 ? (
         <EmptyState
           description={
-            isOwner
+            canManage
               ? 'Додайте першу задачу. Порядок можна змінити перетягуванням.'
               : 'У цьому чеклісті ще немає задач.'
           }
@@ -357,10 +356,10 @@ export function ChecklistDetailRoute() {
         />
       ) : (
         <SortableTaskList
-          isOwner={isOwner}
+          canManage={canManage}
           onReorder={handleReorder}
           onSelect={
-            isOwner
+            canManage
               ? (task, element) => {
                   dialogTriggerRef.current = element;
                   openDialog({ task, type: 'edit-task' });
@@ -371,7 +370,7 @@ export function ChecklistDetailRoute() {
         />
       )}
 
-      {isOwner ? (
+      {canManage ? (
         <Fab
           disabled={atTaskLimit}
           disabledHint="Ліміт 100 задач"

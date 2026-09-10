@@ -27,6 +27,7 @@ import {
   type ChecklistFormValues,
 } from '@/features/checklists/checklist-schema';
 import { useTeams } from '@/features/teams/team-context';
+import { getTeamPermissions } from '@/features/teams/team-permissions';
 import { getErrorMessage } from '@/lib/errors';
 import { queryKeys } from '@/lib/query-client';
 
@@ -75,9 +76,7 @@ export function ChecklistsRoute() {
     ? getErrorMessage(checklistQuery.error, 'Не вдалося завантажити чеклісти.')
     : null;
 
-  const isOwner = Boolean(
-    activeTeam && session?.user.id === activeTeam.owner_id,
-  );
+  const { canManage } = getTeamPermissions(activeTeam, session?.user.id);
   const atChecklistLimit = checklists.length >= MAX_ACTIVE_CHECKLISTS_PER_TEAM;
 
   const submitCreate = async (values: ChecklistFormValues) => {
@@ -128,7 +127,7 @@ export function ChecklistsRoute() {
     <Page
       title="Чеклісти"
       titleBadge={
-        isOwner ? (
+        canManage ? (
           <Badge size="sm" soft>
             {`${checklists.length} / ${MAX_ACTIVE_CHECKLISTS_PER_TEAM}`}
           </Badge>
@@ -155,7 +154,7 @@ export function ChecklistsRoute() {
       {!loading && checklists.length === 0 ? (
         <EmptyState
           action={
-            isOwner && !atChecklistLimit ? (
+            canManage && !atChecklistLimit ? (
               <Button
                 color="primary"
                 onClick={(event) => {
@@ -168,9 +167,9 @@ export function ChecklistsRoute() {
             ) : undefined
           }
           description={
-            isOwner
+            canManage
               ? 'Додайте перший чекліст для команди.'
-              : 'Owner ще не додав жодного чекліста.'
+              : 'Власник або адмін ще не додав жодного чекліста.'
           }
           icon="clipboard-list"
           title="Чеклістів поки немає"
@@ -194,7 +193,7 @@ export function ChecklistsRoute() {
         </ul>
       ) : null}
 
-      {isOwner ? (
+      {canManage ? (
         <Fab
           disabled={atChecklistLimit}
           disabledHint="Ліміт 20 чеклістів"

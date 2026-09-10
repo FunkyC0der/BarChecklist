@@ -32,6 +32,7 @@
 - Поточний Epic 6: [epic-06-closed-web-beta.md](./epics/epic-06-closed-web-beta.md) — закритий Web beta, ізоляція середовища, support/feedback, smoke і cohort gate.
 - Epic 6b: [epic-06b-member-stats.md](./epics/epic-06b-member-stats.md) — статистика учасників команди, деталі в [member-stats-spec.md](../member-stats-spec.md).
 - Epic 6c: [epic-06c-admin-console.md](./epics/epic-06c-admin-console.md) — адмінська консоль платформи (`/admin`), seam для ролі супер-адміна.
+- Epic 6d: [epic-06d-team-admins.md](./epics/epic-06d-team-admins.md) — ролі адміністраторів команд.
 - Запланований Epic 7: [epic-07-beta-stabilization.md](./epics/epic-07-beta-stabilization.md).
 - Superseded Epics 8–9: [archive/superseded](./archive/superseded/).
 

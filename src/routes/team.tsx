@@ -23,6 +23,7 @@ import {
   fetchCurrentTeamInvite,
   leaveTeam,
   removeTeamMember,
+  setTeamMemberRole,
   updateTeam,
 } from '@/features/teams/team-api';
 import { initials } from '@/features/teams/team-display';
@@ -31,6 +32,7 @@ import { DeleteTeamSheet, InviteSheet } from '@/features/teams/team-sheets';
 import { joinPath } from '@/features/teams/team-routes';
 import { teamMembersQueryOptions } from '@/features/teams/team-queries';
 import { useTeams } from '@/features/teams/team-context';
+import { getTeamPermissions } from '@/features/teams/team-permissions';
 import { useTeamRealtimeStatus } from '@/features/teams/team-realtime-context';
 import { buildAppUrl, shareLink } from '@/lib/platform';
 import { queryKeys } from '@/lib/query-client';
@@ -97,6 +99,17 @@ export function TeamRoute() {
     mutationFn: ({ teamId, userId }: { teamId: string; userId: string }) =>
       removeTeamMember(teamId, userId),
   });
+  const setRoleMutation = useMutation({
+    mutationFn: ({
+      teamId,
+      userId,
+      role,
+    }: {
+      teamId: string;
+      userId: string;
+      role: 'admin' | 'member';
+    }) => setTeamMemberRole(teamId, userId, role),
+  });
   const leaveMutation = useMutation({
     mutationFn: leaveTeam,
     onSuccess: invalidateTeams,
@@ -111,7 +124,9 @@ export function TeamRoute() {
     enabled: Boolean(activeTeam),
   });
   const inviteQuery = useQuery({
-    enabled: Boolean(activeTeam && session?.user.id === activeTeam?.owner_id),
+    enabled: Boolean(
+      activeTeam && getTeamPermissions(activeTeam, session?.user.id).canManage,
+    ),
     queryFn: () => fetchCurrentTeamInvite(activeTeam!.id),
     queryKey: queryKeys.teamInvite(activeTeam?.id ?? 'none'),
   });
@@ -125,8 +140,9 @@ export function TeamRoute() {
     activeTeamIdRef.current = activeTeam?.id ?? null;
   }, [activeTeam?.id]);
 
-  const isOwner = Boolean(
-    activeTeam && session?.user.id === activeTeam.owner_id,
+  const { canManage, isOwner } = getTeamPermissions(
+    activeTeam,
+    session?.user.id,
   );
 
   useEffect(() => {
@@ -328,6 +344,29 @@ export function TeamRoute() {
     }
   };
 
+  const toggleMemberRole = async (userId: string, role: 'admin' | 'member') => {
+    if (!activeTeam) return;
+    const teamId = activeTeam.id;
+    setMemberActionId(userId);
+    setTeamMessage(null);
+    try {
+      await setRoleMutation.mutateAsync({ teamId, userId, role });
+      if (activeTeamIdRef.current !== teamId) return;
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.teamMembers(teamId),
+      });
+    } catch (error) {
+      if (activeTeamIdRef.current === teamId)
+        setTeamMessage(
+          error instanceof Error
+            ? error.message
+            : 'Не вдалося змінити роль учасника.',
+        );
+    } finally {
+      if (activeTeamIdRef.current === teamId) setMemberActionId(null);
+    }
+  };
+
   const leave = async () => {
     if (!activeTeam) return;
 
@@ -445,7 +484,7 @@ export function TeamRoute() {
           </div>
         </Alert>
       ) : null}
-      {!isOwner && teamMessage ? (
+      {!canManage && teamMessage ? (
         <Alert color="error">{teamMessage}</Alert>
       ) : null}
 
@@ -478,7 +517,7 @@ export function TeamRoute() {
                 <div className="text-sm text-base-content/60">{label}</div>
                 <div className="truncate text-base">{value}</div>
               </div>
-              {isOwner ? (
+              {canManage ? (
                 <IconButton
                   icon="pencil"
                   label={editLabel}
@@ -501,7 +540,7 @@ export function TeamRoute() {
           <AppText as="h2" variant="overline">
             Учасники
           </AppText>
-          {isOwner ? (
+          {canManage ? (
             <button
               aria-label={
                 inviteExpiry
@@ -561,16 +600,47 @@ export function TeamRoute() {
                         <Badge color="primary" size="sm" soft>
                           Owner
                         </Badge>
-                      ) : isOwner ? (
-                        <IconButton
-                          className="text-error"
-                          disabled={memberActionId === member.user_id}
-                          icon="trash"
-                          label={`Видалити ${member.displayName}`}
-                          onClick={() => void removeMember(member.user_id)}
-                          size="sm"
-                        />
-                      ) : undefined
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          {member.role === 'admin' ? (
+                            <Badge size="sm" soft>
+                              Admin
+                            </Badge>
+                          ) : null}
+                          {canManage && member.user_id !== session?.user.id ? (
+                            <>
+                              <IconButton
+                                disabled={memberActionId === member.user_id}
+                                icon="shield"
+                                label={
+                                  member.role === 'admin'
+                                    ? 'Забрати роль адміна'
+                                    : 'Зробити адміном'
+                                }
+                                onClick={() =>
+                                  void toggleMemberRole(
+                                    member.user_id,
+                                    member.role === 'admin'
+                                      ? 'member'
+                                      : 'admin',
+                                  )
+                                }
+                                size="sm"
+                              />
+                              <IconButton
+                                className="text-error"
+                                disabled={memberActionId === member.user_id}
+                                icon="trash"
+                                label={`Видалити ${member.displayName}`}
+                                onClick={() =>
+                                  void removeMember(member.user_id)
+                                }
+                                size="sm"
+                              />
+                            </>
+                          ) : null}
+                        </div>
+                      )
                     }
                   />
                 );
@@ -619,7 +689,7 @@ export function TeamRoute() {
         triggerRef={inviteTriggerRef}
       />
 
-      {isOwner ? (
+      {canManage ? (
         <DeleteTeamSheet
           deleteError={deleteSheetOpen ? teamMessage : null}
           deleteLoading={deleteLoading}

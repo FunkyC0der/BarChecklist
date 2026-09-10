@@ -21,6 +21,7 @@ import { useAuth } from '@/features/auth/auth-context';
 import { TodayRealtimeProvider } from '@/features/completions/today-realtime-context';
 import { OnboardingForm } from '@/features/teams/onboarding-form';
 import { useTeams } from '@/features/teams/team-context';
+import { getTeamPermissions } from '@/features/teams/team-permissions';
 import { TeamRealtimeProvider } from '@/features/teams/team-realtime-context';
 import {
   readStoredActiveTeamTab,
@@ -88,9 +89,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const isChecklistDetail = /^\/checklists\/[^/]+$/.test(location.pathname);
-  const isOwner = Boolean(
-    activeTeam && session?.user.id === activeTeam.owner_id,
-  );
+  const { canManage } = getTeamPermissions(activeTeam, session?.user.id);
 
   useEffect(() => {
     restoredTab.current = false;
@@ -227,7 +226,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
                     </NavLink>
                   </li>
                 ) : null}
-                {isChecklistDetail && isOwner ? (
+                {isChecklistDetail && canManage ? (
                   <li>
                     <button
                       className="text-error"

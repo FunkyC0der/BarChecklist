@@ -22,6 +22,7 @@ import { todaySnapshotQueryOptions } from '@/features/completions/today-queries'
 import { useTodayRealtimeStatus } from '@/features/completions/today-realtime-context';
 import { useLogicalDateRefresh } from '@/features/completions/use-logical-date-refresh';
 import { useTeams } from '@/features/teams/team-context';
+import { getTeamPermissions } from '@/features/teams/team-permissions';
 import { cn } from '@/lib/cn';
 import { getErrorMessage } from '@/lib/errors';
 import { logicalDate } from '@/lib/dates';
@@ -69,6 +70,7 @@ export function TodayRoute() {
   const showToast = useToast();
   const { session } = useAuth();
   const { activeTeam, error: teamsError, refreshTeams, status } = useTeams();
+  const { canManage } = getTeamPermissions(activeTeam, session?.user.id);
   const teamId = activeTeam?.id ?? null;
   const teamTimeZone = activeTeam?.timezone ?? 'UTC';
   const [, refreshLogicalDate] = useState(0);
@@ -409,8 +411,7 @@ export function TodayRoute() {
                   completion?.id.startsWith('optimistic:') ?? false;
                 const canUndo = Boolean(
                   completion &&
-                  (completion.completedBy === session?.user.id ||
-                    activeTeam.owner_id === session?.user.id),
+                  (completion.completedBy === session?.user.id || canManage),
                 );
                 const disabled =
                   pending ||

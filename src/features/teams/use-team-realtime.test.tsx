@@ -58,7 +58,7 @@ describe('useTeamRealtime', () => {
     async (realtimeStatus) => {
       const { result } = renderHook(() =>
         useTeamRealtime({
-          isOwner: false,
+          canManage: false,
           onInviteChange: vi.fn(),
           onMembersChange: vi.fn(),
           onTeamChange: vi.fn(),
@@ -75,7 +75,7 @@ describe('useTeamRealtime', () => {
   it('replaces a failed channel exactly once on explicit retry', async () => {
     const { result } = renderHook(() =>
       useTeamRealtime({
-        isOwner: false,
+        canManage: false,
         onInviteChange: vi.fn(),
         onMembersChange: vi.fn(),
         onTeamChange: vi.fn(),
@@ -97,7 +97,7 @@ describe('useTeamRealtime', () => {
 
   it('cleans up the previous channel when the active team changes', async () => {
     const options = {
-      isOwner: false,
+      canManage: false,
       onInviteChange: vi.fn(),
       onMembersChange: vi.fn(),
       onTeamChange: vi.fn(),
@@ -125,7 +125,7 @@ describe('useTeamRealtime', () => {
     const onTeamChange = vi.fn();
     const { result } = renderHook(() =>
       useTeamRealtime({
-        isOwner: true,
+        canManage: true,
         onInviteChange,
         onMembersChange,
         onTeamChange,
@@ -154,7 +154,7 @@ describe('useTeamRealtime', () => {
     const onInviteChange = vi.fn();
     const { result } = renderHook(() =>
       useTeamRealtime({
-        isOwner: false,
+        canManage: false,
         onInviteChange,
         onMembersChange: vi.fn(),
         onTeamChange: vi.fn(),
