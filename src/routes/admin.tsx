@@ -116,160 +116,164 @@ export function AdminRoute() {
   const canShowMore = total !== null && teams.length < total;
 
   return (
-    <Page back="/today" title="Адмінка">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <section>
-          <h2 className="mb-2 text-xs font-medium tracking-wide text-base-content/60 uppercase">
-            Тотали
-          </h2>
-          {overviewQuery.isLoading ? (
-            <Skeleton rows={3} />
-          ) : overviewError ? (
-            <Alert color="error">
-              <span className="flex-1">{overviewError}</span>
-              <Button onClick={() => void overviewQuery.refetch()} size="sm">
-                Повторити
-              </Button>
-            </Alert>
-          ) : overview ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                label="Юзери"
-                value={formatNumber(overview.totals.users)}
-              />
-              <StatCard
-                label="Команди"
-                value={formatNumber(overview.totals.teams)}
-              />
-              <StatCard
-                label="Учасники"
-                value={formatNumber(overview.totals.memberships)}
-              />
-              <StatCard
-                label="Чеклісти"
-                value={formatNumber(overview.totals.checklists)}
-              />
-              <StatCard
-                label="Задачі"
-                value={formatNumber(overview.totals.tasks)}
-              />
-              <StatCard
-                label="Виконання"
-                value={formatNumber(overview.totals.completions)}
-              />
-              <StatCard
-                label="Відкриті інвайти"
-                value={formatNumber(overview.totals.openInvites)}
-              />
-            </div>
-          ) : null}
-        </section>
-
-        {overview ? (
+    // Outside the app shell nothing bounds the height, so give Page (a
+    // scroll container) the same `h-dvh` flex column AppLayout provides.
+    <div className="flex h-dvh flex-col bg-base-100 pt-[env(safe-area-inset-top)]">
+      <Page back="/today" title="Адмінка">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
           <section>
             <h2 className="mb-2 text-xs font-medium tracking-wide text-base-content/60 uppercase">
-              Динаміка
+              Тотали
             </h2>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                label="Нові юзери, 7д / 30д"
-                value={`+${formatNumber(overview.growth.usersLast7)} / +${formatNumber(overview.growth.usersLast30)}`}
-              />
-              <StatCard
-                label="Нові команди, 7д / 30д"
-                value={`+${formatNumber(overview.growth.teamsLast7)} / +${formatNumber(overview.growth.teamsLast30)}`}
-              />
-              <StatCard
-                label="Виконання, 7д / 30д"
-                value={`+${formatNumber(overview.growth.completionsLast7)} / +${formatNumber(overview.growth.completionsLast30)}`}
-              />
-              <StatCard
-                label="Активні команди, 7д / 30д"
-                value={`${formatNumber(overview.activity.activeTeamsLast7)} / ${formatNumber(overview.activity.activeTeamsLast30)}`}
-              />
-              <StatCard
-                label="Активні юзери, 7д / 30д"
-                value={`${formatNumber(overview.activity.activeUsersLast7)} / ${formatNumber(overview.activity.activeUsersLast30)}`}
-              />
-            </div>
-          </section>
-        ) : null}
-
-        <section>
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-xs font-medium tracking-wide text-base-content/60 uppercase">
-              Команди
-            </h2>
-            <label className="fieldset">
-              <select
-                aria-label="Сортування команд"
-                className="select select-sm"
-                onChange={(event) =>
-                  changeSort(event.target.value as PlatformTeamSort)
-                }
-                value={sort}
-              >
-                {platformTeamSortOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {sortLabels[option]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          {teamsQuery.isLoading && teams.length === 0 ? (
-            <Skeleton rows={5} />
-          ) : teamsError ? (
-            <Alert color="error">
-              <span className="flex-1">{teamsError}</span>
-              <Button onClick={() => void teamsQuery.refetch()} size="sm">
-                Повторити
-              </Button>
-            </Alert>
-          ) : teams.length === 0 ? (
-            <EmptyState
-              description="Ще немає жодної команди."
-              icon="users"
-              title="Команд немає"
-            />
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="table table-zebra">
-                  <thead>
-                    <tr>
-                      <th>Команда</th>
-                      <th>Учасники</th>
-                      <th>Чеклісти</th>
-                      <th>Задачі</th>
-                      <th>Виконання</th>
-                      <th>Остання активність</th>
-                      <th>Відкритий інвайт</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teams.map((team) => (
-                      <TeamRow key={team.id} team={team} />
-                    ))}
-                  </tbody>
-                </table>
+            {overviewQuery.isLoading ? (
+              <Skeleton rows={3} />
+            ) : overviewError ? (
+              <Alert color="error">
+                <span className="flex-1">{overviewError}</span>
+                <Button onClick={() => void overviewQuery.refetch()} size="sm">
+                  Повторити
+                </Button>
+              </Alert>
+            ) : overview ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                  label="Юзери"
+                  value={formatNumber(overview.totals.users)}
+                />
+                <StatCard
+                  label="Команди"
+                  value={formatNumber(overview.totals.teams)}
+                />
+                <StatCard
+                  label="Учасники"
+                  value={formatNumber(overview.totals.memberships)}
+                />
+                <StatCard
+                  label="Чеклісти"
+                  value={formatNumber(overview.totals.checklists)}
+                />
+                <StatCard
+                  label="Задачі"
+                  value={formatNumber(overview.totals.tasks)}
+                />
+                <StatCard
+                  label="Виконання"
+                  value={formatNumber(overview.totals.completions)}
+                />
+                <StatCard
+                  label="Відкриті інвайти"
+                  value={formatNumber(overview.totals.openInvites)}
+                />
               </div>
-              {canShowMore ? (
-                <div className="mt-3 flex justify-center">
-                  <Button
-                    onClick={() =>
-                      setOffset((current) => current + teamsPageSize)
-                    }
-                    variant="soft"
-                  >
-                    Показати ще
-                  </Button>
+            ) : null}
+          </section>
+
+          {overview ? (
+            <section>
+              <h2 className="mb-2 text-xs font-medium tracking-wide text-base-content/60 uppercase">
+                Динаміка
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                  label="Нові юзери, 7д / 30д"
+                  value={`+${formatNumber(overview.growth.usersLast7)} / +${formatNumber(overview.growth.usersLast30)}`}
+                />
+                <StatCard
+                  label="Нові команди, 7д / 30д"
+                  value={`+${formatNumber(overview.growth.teamsLast7)} / +${formatNumber(overview.growth.teamsLast30)}`}
+                />
+                <StatCard
+                  label="Виконання, 7д / 30д"
+                  value={`+${formatNumber(overview.growth.completionsLast7)} / +${formatNumber(overview.growth.completionsLast30)}`}
+                />
+                <StatCard
+                  label="Активні команди, 7д / 30д"
+                  value={`${formatNumber(overview.activity.activeTeamsLast7)} / ${formatNumber(overview.activity.activeTeamsLast30)}`}
+                />
+                <StatCard
+                  label="Активні юзери, 7д / 30д"
+                  value={`${formatNumber(overview.activity.activeUsersLast7)} / ${formatNumber(overview.activity.activeUsersLast30)}`}
+                />
+              </div>
+            </section>
+          ) : null}
+
+          <section>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-xs font-medium tracking-wide text-base-content/60 uppercase">
+                Команди
+              </h2>
+              <label className="fieldset">
+                <select
+                  aria-label="Сортування команд"
+                  className="select select-sm"
+                  onChange={(event) =>
+                    changeSort(event.target.value as PlatformTeamSort)
+                  }
+                  value={sort}
+                >
+                  {platformTeamSortOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {sortLabels[option]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {teamsQuery.isLoading && teams.length === 0 ? (
+              <Skeleton rows={5} />
+            ) : teamsError ? (
+              <Alert color="error">
+                <span className="flex-1">{teamsError}</span>
+                <Button onClick={() => void teamsQuery.refetch()} size="sm">
+                  Повторити
+                </Button>
+              </Alert>
+            ) : teams.length === 0 ? (
+              <EmptyState
+                description="Ще немає жодної команди."
+                icon="users"
+                title="Команд немає"
+              />
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra">
+                    <thead>
+                      <tr>
+                        <th>Команда</th>
+                        <th>Учасники</th>
+                        <th>Чеклісти</th>
+                        <th>Задачі</th>
+                        <th>Виконання</th>
+                        <th>Остання активність</th>
+                        <th>Відкритий інвайт</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teams.map((team) => (
+                        <TeamRow key={team.id} team={team} />
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              ) : null}
-            </>
-          )}
-        </section>
-      </div>
-    </Page>
+                {canShowMore ? (
+                  <div className="mt-3 flex justify-center">
+                    <Button
+                      onClick={() =>
+                        setOffset((current) => current + teamsPageSize)
+                      }
+                      variant="soft"
+                    >
+                      Показати ще
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            )}
+          </section>
+        </div>
+      </Page>
+    </div>
   );
 }
