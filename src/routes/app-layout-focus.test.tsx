@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 
-import { ToastProvider } from '@/components/ui';
+import { Fab, ToastProvider } from '@/components/ui';
 import { renderWithRouter } from '@/test/router';
 
 const teamState = vi.hoisted(() => ({
@@ -70,6 +70,28 @@ describe('AppLayout menu focus', () => {
     const canvas = column?.parentElement;
     expect(canvas).toHaveClass('bg-base-200', 'h-dvh', 'standalone:h-lvh');
     expect(column).toHaveClass('bg-base-100', 'w-full', 'sm:max-w-md');
+  });
+
+  it('portals the FAB next to the dock, outside the transformed <main>', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    renderWithRouter({
+      component: () => <Fab label="Створити чекліст" onClick={vi.fn()} />,
+      layout: ({ children }) => (
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <AppLayout>{children}</AppLayout>
+          </ToastProvider>
+        </QueryClientProvider>
+      ),
+      path: '/today',
+    });
+
+    const fab = await screen.findByRole('button', { name: 'Створити чекліст' });
+    const dock = screen.getByRole('navigation', { name: 'Розділи' });
+    expect(screen.getByRole('main')).not.toContainElement(fab);
+    expect(dock.parentElement).toContainElement(fab);
   });
 
   it('restores the stable account-menu trigger after opening Teams from the menu', async () => {

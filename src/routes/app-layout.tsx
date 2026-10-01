@@ -11,6 +11,7 @@ import {
   useToast,
   type IconName,
 } from '@/components/ui';
+import { FabHostContext } from '@/components/ui/fab-host';
 import {
   bottomDockHeightClass,
   bottomDockInsetClass,
@@ -88,6 +89,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   const accountMenuTriggerRef = useRef<HTMLElement>(null);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
+  const [fabHost, setFabHost] = useState<HTMLDivElement | null>(null);
   const isChecklistDetail = /^\/checklists\/[^/]+$/.test(location.pathname);
   const { canManage } = getTeamPermissions(activeTeam, session?.user.id);
 
@@ -269,14 +271,14 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
           </details>
         </header>
         <motion.main
-          animate={{ opacity: 1, transform: 'translateY(0)' }}
+          animate={{ opacity: 1, y: 0 }}
           className="flex min-h-0 flex-1 flex-col"
-          initial={
-            reducedMotion ? false : { opacity: 0, transform: 'translateY(8px)' }
-          }
+          initial={reducedMotion ? false : { opacity: 0, y: 8 }}
           transition={{ duration: 0.2, ease: 'easeOut' }}
         >
-          {children ?? <Outlet />}
+          <FabHostContext value={fabHost}>
+            {children ?? <Outlet />}
+          </FabHostContext>
         </motion.main>
         <nav
           aria-label="Розділи"
@@ -316,6 +318,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
             );
           })}
         </nav>
+        <div ref={setFabHost} />
         <ToastViewport />
         <Sheet
           onClose={() => {

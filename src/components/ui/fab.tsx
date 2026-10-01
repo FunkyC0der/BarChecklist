@@ -1,7 +1,9 @@
-import { type Ref } from 'react';
+import { use, type Ref } from 'react';
+import { createPortal } from 'react-dom';
 
 import { cn } from '@/lib/cn';
 
+import { FabHostContext } from './fab-host';
 import { Icon } from './icon';
 
 export function Fab({
@@ -30,7 +32,9 @@ export function Fab({
     </button>
   );
 
-  return (
+  const host = use(FabHostContext);
+
+  const node = (
     <div
       className={cn(
         // Fixed on phones; on wider screens anchor inside the max-w-md column.
@@ -47,4 +51,6 @@ export function Fab({
       )}
     </div>
   );
+
+  return host ? createPortal(node, host) : node;
 }
