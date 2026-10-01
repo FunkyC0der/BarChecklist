@@ -143,7 +143,7 @@ function AppLayoutContent({ children }: { children?: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="flex h-dvh flex-col overflow-x-clip bg-base-200 pt-[env(safe-area-inset-top)]">
+    <div className="flex h-dvh flex-col overflow-x-clip bg-base-200 pt-[env(safe-area-inset-top)] standalone:h-lvh">
       <div className="relative mx-auto flex min-h-0 w-full flex-1 flex-col bg-base-100 sm:max-w-md">
         <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-base-300/60 bg-base-100 px-4">
           <button

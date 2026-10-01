@@ -8,10 +8,23 @@
   --size-field: 0.28125rem;
 }
 
+@custom-variant standalone (@media (display-mode: standalone));
+
 html,
 body,
 #root {
   height: 100%;
+}
+
+/* iOS 26 standalone (WebKit 301108): dvh/100% exclude the top safe-area inset,
+ * leaving a dead strip at the bottom. There is no browser UI there, so lvh is
+ * the full screen. */
+@media (display-mode: standalone) {
+  html,
+  body,
+  #root {
+    height: 100lvh;
+  }
 }
 
 html {

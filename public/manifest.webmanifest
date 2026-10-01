@@ -1,0 +1,8 @@
+{
+  "name": "Checklister",
+  "short_name": "Checklister",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f5",
+  "theme_color": "#faf7f5"
+}

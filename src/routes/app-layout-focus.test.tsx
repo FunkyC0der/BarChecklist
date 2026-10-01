@@ -68,7 +68,7 @@ describe('AppLayout menu focus', () => {
     const header = await screen.findByRole('banner');
     const column = header.parentElement;
     const canvas = column?.parentElement;
-    expect(canvas).toHaveClass('bg-base-200', 'h-dvh');
+    expect(canvas).toHaveClass('bg-base-200', 'h-dvh', 'standalone:h-lvh');
     expect(column).toHaveClass('bg-base-100', 'w-full', 'sm:max-w-md');
   });
 
